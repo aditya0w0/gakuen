@@ -1,0 +1,217 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Plus, Edit, Trash2, BookOpen, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRequireAdmin } from "@/hooks/useRequireAdmin";
+import { SimpleModal } from "@/components/ui/SimpleModal";
+
+export default function CoursesManagementPage() {
+    const router = useRouter();
+    const { isAdmin, isLoading: authLoading } = useRequireAdmin();
+    const [isCreating, setIsCreating] = useState(false);
+    const [courses, setCourses] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
+        try {
+            const res = await fetch(`/api/courses?id=${deleteId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete');
+
+            // Remove from state immediately
+            setCourses(prev => prev.filter(c => c.id !== deleteId));
+            setDeleteId(null);
+        } catch (error) {
+            console.error('Delete failed:', error);
+            alert('Failed to delete course');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    // Load courses from API - MUST be before any early returns!
+    useEffect(() => {
+        if (!isAdmin) return; // Don't fetch if not admin yet
+
+        fetch('/api/courses')
+            .then(res => res.json())
+            .then(data => {
+                setCourses(data);
+                setIsLoading(false);
+            })
+            .catch(err => {
+                console.error('Failed to load courses:', err);
+                setIsLoading(false);
+            });
+    }, [isAdmin]);
+
+    // Show loading while checking auth - AFTER all hooks
+    if (authLoading || !isAdmin) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+            </div>
+        );
+    }
+
+    const handleCreateCourse = async () => {
+        setIsCreating(true);
+        try {
+            const response = await fetch('/api/courses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: 'Untitled Course',
+                    description: 'Start building your course...',
+                }),
+            });
+
+            if (!response.ok) throw new Error('Failed to create course');
+
+            const { id } = await response.json();
+            router.push(`/courses/${id}/edit`);
+        } catch (error) {
+            console.error('Creation failed:', error);
+            alert('Failed to create course');
+            setIsCreating(false);
+        }
+    };
+
+    if (isLoading) {
+        return <div className="flex items-center justify-center h-screen text-zinc-500">Loading courses...</div>;
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-white">Content Management</h1>
+                    <p className="text-neutral-400 mt-1">Manage all courses and content</p>
+                </div>
+                <Button
+                    onClick={handleCreateCourse}
+                    disabled={isCreating}
+                    className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                >
+                    <Plus className="w-4 h-4 mr-2" />
+                    {isCreating ? 'Creating...' : 'Add Course'}
+                </Button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                    <p className="text-sm text-neutral-400">Total Courses</p>
+                    <p className="text-2xl font-bold text-white mt-1">{courses.length}</p>
+                </div>
+                <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                    <p className="text-sm text-neutral-400">Published</p>
+                    <p className="text-2xl font-bold text-white mt-1">{courses.filter(c => c.isPublished).length}</p>
+                </div>
+                <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                    <p className="text-sm text-neutral-400">Total Lessons</p>
+                    <p className="text-2xl font-bold text-white mt-1">
+                        {courses.reduce((sum, c) => sum + (c.lessons?.length || 0), 0)}
+                    </p>
+                </div>
+            </div>
+
+            {/* Courses Table */}
+            <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                <table className="w-full">
+                    <thead className="bg-white/5 border-b border-white/10">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
+                                Course
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
+                                Category
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
+                                Lessons
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
+                                Level
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-semibold text-neutral-400 uppercase">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                        {courses.map((course) => (
+                            <tr key={course.id} className="hover:bg-white/5 transition-colors">
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-3">
+                                        <img
+                                            src={course.thumbnail}
+                                            alt={course.title}
+                                            className="w-12 h-12 rounded-lg object-cover"
+                                        />
+                                        <div>
+                                            <p className="text-sm font-medium text-white">{course.title}</p>
+                                            <p className="text-xs text-neutral-400">{course.instructor}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <span className="text-sm text-neutral-300">{course.category}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2">
+                                        <BookOpen className="w-4 h-4 text-neutral-400" />
+                                        <span className="text-sm text-white">{course.lessons.length}</span>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <span
+                                        className={`px-2 py-1 rounded text-xs font-medium ${course.level === "Beginner"
+                                            ? "bg-green-500/20 text-green-400"
+                                            : course.level === "Intermediate"
+                                                ? "bg-yellow-500/20 text-yellow-400"
+                                                : "bg-red-500/20 text-red-400"
+                                            }`}
+                                    >
+                                        {course.level}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Link href={`/courses/${course.id}/edit`}>
+                                            <button className="p-2 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-colors">
+                                                <Edit className="w-4 h-4" />
+                                            </button>
+                                        </Link>
+                                        <button
+                                            onClick={() => setDeleteId(course.id)}
+                                            className="p-2 rounded-lg hover:bg-white/10 text-red-400 hover:text-red-300 transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <SimpleModal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Course?"
+                description="This action cannot be undone. This will permanently delete the course and all its lessons."
+                isDestructive
+                isLoading={isDeleting}
+            />
+        </div >
+    );
+}

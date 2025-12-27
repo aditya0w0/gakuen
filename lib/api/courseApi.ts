@@ -1,0 +1,46 @@
+import { Course } from '@/lib/constants/demo-data';
+
+// Fetch course by ID
+export async function fetchCourse(id: string): Promise<Course | null> {
+    try {
+        const response = await fetch(`/api/courses/${id}`);
+        if (!response.ok) {
+            return null;
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching course ${id}:`, error);
+        return null;
+    }
+}
+
+// Update course
+export async function updateCourse(id: string, course: Course): Promise<boolean> {
+    try {
+        const response = await fetch(`/api/courses/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(course),
+        });
+        return response.ok;
+    } catch (error) {
+        console.error(`Error updating course ${id}:`, error);
+        return false;
+    }
+}
+
+// Fetch all courses
+export async function fetchAllCourses(): Promise<Course[]> {
+    try {
+        const response = await fetch('/api/courses');
+        if (!response.ok) {
+            return [];
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching courses:', error);
+        return [];
+    }
+}

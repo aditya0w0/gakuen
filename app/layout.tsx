@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ModernBackground } from "@/components/animations/ModernBackground";
+import { AuthProvider } from "@/components/auth/AuthContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { GlobalErrorHandler } from "@/components/GlobalErrorHandler";
 
 const geistSans = Geist({
+
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
@@ -27,7 +32,17 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          <ErrorBoundary>
+            <GlobalErrorHandler />
+            <div className="relative min-h-screen">
+              <ModernBackground />
+              <main className="relative z-10">
+                {children}
+              </main>
+            </div>
+          </ErrorBoundary>
+        </AuthProvider>
       </body>
     </html>
   );
