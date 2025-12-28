@@ -25,31 +25,25 @@ export default function SettingsPage() {
 
         setIsUploading(true);
         try {
-            // Convert to base64
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-                const base64String = reader.result as string;
+            // Upload using new API
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', 'avatars');
+            formData.append('id', user.id);
 
-                // Upload
-                const res = await fetch('/api/upload-image', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        image: base64String,
-                        filename: `avatar-${user.id}-${Date.now()}.jpg`
-                    }),
-                });
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
 
-                if (!res.ok) throw new Error('Upload failed');
-                const { url } = await res.json();
+            if (!res.ok) throw new Error('Upload failed');
+            const { url } = await res.json();
 
-                // Update Profile
-                await hybridStorage.profile.update(user.id, { avatar: url });
+            // Update Profile in both local and Firebase
+            await hybridStorage.profile.update(user.id, { avatar: url });
 
-                // Refresh Context to show new avatar instantly
-                refreshUser();
-            };
-            reader.readAsDataURL(file);
+            // Refresh Context to show new avatar instantly
+            await refreshUser();
         } catch (error) {
             console.error("Failed to upload avatar", error);
             alert("Failed to upload avatar");

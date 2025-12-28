@@ -15,10 +15,21 @@ export const authStore = {
             const stored = localStorage.getItem(AUTH_STORAGE_KEY);
             if (!stored) return null;
 
-            const session: AuthSession = JSON.parse(stored);
+            const session = JSON.parse(stored);
+
+            // Validate session structure
+            if (!session || typeof session !== 'object' || Array.isArray(session)) {
+                return null;
+            }
+
+            // Validate required fields exist
+            if (!session.user || !session.expiresAt) {
+                return null;
+            }
 
             // Check if session expired
-            if (new Date(session.expiresAt) < new Date()) {
+            const expiresAt = new Date(session.expiresAt);
+            if (isNaN(expiresAt.getTime()) || expiresAt < new Date()) {
                 this.clearSession();
                 return null;
             }

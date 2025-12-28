@@ -92,6 +92,9 @@ export const firebaseAuth = {
         // Check if user exists
         let profile = await getUserProfile(credential.user.uid);
 
+        // Google's photo URL (always get latest from Google)
+        const googleAvatar = credential.user.photoURL || undefined;
+
         // If new user, create profile
         if (!profile) {
             const newUser: User = {
@@ -99,7 +102,7 @@ export const firebaseAuth = {
                 email: credential.user.email || "",
                 name: credential.user.displayName || "User",
                 role: "user",
-                avatar: credential.user.photoURL || undefined,
+                avatar: googleAvatar,
                 enrolledCourses: [],
                 completedLessons: [],
                 createdAt: new Date().toISOString(),
@@ -107,7 +110,19 @@ export const firebaseAuth = {
 
             await createUserProfile(newUser);
             profile = newUser;
+        } else {
+            // Existing user - ALWAYS update avatar from Google (it might have changed)
+            if (googleAvatar) {
+                profile = { ...profile, avatar: googleAvatar };
+                // Update in Firestore
+                const { updateUserProfile } = await import('./firestore');
+                await updateUserProfile(credential.user.uid, { avatar: googleAvatar });
+            }
         }
+
+        // CRITICAL: Save profile with avatar to localStorage for immediate display
+        const { localCache } = await import('@/lib/storage/local-cache');
+        localCache.user.set(profile);
 
         return profile;
     },

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Simplified middleware for Edge Runtime
+ * Proxy for Edge Runtime (formerly middleware)
  * 
  * Edge Runtime doesn't support Firebase Admin SDK (node:process not available)
  * So we just check if the token EXISTS here, not validate it
@@ -12,7 +12,7 @@ import type { NextRequest } from 'next/server';
  * - Server components (Node.js runtime)
  * - useRequireAdmin hook (client-side)
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Admin routes that require authentication
@@ -36,7 +36,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
 }
 
-// Configure which routes to run middleware on
+// Configure which routes to run proxy on
 export const config = {
     matcher: [
         '/courses/:path*',

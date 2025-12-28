@@ -12,7 +12,7 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<void>;
     signup: (email: string, password: string, name: string) => Promise<void>;
     logout: () => void;
-    refreshUser: () => void;
+    refreshUser: () => Promise<void>;
     error: string | null;
 }
 
@@ -29,16 +29,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         initFirebase();
 
         // Load user from cache immediately (O(1))
-        const currentUser = hybridStorage.auth.getSession();
-        if (currentUser) {
-            setUser(currentUser);
+        const cachedUser = hybridStorage.auth.getSession();
+        if (cachedUser) {
+            setUser(cachedUser);
+            setIsLoading(false);
 
             // Sync cookie with localStorage (for existing sessions)
             import('@/lib/auth/cookies').then(({ authCookies }) => {
-                authCookies.set(currentUser);
+                authCookies.set(cachedUser);
             });
         }
-        setIsLoading(false);
+
+        // Also listen to Firebase auth state for real-time sync
+        import('@/lib/firebase/auth').then(({ firebaseAuth }) => {
+            import('@/lib/firebase/firestore').then(({ getUserProfile }) => {
+                const unsubscribe = firebaseAuth.onAuthChange(async (firebaseUser) => {
+                    if (firebaseUser) {
+                        // User is signed in - get full profile
+                        const profile = await getUserProfile(firebaseUser.uid);
+                        if (profile) {
+                            setUser(profile);
+                            // Update localStorage
+                            import('@/lib/storage/local-cache').then(({ localCache }) => {
+                                localCache.user.set(profile);
+                            });
+                        }
+                    } else {
+                        // User signed out
+                        setUser(null);
+                    }
+                    setIsLoading(false);
+                });
+
+                // Cleanup listener on unmount
+                return () => unsubscribe();
+            });
+        });
+
+        // Set loading to false after initial check if no cached user
+        if (!cachedUser) {
+            // Give Firebase a moment to initialize, then set loading false
+            const timeout = setTimeout(() => setIsLoading(false), 500);
+            return () => clearTimeout(timeout);
+        }
     }, []);
 
     const login = async (email: string, password: string) => {
@@ -46,29 +79,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setError(null);
 
         try {
-            const user = await hybridStorage.auth.login(email, password);
-            console.log('✅ Login successful, user:', user);
+            const loggedInUser = await hybridStorage.auth.login(email, password);
+            console.log('✅ Login successful, user:', loggedInUser);
 
             // Set user state immediately after successful login
-            setUser(user);
-            console.log('✅ User state set in AuthContext');
+            setUser(loggedInUser);
 
-            // Small delay to ensure state is updated
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // CRITICAL: Set loading to false BEFORE navigation
+            setIsLoading(false);
 
-            // Redirect based on role
-            console.log(`🔄 Redirecting to ${user.role === 'admin' ? '/dashboard' : '/user'}`);
-            if (user.role === "admin") {
-                router.push("/dashboard");
+            console.log('✅ User state set, navigating...');
+
+            // Small delay to ensure React has flushed the state updates
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            // Redirect based on role using replace to prevent back-button issues
+            console.log(`🔄 Redirecting to ${loggedInUser.role === 'admin' ? '/dashboard' : '/user'}`);
+            if (loggedInUser.role === "admin") {
+                router.replace("/dashboard");
             } else {
-                router.push("/user");
+                router.replace("/user");
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Login failed";
             setError(errorMessage);
-            throw err;
-        } finally {
             setIsLoading(false);
+            throw err;
         }
     };
 
@@ -77,24 +113,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setError(null);
 
         try {
-            const user = await hybridStorage.auth.signup(email, password, name);
-            console.log('✅ Signup successful, user:', user);
+            const newUser = await hybridStorage.auth.signup(email, password, name);
+            console.log('✅ Signup successful, user:', newUser);
 
             // Set user state immediately
-            setUser(user);
-            console.log('✅ User state set in AuthContext');
+            setUser(newUser);
 
-            // Small delay to ensure state propagates
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // CRITICAL: Set loading to false BEFORE navigation
+            // This ensures the dashboard component sees isLoading=false
+            setIsLoading(false);
 
-            // Redirect to user dashboard
-            router.push("/user");
+            console.log('✅ User state set, navigating to dashboard...');
+
+            // Use replace to prevent back-button issues
+            // Small delay to ensure React has flushed the state updates
+            await new Promise(resolve => setTimeout(resolve, 50));
+            router.replace("/user");
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Signup failed";
             setError(errorMessage);
-            throw err;
-        } finally {
             setIsLoading(false);
+            throw err;
         }
     };
 
@@ -107,10 +146,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push("/");
     };
 
-    const refreshUser = () => {
-        const currentUser = hybridStorage.auth.getSession();
-        if (currentUser) {
-            setUser(currentUser);
+    const refreshUser = async () => {
+        // Try to get latest from Firebase first
+        const { getUserProfile } = await import('@/lib/firebase/firestore');
+        const { firebaseAuth } = await import('@/lib/firebase/auth');
+
+        const currentFirebaseUser = firebaseAuth.getCurrentUser();
+        if (currentFirebaseUser) {
+            const firebaseProfile = await getUserProfile(currentFirebaseUser.uid);
+            if (firebaseProfile) {
+                setUser(firebaseProfile);
+                // Also update localStorage
+                hybridStorage.auth.getSession(); // This triggers cache update
+                return;
+            }
+        }
+
+        // Fall back to localStorage
+        const cachedUser = hybridStorage.auth.getSession();
+        if (cachedUser) {
+            setUser(cachedUser);
         }
     };
 
