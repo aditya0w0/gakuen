@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, LayoutDashboard, BookOpen, Settings, Home, Users, ChevronLeft, ChevronRight, Compass } from "lucide-react";
@@ -11,7 +11,7 @@ import Link from "next/link";
 export function DashboardShell({ children }: { children: React.ReactNode }) {
     const { user, logout } = useAuth();
     const pathname = usePathname();
-    const [isCollapsed, setIsCollapsed] = React.useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     const navItems = user?.role === "admin"
         ? [
@@ -20,14 +20,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             { icon: Settings, label: "Settings", href: "/settings" },
         ]
         : [
-            { icon: Home, label: "Dashboard", href: "/user" },
+            { icon: Home, label: "Home", href: "/user" },
             { icon: Compass, label: "Browse", href: "/browse" },
-            { icon: BookOpen, label: "My Classes", href: "/my-classes" },
+            { icon: BookOpen, label: "Classes", href: "/my-classes" },
             { icon: Settings, label: "Settings", href: "/settings" },
         ];
 
     return (
         <div className="flex h-screen">
+            {/* Desktop Sidebar */}
             <aside
                 className={cn(
                     "border-r border-white/10 bg-black/20 backdrop-blur-md hidden md:flex flex-col transition-all duration-300 relative",
@@ -112,11 +113,35 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 </div>
             </aside>
 
+            {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0">
-                <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+                <main className="flex-1 p-4 pb-20 md:pb-8 md:p-8 overflow-y-auto">
                     {children}
                 </main>
             </div>
+
+            {/* Mobile Bottom Navigation - PWA Style */}
+            <nav className="fixed bottom-0 left-0 right-0 h-16 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 flex items-center justify-around md:hidden z-40 safe-area-pb">
+                {navItems.map((item) => (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                            "flex flex-col items-center justify-center flex-1 h-full transition-colors py-2",
+                            pathname === item.href ? "text-white" : "text-neutral-500"
+                        )}
+                    >
+                        <item.icon className={cn(
+                            "w-5 h-5 transition-transform",
+                            pathname === item.href && "scale-110"
+                        )} />
+                        <span className="text-[10px] mt-1 font-medium">{item.label}</span>
+                        {pathname === item.href && (
+                            <div className="absolute bottom-1 w-1 h-1 bg-white rounded-full" />
+                        )}
+                    </Link>
+                ))}
+            </nav>
         </div>
     );
 }

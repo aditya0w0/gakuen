@@ -7,9 +7,20 @@ export interface Spacing {
     left?: number;
 }
 
+// All valid component types
+export type ComponentType =
+    | "header"
+    | "text"
+    | "image"
+    | "video"
+    | "code"
+    | "cta"
+    | "divider"
+    | "spacer";
+
 export interface BaseComponent {
     id: string;
-    type: string;
+    type: ComponentType;
 }
 
 // Header Component
@@ -111,7 +122,7 @@ export type Component =
 
 // Component metadata for registry
 export interface ComponentMeta {
-    type: string;
+    type: ComponentType;
     name: string;
     icon: string;
     description: string;

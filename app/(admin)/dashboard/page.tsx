@@ -215,8 +215,8 @@ export default function AdminDashboard() {
                                         <span className="text-yellow-400">★ {course.rating}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className={`px-2 py-0.5 rounded text-xs ${course.level === "Beginner" ? "bg-green-500/20 text-green-400" :
-                                            course.level === "Intermediate" ? "bg-yellow-500/20 text-yellow-400" :
+                                        <span className={`px-2 py-0.5 rounded text-xs ${course.level === "beginner" ? "bg-green-500/20 text-green-400" :
+                                            course.level === "intermediate" ? "bg-yellow-500/20 text-yellow-400" :
                                                 "bg-red-500/20 text-red-400"
                                             }`}>
                                             {course.level}

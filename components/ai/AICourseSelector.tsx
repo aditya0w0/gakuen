@@ -57,24 +57,24 @@ export function AICourseSelector({ courses }: AICourseSelectorProps) {
                         Tell our AI advisor what you're interested in, and we'll find the perfect course for you.
                     </p>
 
-                    <div className="relative">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <input
                             type="text"
                             placeholder="e.g., I want to build a mobile app..."
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleAskAI()}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-32 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                            className="flex-1 bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                         />
                         <button
                             onClick={handleAskAI}
                             disabled={isLoading || !query.trim()}
-                            className="absolute right-1.5 top-1.5 bottom-1.5 px-4 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
+                            className="px-4 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
                         >
                             {isLoading ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    Thinking...
+                                    <span className="hidden sm:inline">Thinking...</span>
                                 </>
                             ) : (
                                 <>

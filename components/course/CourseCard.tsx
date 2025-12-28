@@ -14,11 +14,11 @@ import { useAuth } from "../auth/AuthContext";
 
 interface CourseCardProps {
     course: Course;
-    index: number;
+    index?: number;
     onEnrollChange?: () => void;
 }
 
-export function CourseCard({ course, index, onEnrollChange }: CourseCardProps) {
+export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
     const { user, refreshUser } = useAuth();
     const [isEnrolled, setIsEnrolled] = useState(false);

@@ -1,6 +1,7 @@
 "use client";
 
 import { HeaderComponent } from "@/lib/cms/types";
+import React, { createElement } from "react";
 
 interface HeaderBlockProps {
     component: HeaderComponent;
@@ -17,9 +18,9 @@ export function HeaderBlock({
     onUpdate,
     onSelect,
 }: HeaderBlockProps) {
-    const Tag = `h${component.level}` as keyof JSX.IntrinsicElements;
+    const tagName = `h${component.level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
-    const style = {
+    const style: React.CSSProperties = {
         textAlign: component.align || "left",
         color: component.color || "#ffffff",
         fontSize: component.fontSize ? `${component.fontSize}px` : undefined,
@@ -37,22 +38,21 @@ export function HeaderBlock({
                 className={`group cursor-pointer rounded-lg transition-all ${isSelected ? "ring-2 ring-indigo-500 bg-indigo-500/10" : "hover:bg-white/5"
                     }`}
             >
-                <Tag
-                    contentEditable
-                    suppressContentEditableWarning
-                    onBlur={(e) => {
+                {createElement(tagName, {
+                    contentEditable: true,
+                    suppressContentEditableWarning: true,
+                    onBlur: (e: React.FocusEvent<HTMLElement>) => {
                         if (onUpdate) {
                             onUpdate({ ...component, text: e.currentTarget.textContent || "" });
                         }
-                    }}
-                    style={style}
-                    className="focus:outline-none px-2 py-1"
-                >
-                    {component.text}
-                </Tag>
+                    },
+                    style,
+                    className: "focus:outline-none px-2 py-1",
+                    children: component.text,
+                })}
             </div>
         );
     }
 
-    return <Tag style={style}>{component.text}</Tag>;
+    return createElement(tagName, { style }, component.text);
 }

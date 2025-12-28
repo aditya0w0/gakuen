@@ -148,22 +148,18 @@ export function CourseChatBot({ course, onToggleSidebar }: CourseChatBotProps) {
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={isSidebarMode
-                            ? { x: "100%" }
-                            : { opacity: 0, y: 20, scale: 0.95 }
-                        }
-                        animate={isSidebarMode
-                            ? { x: 0, top: 0, right: 0, bottom: 0, height: "100vh", width: "420px", borderRadius: 0 }
-                            : { opacity: 1, y: 0, scale: 1, width: "400px", height: "600px", bottom: "24px", right: "24px", borderRadius: "20px" }
-                        }
-                        exit={isSidebarMode
-                            ? { x: "100%" }
-                            : { opacity: 0, y: 20, scale: 0.95 }
-                        }
-                        transition={{ duration: 0.3, type: "spring", damping: 25, stiffness: 300 }}
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
                         className={cn(
                             "fixed z-50 bg-zinc-950 border border-zinc-800 shadow-2xl shadow-black/50 flex flex-col overflow-hidden",
-                            isSidebarMode ? "border-l border-zinc-800" : "rounded-[20px]"
+                            // Mobile: full screen
+                            "inset-4 rounded-2xl",
+                            // Tablet and up: fixed size bottom right
+                            "sm:inset-auto sm:bottom-4 sm:right-4 sm:w-[380px] sm:h-[500px] sm:rounded-2xl",
+                            // Desktop sidebar mode
+                            isSidebarMode && "lg:inset-y-0 lg:right-0 lg:left-auto lg:w-[420px] lg:h-full lg:rounded-none lg:border-l"
                         )}
                     >
                         {/* Header */}
