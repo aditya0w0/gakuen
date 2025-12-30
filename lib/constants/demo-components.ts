@@ -1,5 +1,7 @@
+import { Component, HeaderComponent, TextComponent } from "../cms/types";
+
 // Sample component blocks for demo lesson
-export const DEMO_LESSON_COMPONENTS = [
+export const DEMO_LESSON_COMPONENTS: Component[] = [
     {
         id: "header-demo-1",
         type: "header",
@@ -7,7 +9,7 @@ export const DEMO_LESSON_COMPONENTS = [
         text: "What is an Algorithm?",
         align: "left",
         color: "#ffffff",
-    },
+    } as HeaderComponent,
     {
         id: "text-demo-1",
         type: "text",
@@ -16,7 +18,7 @@ export const DEMO_LESSON_COMPONENTS = [
         fontSize: 16,
         lineHeight: 1.6,
         color: "#d4d4d8",
-    },
+    } as TextComponent,
     {
         id: "header-demo-2",
         type: "header",
@@ -24,7 +26,7 @@ export const DEMO_LESSON_COMPONENTS = [
         text: "Key Characteristics",
         align: "left",
         color: "#ffffff",
-    },
+    } as HeaderComponent,
     {
         id: "text-demo-2",
         type: "text",
@@ -33,7 +35,7 @@ export const DEMO_LESSON_COMPONENTS = [
         fontSize: 16,
         lineHeight: 1.8,
         color: "#d4d4d8",
-    },
+    } as TextComponent,
     {
         id: "header-demo-3",
         type: "header",
@@ -41,7 +43,7 @@ export const DEMO_LESSON_COMPONENTS = [
         text: "Why Algorithms Matter",
         align: "left",
         color: "#ffffff",
-    },
+    } as HeaderComponent,
     {
         id: "text-demo-3",
         type: "text",
@@ -50,5 +52,5 @@ export const DEMO_LESSON_COMPONENTS = [
         fontSize: 16,
         lineHeight: 1.8,
         color: "#d4d4d8",
-    },
+    } as TextComponent,
 ];

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateFirebaseToken } from '@/lib/auth/validateToken';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * API endpoint to set httpOnly cookie with Firebase ID token
  * Called after successful login on client side

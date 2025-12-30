@@ -224,5 +224,9 @@ export function raf(callback: FrameRequestCallback): number {
 export function cancelRaf(id: number): void {
     if (typeof window === 'undefined') return;
 
-    window.cancelAnimationFrame?.(id) || window.clearTimeout(id);
+    if (window.cancelAnimationFrame) {
+        window.cancelAnimationFrame(id);
+    } else {
+        window.clearTimeout(id);
+    }
 }

@@ -35,13 +35,9 @@ export default function LoginPage() {
 
         try {
             if (mode === "signup") {
-                // Use AuthContext's signup function
                 await authSignup(email, password, name);
-                // Redirect is handled by AuthContext
             } else {
-                // Use AuthContext's login function
                 await authLogin(email, password);
-                // Redirect is handled by AuthContext
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Authentication failed";
@@ -67,13 +63,21 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex min-h-[80vh] items-center justify-center p-4">
-            <Card className="login-card w-full max-w-md border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl opacity-0">
+        <div className="flex min-h-screen items-center justify-center p-4 bg-neutral-50 dark:bg-neutral-950">
+            {/* Back to Home */}
+            <Link
+                href="/"
+                className="fixed top-4 left-4 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+            >
+                ← Back to Home
+            </Link>
+
+            <Card className="login-card w-full max-w-md border-neutral-200 dark:border-white/10 bg-white dark:bg-black/40 backdrop-blur-xl shadow-2xl opacity-0">
                 <CardHeader className="text-center space-y-1">
-                    <CardTitle className="text-3xl font-bold tracking-tight text-white mb-2">
+                    <CardTitle className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white mb-2">
                         {mode === "signup" ? "Create Account" : "Welcome Back"}
                     </CardTitle>
-                    <CardDescription className="text-neutral-400">
+                    <CardDescription className="text-neutral-500 dark:text-neutral-400">
                         {mode === "signup" ? "Join Gakuen to start learning" : "Sign in to continue your journey"}
                     </CardDescription>
                 </CardHeader>
@@ -81,11 +85,11 @@ export default function LoginPage() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {mode === "signup" && (
                             <div className="space-y-2">
-                                <label htmlFor="name" className="text-sm font-medium text-neutral-300">
+                                <label htmlFor="name" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                                     Full Name
                                 </label>
                                 <div className="relative">
-                                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+                                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500" />
                                     <input
                                         id="name"
                                         type="text"
@@ -93,18 +97,18 @@ export default function LoginPage() {
                                         onChange={(e) => setName(e.target.value)}
                                         placeholder="Yuki Tanaka"
                                         required
-                                        className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                                     />
                                 </div>
                             </div>
                         )}
 
                         <div className="space-y-2">
-                            <label htmlFor="email" className="text-sm font-medium text-neutral-300">
+                            <label htmlFor="email" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                                 Email Address
                             </label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500" />
                                 <input
                                     id="email"
                                     type="email"
@@ -112,17 +116,17 @@ export default function LoginPage() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="student@gakuen.edu"
                                     required
-                                    className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="password" className="text-sm font-medium text-neutral-300">
+                            <label htmlFor="password" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                                 Password
                             </label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-neutral-500" />
                                 <input
                                     id="password"
                                     type="password"
@@ -131,22 +135,22 @@ export default function LoginPage() {
                                     placeholder="••••••••"
                                     required
                                     minLength={6}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                                 />
                             </div>
                         </div>
 
                         {(error || authError) && (
-                            <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
-                                <p className="text-sm text-red-400">{error || authError}</p>
+                            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg">
+                                <AlertCircle className="h-4 w-4 text-red-500 dark:text-red-400 flex-shrink-0" />
+                                <p className="text-sm text-red-600 dark:text-red-400">{error || authError}</p>
                             </div>
                         )}
 
                         <Button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full h-11 bg-white text-black hover:bg-neutral-200 font-medium"
+                            className="w-full h-11 bg-blue-600 text-white hover:bg-blue-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200 font-medium"
                         >
                             {isLoading ? (
                                 <>
@@ -161,10 +165,10 @@ export default function LoginPage() {
 
                     <div className="relative">
                         <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-white/10" />
+                            <span className="w-full border-t border-neutral-200 dark:border-white/10" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-black/40 px-2 text-neutral-600">Or continue with</span>
+                            <span className="bg-white dark:bg-black/40 px-2 text-neutral-500 dark:text-neutral-600">Or continue with</span>
                         </div>
                     </div>
 
@@ -173,7 +177,7 @@ export default function LoginPage() {
                         variant="outline"
                         onClick={handleGoogleSignIn}
                         disabled={isLoading}
-                        className="w-full h-11 border-white/10 hover:bg-white/5"
+                        className="w-full h-11 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-700 dark:text-neutral-300"
                     >
                         <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -188,16 +192,16 @@ export default function LoginPage() {
                         <button
                             type="button"
                             onClick={() => setMode(mode === "login" ? "signup" : "login")}
-                            className="text-neutral-400 hover:text-white transition-colors"
+                            className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
                         >
                             {mode === "login" ? "Don't have an account? " : "Already have an account? "}
-                            <span className="text-white font-medium">
+                            <span className="text-blue-600 dark:text-white font-medium">
                                 {mode === "login" ? "Sign up" : "Sign in"}
                             </span>
                         </button>
                     </div>
 
-                    <p className="text-xs text-center text-neutral-600">
+                    <p className="text-xs text-center text-neutral-400 dark:text-neutral-600">
                         Demo: student@gakuen.edu / any password (6+ chars)
                     </p>
                 </CardContent>

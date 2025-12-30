@@ -8,7 +8,7 @@ export function useRole() {
     return {
         role: user?.role,
         isAdmin: user?.role === "admin",
-        isStudent: user?.role === "student" || user?.role === "user",
+        isStudent: user?.role === "user", // "user" is the student role
         isAuthenticated: !!user,
     };
 }

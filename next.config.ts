@@ -46,6 +46,24 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // HTML pages - no cache (critical for fresh UI after deployments)
+        source: '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|jpg|jpeg|png|gif|ico|webp|avif|woff|woff2)).*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+        ],
+      },
+      {
         // API routes - short cache with revalidation
         source: '/api/:path*',
         headers: [
@@ -71,6 +89,37 @@ const nextConfig: NextConfig = {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin',
           },
+          // Prevent clickjacking
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          // XSS Protection (legacy but still useful)
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          // Permissions Policy - restrict browser features
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+          // Content Security Policy
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Need unsafe for Next.js
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: blob: https: http:",
+              "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com",
+              "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join('; '),
+          },
         ],
       },
     ];
@@ -89,6 +138,17 @@ const nextConfig: NextConfig = {
   //     }
   //     return config;
   // },
+
+  // Rewrites for legacy URL compatibility
+  async rewrites() {
+    return [
+      {
+        // Fix legacy avatar URLs that have /public/ prefix
+        source: '/public/uploads/:path*',
+        destination: '/uploads/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

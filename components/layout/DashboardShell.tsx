@@ -3,69 +3,74 @@
 import React, { useState } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, BookOpen, Settings, Home, Users, ChevronLeft, ChevronRight, Compass } from "lucide-react";
+import { LayoutDashboard, BookOpen, Settings, Home, Users, ChevronLeft, ChevronRight, Compass, BarChart3, BookMarked } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { UserMenu } from "./UserMenu";
+import { useTranslation } from "@/lib/i18n";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const pathname = usePathname();
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const { t } = useTranslation();
 
     const navItems = user?.role === "admin"
         ? [
-            { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+            { icon: LayoutDashboard, label: t.dashboard, href: "/dashboard" },
+            { icon: BookMarked, label: "Courses", href: "/courses" },
             { icon: Users, label: "Users", href: "/users" },
-            { icon: Settings, label: "Settings", href: "/settings" },
+            { icon: BarChart3, label: "Analytics", href: "/analytics" },
+            { icon: Settings, label: t.settings, href: "/settings" },
         ]
         : [
-            { icon: Home, label: "Home", href: "/user" },
-            { icon: Compass, label: "Browse", href: "/browse" },
-            { icon: BookOpen, label: "Classes", href: "/my-classes" },
-            { icon: Settings, label: "Settings", href: "/settings" },
+            { icon: Home, label: t.home, href: "/user" },
+            { icon: Compass, label: t.browse, href: "/browse" },
+            { icon: BookOpen, label: t.classes, href: "/my-classes" },
+            { icon: Settings, label: t.settings, href: "/settings" },
         ];
 
     return (
-        <div className="flex h-screen">
+        <div className="flex h-screen bg-neutral-50 dark:bg-neutral-950">
             {/* Desktop Sidebar */}
             <aside
                 className={cn(
-                    "border-r border-white/10 bg-black/20 backdrop-blur-md hidden md:flex flex-col transition-all duration-300 relative",
+                    "border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 backdrop-blur-md hidden md:flex flex-col transition-all duration-300 relative",
                     isCollapsed ? "w-20" : "w-64"
                 )}
             >
                 {/* Toggle Button */}
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="absolute -right-3 top-6 bg-zinc-800 border border-zinc-700 text-neutral-400 hover:text-white p-1 rounded-full shadow-lg z-50 transition-colors"
+                    className="absolute -right-3 top-6 bg-white dark:bg-zinc-800 border border-neutral-200 dark:border-zinc-700 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white p-1 rounded-full shadow-lg z-50 transition-colors"
                 >
                     {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                 </button>
 
                 <div className={cn("p-6 flex items-center", isCollapsed ? "justify-center" : "")}>
                     {isCollapsed ? (
-                        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white cursor-help" title="Gakuen">
+                        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white cursor-help" title="Gakuen">
                             G
                         </div>
                     ) : (
                         <div>
-                            <h1 className="text-xl font-bold tracking-tight text-white">Gakuen</h1>
+                            <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">Gakuen</h1>
                             <p className="text-xs text-neutral-500 mt-1">
-                                {user?.role === "admin" ? "Admin Portal" : "Student Portal"}
+                                {user?.role === "admin" ? t.dash.adminPortal : t.dash.studentPortal}
                             </p>
                         </div>
                     )}
                 </div>
 
-                <nav className="flex-1 px-3 space-y-2">
+                <nav className="flex-1 px-3 space-y-1">
                     {navItems.map((item) => (
                         <Link key={item.href} href={item.href}>
                             <Button
                                 variant="ghost"
                                 className={cn(
-                                    "w-full text-neutral-400 hover:text-white hover:bg-white/5 flex items-center transition-all duration-200",
-                                    pathname === item.href && "bg-white/10 text-white",
+                                    "w-full text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 flex items-center transition-all duration-200",
+                                    pathname === item.href && "bg-neutral-100 dark:bg-white/10 text-neutral-900 dark:text-white",
                                     isCollapsed ? "justify-center px-0 py-3 h-12" : "justify-start px-4 py-2"
                                 )}
                                 title={isCollapsed ? item.label : undefined}
@@ -77,58 +82,28 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     ))}
                 </nav>
 
-                <div className={cn("p-4 border-t border-white/5", isCollapsed ? "flex flex-col items-center" : "")}>
-                    <div className={cn("flex items-center mb-4 transition-all", isCollapsed ? "justify-center px-0" : "px-2")}>
-                        {user?.avatar ? (
-                            <img
-                                src={user.avatar}
-                                alt={user.name}
-                                className="h-9 w-9 rounded-full object-cover border border-white/10"
-                            />
-                        ) : (
-                            <div className="h-9 w-9 rounded-full bg-neutral-800 flex items-center justify-center text-xs font-bold text-white border border-white/10">
-                                {user?.name?.[0]?.toUpperCase() || "U"}
-                            </div>
-                        )}
-
-                        {!isCollapsed && (
-                            <div className="ml-3 overflow-hidden">
-                                <p className="text-sm font-medium text-white truncate max-w-[140px]">{user?.name || "User"}</p>
-                            </div>
-                        )}
-                    </div>
-
-                    <Button
-                        variant="ghost"
-                        className={cn(
-                            "w-full text-red-400 hover:text-red-300 hover:bg-red-900/10 transition-all",
-                            isCollapsed ? "justify-center px-0 h-10 w-10 min-w-0" : "justify-start"
-                        )}
-                        onClick={logout}
-                        title={isCollapsed ? "Sign Out" : undefined}
-                    >
-                        <LogOut className={cn("h-4 w-4", isCollapsed ? "mr-0" : "mr-2")} />
-                        {!isCollapsed && "Sign Out"}
-                    </Button>
+                {/* User Menu at Bottom */}
+                <div className={cn("p-3 border-t border-neutral-200 dark:border-neutral-800")}>
+                    <UserMenu collapsed={isCollapsed} />
                 </div>
             </aside>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 bg-neutral-50 dark:bg-neutral-950">
                 <main className="flex-1 p-4 pb-20 md:pb-8 md:p-8 overflow-y-auto">
                     {children}
                 </main>
             </div>
 
             {/* Mobile Bottom Navigation - PWA Style */}
-            <nav className="fixed bottom-0 left-0 right-0 h-16 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 flex items-center justify-around md:hidden z-40 safe-area-pb">
+            <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-t border-neutral-200 dark:border-white/10 flex items-center justify-around md:hidden z-40 safe-area-pb">
                 {navItems.map((item) => (
                     <Link
                         key={item.href}
                         href={item.href}
                         className={cn(
                             "flex flex-col items-center justify-center flex-1 h-full transition-colors py-2",
-                            pathname === item.href ? "text-white" : "text-neutral-500"
+                            pathname === item.href ? "text-blue-600 dark:text-white" : "text-neutral-400 dark:text-neutral-500"
                         )}
                     >
                         <item.icon className={cn(
@@ -137,7 +112,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                         )} />
                         <span className="text-[10px] mt-1 font-medium">{item.label}</span>
                         {pathname === item.href && (
-                            <div className="absolute bottom-1 w-1 h-1 bg-white rounded-full" />
+                            <div className="absolute bottom-1 w-1 h-1 bg-blue-600 dark:bg-white rounded-full" />
                         )}
                     </Link>
                 ))}

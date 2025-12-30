@@ -39,7 +39,7 @@ describe('Logger', () => {
         });
 
         it('should handle undefined data', () => {
-            const payload = {
+            const payload: { level: 'debug'; message: string; timestamp: string; data?: unknown } = {
                 level: 'debug' as const,
                 message: 'No data',
                 timestamp: new Date().toISOString(),

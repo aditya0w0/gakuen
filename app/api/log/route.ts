@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { sanitizeLogMessage } from '@/lib/api/validators';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,12 +25,25 @@ const levelConfig: Record<string, { emoji: string; color: string; label: string 
     error: { emoji: '❌', color: colors.red, label: 'ERROR' },
 };
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
         const payload = await request.json();
-        const { level = 'info', message, data, source, timestamp } = payload;
 
-        const config = levelConfig[level] || levelConfig.info;
+        // 🔒 SECURITY: Validate and sanitize all input
+        const level = ['debug', 'info', 'warn', 'error'].includes(payload.level)
+            ? payload.level
+            : 'info';
+
+        // 🔒 SECURITY: Sanitize message to prevent log injection
+        const message = sanitizeLogMessage(payload.message || '');
+        const source = sanitizeLogMessage(payload.source || '');
+        const timestamp = payload.timestamp;
+
+        if (!message) {
+            return NextResponse.json({ error: 'Message required' }, { status: 400 });
+        }
+
+        const config = levelConfig[level];
         const time = timestamp
             ? new Date(timestamp).toLocaleTimeString()
             : new Date().toLocaleTimeString();
@@ -46,11 +60,13 @@ export async function POST(request: Request) {
 
         let output = `${config.emoji} ${config.color}${colors.bright}${config.label}${colors.reset} ${colors.dim}${time}${colors.reset} ${browserTag} ${sourceTag} ${message}`;
 
-        if (data !== undefined) {
-            const dataStr = typeof data === 'object'
-                ? JSON.stringify(data, null, 2)
-                : String(data);
-            output += `\n${colors.dim}└─ ${dataStr}${colors.reset}`;
+        // 🔒 SECURITY: Sanitize data before logging
+        if (payload.data !== undefined) {
+            const dataStr = typeof payload.data === 'object'
+                ? JSON.stringify(payload.data, null, 2).slice(0, 500)
+                : String(payload.data).slice(0, 500);
+            const safeData = sanitizeLogMessage(dataStr);
+            output += `\n${colors.dim}└─ ${safeData}${colors.reset}`;
         }
 
         // Print to server terminal
@@ -58,7 +74,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ ok: true });
     } catch (error) {
-        console.error(`${colors.red}❌ Log endpoint error:${colors.reset}`, error);
+        console.error(`${colors.red}❌ Log endpoint error${colors.reset}`);
         return NextResponse.json({ error: 'Failed to log' }, { status: 500 });
     }
 }

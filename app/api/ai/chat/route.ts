@@ -1,14 +1,54 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { indexCourse, retrieveContext } from '@/lib/ml/server';
+import { requireAuth, safeErrorResponse } from '@/lib/api/auth-guard';
+import { checkRateLimit, getClientIP, RateLimits } from '@/lib/api/rate-limit';
+
+export const dynamic = 'force-dynamic';
 
 const apiKey = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(apiKey);
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
+        // 🔒 SECURITY: Rate limiting
+        const clientIP = getClientIP(request);
+        const rateLimit = checkRateLimit(`ai-chat:${clientIP}`, RateLimits.AI);
+        if (!rateLimit.allowed) {
+            return NextResponse.json(
+                { error: 'Too many requests. Please wait before trying again.' },
+                {
+                    status: 429,
+                    headers: {
+                        'Retry-After': String(Math.ceil((rateLimit.resetTime - Date.now()) / 1000)),
+                        'X-RateLimit-Remaining': '0',
+                    }
+                }
+            );
+        }
+
+        // 🔒 SECURITY: Require authentication to prevent API cost abuse
+        const authResult = await requireAuth(request);
+        if (!authResult.authenticated) {
+            return authResult.response;
+        }
+
         const { messages, course, mode } = await request.json();
+
+        // 🔒 SECURITY: Validate input
+        if (!messages || !Array.isArray(messages) || messages.length === 0) {
+            return NextResponse.json({ error: 'Messages required' }, { status: 400 });
+        }
+        if (!course || !course.id || !course.title) {
+            return NextResponse.json({ error: 'Course data required' }, { status: 400 });
+        }
+
         const userMessage = messages[messages.length - 1].content;
+
+        // 🔒 SECURITY: Limit message length
+        if (typeof userMessage !== 'string' || userMessage.length > 5000) {
+            return NextResponse.json({ error: 'Message too long (max 5000 chars)' }, { status: 400 });
+        }
 
         // 1. Index course for RAG
         await indexCourse(course);
@@ -22,12 +62,12 @@ export async function POST(request: Request) {
         }
 
         // 4. Try Flash first - it will ESCALATE if needed
-        console.log(`⚡ Trying Flash first...`);
+        console.log(`⚡ User ${authResult.user.email} chat - Flash model`);
         const flashResponse = await callFlash(userMessage, course, context);
 
         // 5. Check for escalation
         if (flashResponse.includes('ESCALATE_TO_PRO')) {
-            console.log(`🔄 Flash escalated to Pro`);
+            console.log(`🔄 Flash escalated to Pro for ${authResult.user.email}`);
             return await callPro(userMessage, course, context);
         }
 
@@ -38,13 +78,12 @@ export async function POST(request: Request) {
             modelUsed: 'gemini-3-flash-preview'
         });
 
-    } catch (error: any) {
-        console.error('Chat API Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        return safeErrorResponse(error, 'Chat service unavailable');
     }
 }
 
-async function callFlash(userMessage: string, course: any, context: string) {
+async function callFlash(userMessage: string, course: { id: string; title: string; lessons?: unknown[] }, context: string) {
     const flash = genAI.getGenerativeModel({
         model: 'gemini-3-flash-preview',
         systemInstruction: `You are a course tutor for "${course.title}".
@@ -73,7 +112,7 @@ CONTEXT: ${context}`
     return result.response.text();
 }
 
-async function callPro(userMessage: string, course: any, context: string) {
+async function callPro(userMessage: string, course: { id: string; title: string; lessons?: unknown[] }, context: string) {
     console.log(`🧠 Using Pro model...`);
 
     const pro = genAI.getGenerativeModel({

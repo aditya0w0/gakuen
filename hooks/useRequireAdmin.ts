@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
 
 export function useRequireAdmin() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
-    const [hasChecked, setHasChecked] = useState(false);
+    const hasCheckedRef = useRef(false);
 
     useEffect(() => {
         // Don't check until loading is complete
@@ -17,8 +17,8 @@ export function useRequireAdmin() {
         }
 
         // Only check once after loading completes
-        if (hasChecked) return;
-        setHasChecked(true);
+        if (hasCheckedRef.current) return;
+        hasCheckedRef.current = true;
 
         console.log('🔍 useRequireAdmin: Checking auth -', { user: user?.email, role: user?.role });
 
@@ -34,7 +34,7 @@ export function useRequireAdmin() {
         } else {
             console.log(`✅ Admin access granted for ${user.email}`);
         }
-    }, [user, isLoading, router, hasChecked]);
+    }, [user, isLoading, router]);
 
     return { isAdmin: user?.role === "admin", isLoading };
 }

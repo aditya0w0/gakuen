@@ -43,6 +43,7 @@ export function CourseEditor({ course, onClose, onSave }: CourseEditorProps) {
             type: "article",
             duration: "10 min",
             content: "Lesson content goes here...",
+            order: lessons.length + 1,
         };
         setLessons([...lessons, newLesson]);
         setEditingLesson(newLesson);
@@ -81,8 +82,8 @@ export function CourseEditor({ course, onClose, onSave }: CourseEditorProps) {
                     <button
                         onClick={() => setCurrentTab("details")}
                         className={`pb-3 px-1 text-sm font-medium transition-all ${currentTab === "details"
-                                ? "text-white border-b-2 border-blue-500"
-                                : "text-neutral-400 hover:text-white"
+                            ? "text-white border-b-2 border-blue-500"
+                            : "text-neutral-400 hover:text-white"
                             }`}
                     >
                         Course Details
@@ -90,8 +91,8 @@ export function CourseEditor({ course, onClose, onSave }: CourseEditorProps) {
                     <button
                         onClick={() => setCurrentTab("content")}
                         className={`pb-3 px-1 text-sm font-medium transition-all ${currentTab === "content"
-                                ? "text-white border-b-2 border-blue-500"
-                                : "text-neutral-400 hover:text-white"
+                            ? "text-white border-b-2 border-blue-500"
+                            : "text-neutral-400 hover:text-white"
                             }`}
                     >
                         Lessons & Content ({lessons.length})

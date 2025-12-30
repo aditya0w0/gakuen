@@ -1,21 +1,34 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { generateImage } from '@/lib/ai/gemini';
+import { requireAuth, safeErrorResponse } from '@/lib/api/auth-guard';
 
-export async function POST(request: Request) {
+export const dynamic = 'force-dynamic';
+
+export async function POST(request: NextRequest) {
     try {
+        // 🔒 SECURITY: Require authentication
+        const authResult = await requireAuth(request);
+        if (!authResult.authenticated) {
+            return authResult.response;
+        }
+
         const { prompt } = await request.json();
 
-        if (!prompt) {
+        // 🔒 SECURITY: Validate input
+        if (!prompt || typeof prompt !== 'string') {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
         }
 
-        console.log('🚀 API: Generating image for prompt:', prompt);
+        // 🔒 SECURITY: Limit prompt length
+        if (prompt.length > 1000) {
+            return NextResponse.json({ error: 'Prompt too long (max 1000 chars)' }, { status: 400 });
+        }
+
+        console.log(`🚀 User ${authResult.user.email} generating image: ${prompt.slice(0, 50)}...`);
         const imageUrl = await generateImage(prompt);
-        console.log('✅ API: Returning imageUrl:', imageUrl.substring(0, 100) + '...');
 
         return NextResponse.json({ imageUrl });
-    } catch (error: any) {
-        console.error('❌ API: Image generation error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        return safeErrorResponse(error, 'Image generation failed');
     }
 }

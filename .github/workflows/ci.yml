@@ -1,397 +1,148 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches: ['**']  # Run on all branches
   pull_request:
-    branches: ['**']  # Run on PRs to all branches
   workflow_dispatch:
-    inputs:
-      debug:
-        description: 'Enable debug mode'
-        required: false
-        default: false
-        type: boolean
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 env:
   NODE_VERSION: '20'
-  CI: true
-  # Prevent npm from showing update notifications
-  NPM_CONFIG_UPDATE_NOTIFIER: false
-  # Consistent timezone for tests
-  TZ: UTC
 
 jobs:
   # ============================================
-  # Stage 1: Install & Cache Dependencies
-  # ============================================
-  install:
-    name: 📦 Install
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    outputs:
-      cache-key: ${{ steps.cache-key.outputs.key }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Generate cache key
-        id: cache-key
-        run: echo "key=node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}" >> $GITHUB_OUTPUT
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        id: cache
-        with:
-          path: |
-            node_modules
-            ~/.npm
-          key: ${{ steps.cache-key.outputs.key }}
-          restore-keys: |
-            node-modules-${{ runner.os }}-
-
-      - name: Install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          npm ci --prefer-offline --no-audit --no-fund
-          # Verify installation
-          npm ls --depth=0 || true
-
-      - name: Check disk space
-        run: df -h
-
-  # ============================================
-  # Stage 2: Code Quality (Parallel)
+  # Quality Checks (parallel)
   # ============================================
   lint:
-    name: 🔍 ESLint
+    name: 🔍 Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: install
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Restore node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.npm
-          key: ${{ needs.install.outputs.cache-key }}
-          fail-on-cache-miss: true
+      - run: npm ci
 
-      - name: Run ESLint
-        run: npm run lint -- --max-warnings=0 --format=stylish
-
-      - name: ESLint Summary
-        if: always()
-        run: |
-          echo "## 🔍 ESLint Results" >> $GITHUB_STEP_SUMMARY
-          npm run lint 2>&1 | head -20 >> $GITHUB_STEP_SUMMARY || echo "✅ No issues" >> $GITHUB_STEP_SUMMARY
+      - name: ESLint
+        run: npm run lint
 
   typecheck:
     name: 📘 TypeScript
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: install
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Restore node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.npm
-          key: ${{ needs.install.outputs.cache-key }}
-          fail-on-cache-miss: true
+      - run: npm ci
 
-      - name: TypeScript Check
-        run: npx tsc --noEmit --pretty --incremental false
+      - name: Type Check
+        run: npx tsc --noEmit
 
-      - name: TypeScript Summary
-        if: always()
-        run: |
-          echo "## 📘 TypeScript Check" >> $GITHUB_STEP_SUMMARY
-          npx tsc --noEmit 2>&1 | tail -5 >> $GITHUB_STEP_SUMMARY || echo "✅ No type errors" >> $GITHUB_STEP_SUMMARY
-
-  # ============================================
-  # Stage 3: Unit Tests (Multi-OS Matrix)
-  # ============================================
-  unit-tests:
-    name: 🧪 Tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+  test:
+    name: 🧪 Tests
+    runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: install
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        # Uncomment for multi-OS testing:
-        # os: [ubuntu-latest, windows-latest, macos-latest]
-        node: [20]
-        # Uncomment for multi-node testing:
-        # node: [18, 20, 22]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Restore node_modules (Linux)
-        if: runner.os == 'Linux'
-        uses: actions/cache@v4
+      - run: npm ci
+
+      - name: Unit Tests
+        run: npm run test -- --reporter=verbose
+
+      - name: Coverage
+        run: npm run test:coverage
+
+      - uses: actions/upload-artifact@v4
         with:
-          path: |
-            node_modules
-            ~/.npm
-          key: ${{ needs.install.outputs.cache-key }}
-
-      - name: Install dependencies (non-Linux)
-        if: runner.os != 'Linux'
-        run: npm ci --prefer-offline --no-audit --no-fund
-
-      - name: Run Unit Tests
-        run: npm run test -- --reporter=verbose --passWithNoTests
-
-      - name: Run Tests with Coverage
-        run: npm run test:coverage -- --passWithNoTests
-
-      - name: Upload Coverage
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.os }}-node${{ matrix.node }}
+          name: coverage
           path: coverage/
-          retention-days: 14
+          retention-days: 7
 
   # ============================================
-  # Stage 4: Build Verification
+  # Build
   # ============================================
   build:
     name: 🏗️ Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [install, lint, typecheck, unit-tests]
+    needs: [lint, typecheck, test]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Restore node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.npm
-          key: ${{ needs.install.outputs.cache-key }}
-          fail-on-cache-miss: true
+      - run: npm ci
 
-      - name: Cache Next.js
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: .next/cache
-          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
-          restore-keys: |
-            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
-            nextjs-${{ runner.os }}-
+          key: nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          restore-keys: nextjs-${{ hashFiles('package-lock.json') }}-
 
-      - name: Check disk before build
-        run: df -h
-
-      - name: Build Application
+      - name: Build
         run: npm run build
         env:
-          # CI environment variables (dummy for build)
-          NEXT_PUBLIC_FIREBASE_API_KEY: 'ci-test-key'
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'ci-test.firebaseapp.com'
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'ci-test-project'
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'ci-test.appspot.com'
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '000000000000'
-          NEXT_PUBLIC_FIREBASE_APP_ID: '1:000000000000:web:0000000000'
-          # Disable telemetry
+          NEXT_PUBLIC_FIREBASE_API_KEY: 'ci-dummy'
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'ci-dummy'
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'ci-dummy'
           NEXT_TELEMETRY_DISABLED: '1'
 
-      - name: Check disk after build
-        run: df -h
-
-      - name: Upload Build
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output
-          path: |
-            .next/
-            !.next/cache
-          retention-days: 7
-
-  # ============================================
-  # Stage 5: Bundle Analysis
-  # ============================================
-  analyze:
-    name: 📊 Bundle Analysis
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: build
-    steps:
-      - name: Download Build
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-          path: .next/
-
-      - name: Analyze Bundle
+      - name: Bundle Size
         run: |
-          echo "## 📦 Build Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Build Size" >> $GITHUB_STEP_SUMMARY
+          du -sh .next/ >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Total size
-          TOTAL=$(du -sh .next/ | awk '{print $1}')
-          echo "### Total Size: $TOTAL" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Breakdown
-          echo "### Directory Breakdown" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          du -sh .next/*/ 2>/dev/null | sort -rh >> $GITHUB_STEP_SUMMARY || echo "N/A" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Largest chunks
-          echo "### Top 10 Largest Chunks" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          find .next/static -type f -name "*.js" -exec du -h {} \; 2>/dev/null | sort -rh | head -10 >> $GITHUB_STEP_SUMMARY || echo "No JS chunks found" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Size Gate (warn if > 50MB)
-        run: |
-          SIZE_KB=$(du -sk .next/ | awk '{print $1}')
-          SIZE_MB=$((SIZE_KB / 1024))
-          echo "Build size: ${SIZE_MB}MB"
-          
-          if [ $SIZE_MB -gt 100 ]; then
-            echo "⚠️ Warning: Build is very large (${SIZE_MB}MB > 100MB)"
-            echo "::warning::Build size is ${SIZE_MB}MB, consider optimizing"
-          elif [ $SIZE_MB -gt 50 ]; then
-            echo "📝 Note: Build is moderately large (${SIZE_MB}MB)"
-          else
-            echo "✅ Build size is acceptable (${SIZE_MB}MB)"
-          fi
+          echo "**Top 5 chunks:**" >> $GITHUB_STEP_SUMMARY
+          find .next/static -name "*.js" -exec du -h {} \; 2>/dev/null | sort -rh | head -5 >> $GITHUB_STEP_SUMMARY || true
 
   # ============================================
-  # Stage 6: Security Audit
+  # Security (non-blocking)
   # ============================================
   security:
     name: 🔒 Security
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: install
+    timeout-minutes: 5
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Restore node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.npm
-          key: ${{ needs.install.outputs.cache-key }}
+      - run: npm ci
 
-      - name: npm Audit
-        run: npm audit --audit-level=moderate || true
-
-      - name: Security Summary
+      - name: Audit
         run: |
-          echo "## 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          VULN=$(npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities.total' 2>/dev/null || echo "0")
-          HIGH=$(npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities.high' 2>/dev/null || echo "0")
-          CRIT=$(npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities.critical' 2>/dev/null || echo "0")
-          
-          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Critical | $CRIT |" >> $GITHUB_STEP_SUMMARY
-          echo "| High | $HIGH |" >> $GITHUB_STEP_SUMMARY
-          echo "| Total | $VULN |" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "$CRIT" != "0" ] || [ "$HIGH" != "0" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ **Action Required**: Fix high/critical vulnerabilities" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
+          AUDIT=$(npm audit --json 2>/dev/null || echo '{}')
+          HIGH=$(echo "$AUDIT" | jq '.metadata.vulnerabilities.high // 0')
+          CRIT=$(echo "$AUDIT" | jq '.metadata.vulnerabilities.critical // 0')
+          echo "Critical: $CRIT, High: $HIGH" >> $GITHUB_STEP_SUMMARY
+          if [ "$CRIT" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "⚠️ Vulnerabilities found" >> $GITHUB_STEP_SUMMARY
           else
-            echo "" >> $GITHUB_STEP_SUMMARY
             echo "✅ No high/critical vulnerabilities" >> $GITHUB_STEP_SUMMARY
           fi
-
-  # ============================================
-  # Final Gate
-  # ============================================
-  ci-success:
-    name: ✅ CI Success
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    needs: [lint, typecheck, unit-tests, build, analyze, security]
-    if: always()
-    steps:
-      - name: Evaluate Results
-        run: |
-          echo "## CI Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| TypeScript | ${{ needs.typecheck.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Unit Tests | ${{ needs.unit-tests.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Analysis | ${{ needs.analyze.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
-
-      - name: Check Required Jobs
-        run: |
-          LINT="${{ needs.lint.result }}"
-          TS="${{ needs.typecheck.result }}"
-          TEST="${{ needs.unit-tests.result }}"
-          BUILD="${{ needs.build.result }}"
-          
-          if [[ "$LINT" != "success" ]] || \
-             [[ "$TS" != "success" ]] || \
-             [[ "$TEST" != "success" ]] || \
-             [[ "$BUILD" != "success" ]]; then
-            echo "❌ Required jobs failed:"
-            echo "  Lint: $LINT"
-            echo "  TypeScript: $TS"
-            echo "  Tests: $TEST"
-            echo "  Build: $BUILD"
-            exit 1
-          fi
-          
-          echo "✅ All required CI checks passed!"

@@ -39,7 +39,7 @@ export default function CoursesManagementPage() {
     useEffect(() => {
         if (!isAdmin) return; // Don't fetch if not admin yet
 
-        fetch('/api/courses')
+        fetch('/api/courses', { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
                 setCourses(data);

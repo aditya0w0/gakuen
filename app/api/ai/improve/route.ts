@@ -1,12 +1,27 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { improveText, fixTypos, paraphraseText } from '@/lib/ai/gemini';
+import { requireAuth, safeErrorResponse } from '@/lib/api/auth-guard';
 
-export async function POST(request: Request) {
+export const dynamic = 'force-dynamic';
+
+export async function POST(request: NextRequest) {
     try {
+        // 🔒 SECURITY: Require authentication
+        const authResult = await requireAuth(request);
+        if (!authResult.authenticated) {
+            return authResult.response;
+        }
+
         const { text, action } = await request.json();
 
-        if (!text) {
+        // 🔒 SECURITY: Validate input
+        if (!text || typeof text !== 'string') {
             return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+        }
+
+        // 🔒 SECURITY: Limit text length
+        if (text.length > 10000) {
+            return NextResponse.json({ error: 'Text too long (max 10000 chars)' }, { status: 400 });
         }
 
         let result: string;
@@ -26,8 +41,7 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json({ result });
-    } catch (error: any) {
-        console.error('AI improvement error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        return safeErrorResponse(error, 'Text improvement failed');
     }
 }

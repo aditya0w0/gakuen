@@ -18,8 +18,6 @@ export function HeaderBlock({
     onUpdate,
     onSelect,
 }: HeaderBlockProps) {
-    const tagName = `h${component.level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
-
     const style: React.CSSProperties = {
         textAlign: component.align || "left",
         color: component.color || "#ffffff",
@@ -30,6 +28,8 @@ export function HeaderBlock({
         marginBottom: component.margin?.bottom ? `${component.margin.bottom}px` : undefined,
         marginLeft: component.margin?.left ? `${component.margin.left}px` : undefined,
     };
+
+    const tagName = `h${component.level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
     if (isEditing) {
         return (
@@ -48,8 +48,7 @@ export function HeaderBlock({
                     },
                     style,
                     className: "focus:outline-none px-2 py-1",
-                    children: component.text,
-                })}
+                }, component.text)}
             </div>
         );
     }

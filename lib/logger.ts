@@ -12,7 +12,7 @@ type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 interface LogPayload {
     level: LogLevel;
     message: string;
-    data?: any;
+    data?: unknown;
     source?: string;
     timestamp: string;
 }
@@ -74,7 +74,7 @@ async function sendToServer(payload: LogPayload): Promise<void> {
 }
 
 function createLogFn(level: LogLevel) {
-    return (message: string, data?: any, source?: string) => {
+    return (message: string, data?: unknown, source?: string) => {
         const payload: LogPayload = {
             level,
             message,

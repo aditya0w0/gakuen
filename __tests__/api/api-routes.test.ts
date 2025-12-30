@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-global.fetch = vi.fn();
+// Simple mock with proper typing
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
 
 describe('API Routes', () => {
     beforeEach(() => {
@@ -14,7 +16,7 @@ describe('API Routes', () => {
                 { id: 'course-2', title: 'Test Course 2' },
             ];
 
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => mockCourses,
@@ -29,7 +31,7 @@ describe('API Routes', () => {
         });
 
         it('handles empty courses', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => [],
@@ -42,7 +44,7 @@ describe('API Routes', () => {
         });
 
         it('handles server error', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: false,
                 status: 500,
                 json: async () => ({ error: 'Internal Server Error' }),
@@ -62,7 +64,7 @@ describe('API Routes', () => {
                 description: 'Test description',
             };
 
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: true,
                 status: 201,
                 json: async () => ({ id: 'new-course-123', ...newCourse }),
@@ -79,7 +81,7 @@ describe('API Routes', () => {
         });
 
         it('returns 400 for missing title', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: false,
                 status: 400,
                 json: async () => ({ error: 'Title is required' }),
@@ -98,7 +100,7 @@ describe('API Routes', () => {
 
     describe('DELETE /api/courses', () => {
         it('deletes course with valid id', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => ({ success: true }),
@@ -112,7 +114,7 @@ describe('API Routes', () => {
         });
 
         it('returns 400 for missing id', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: false,
                 status: 400,
                 json: async () => ({ error: 'Missing course ID' }),
@@ -127,7 +129,7 @@ describe('API Routes', () => {
         });
 
         it('returns 404 for non-existent course', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: false,
                 status: 404,
                 json: async () => ({ error: 'Course not found' }),
@@ -144,7 +146,7 @@ describe('API Routes', () => {
 
     describe('POST /api/upload', () => {
         it('uploads file successfully', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => ({ url: '/uploads/test-image.webp' }),
@@ -164,7 +166,7 @@ describe('API Routes', () => {
         });
 
         it('returns 400 for missing file', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: false,
                 status: 400,
                 json: async () => ({ error: 'No file provided' }),
@@ -180,7 +182,7 @@ describe('API Routes', () => {
 
     describe('POST /api/ai/chat', () => {
         it('returns AI response', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => ({ response: 'Hello! How can I help?' }),
@@ -198,7 +200,7 @@ describe('API Routes', () => {
         });
 
         it('handles rate limiting', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: false,
                 status: 429,
                 json: async () => ({ error: 'Too many requests' }),
@@ -215,7 +217,7 @@ describe('API Routes', () => {
 
     describe('API Security', () => {
         it('rejects requests without proper headers', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: false,
                 status: 401,
                 json: async () => ({ error: 'Unauthorized' }),
@@ -227,7 +229,7 @@ describe('API Routes', () => {
         });
 
         it('handles malformed JSON', async () => {
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: false,
                 status: 400,
                 json: async () => ({ error: 'Invalid JSON' }),
@@ -245,7 +247,7 @@ describe('API Routes', () => {
         it('handles XSS in input', async () => {
             const maliciousInput = '<script>alert("xss")</script>';
 
-            (global.fetch as any).mockResolvedValueOnce({
+            mockFetch.mockResolvedValueOnce({
                 ok: true,
                 status: 200,
                 json: async () => ({

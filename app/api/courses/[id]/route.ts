@@ -1,15 +1,22 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCourse, saveCourse, deleteCourse } from '@/lib/server/fileOperations';
 import { Course } from '@/lib/constants/demo-data';
+import { requireAdmin, safeErrorResponse } from '@/lib/api/auth-guard';
+import { validateCourseId } from '@/lib/api/validators';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/courses/[id]
+// GET /api/courses/[id] - Public, anyone can view a course
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
+
+    // 🔒 SECURITY: Validate course ID format
+    if (!validateCourseId(id)) {
+        return NextResponse.json({ error: 'Invalid course ID' }, { status: 400 });
+    }
 
     try {
         const course = await getCourse(id);
@@ -18,41 +25,79 @@ export async function GET(
             return NextResponse.json({ error: 'Course not found' }, { status: 404 });
         }
 
-        return NextResponse.json(course);
+        return NextResponse.json(course, {
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+            }
+        });
     } catch (error) {
-        console.error(`Error fetching course ${id}:`, error);
-        return NextResponse.json({ error: 'Failed to fetch course' }, { status: 500 });
+        return safeErrorResponse(error, 'Failed to fetch course');
     }
 }
 
-// PUT /api/courses/[id]
+// PUT /api/courses/[id] - Admin only
 export async function PUT(
-    request: Request,
+    request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    // 🔒 SECURITY: Require admin role
+    const authResult = await requireAdmin(request);
+    if (!authResult.authenticated) {
+        return authResult.response;
+    }
+
     const { id } = await params;
+
+    // 🔒 SECURITY: Validate course ID format
+    if (!validateCourseId(id)) {
+        return NextResponse.json({ error: 'Invalid course ID' }, { status: 400 });
+    }
 
     try {
         const course: Course = await request.json();
+
+        // 🔒 SECURITY: Validate required fields
+        if (!course.title || !course.id) {
+            return NextResponse.json({ error: 'Invalid course data' }, { status: 400 });
+        }
+
+        // Ensure ID matches URL
+        if (course.id !== id) {
+            return NextResponse.json({ error: 'Course ID mismatch' }, { status: 400 });
+        }
+
         const success = await saveCourse(id, course);
 
         if (!success) {
             return NextResponse.json({ error: 'Failed to save course' }, { status: 500 });
         }
 
+        console.log(`✅ Admin ${authResult.user.email} updated course: ${id}`);
         return NextResponse.json({ success: true, course });
     } catch (error) {
-        console.error(`Error saving course ${id}:`, error);
-        return NextResponse.json({ error: 'Failed to save course' }, { status: 500 });
+        return safeErrorResponse(error, 'Failed to save course');
     }
 }
 
-// DELETE /api/courses/[id]
+// DELETE /api/courses/[id] - Admin only
 export async function DELETE(
-    request: Request,
+    request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    // 🔒 SECURITY: Require admin role
+    const authResult = await requireAdmin(request);
+    if (!authResult.authenticated) {
+        return authResult.response;
+    }
+
     const { id } = await params;
+
+    // 🔒 SECURITY: Validate course ID format
+    if (!validateCourseId(id)) {
+        return NextResponse.json({ error: 'Invalid course ID' }, { status: 400 });
+    }
 
     try {
         const success = await deleteCourse(id);
@@ -61,9 +106,9 @@ export async function DELETE(
             return NextResponse.json({ error: 'Course not found' }, { status: 404 });
         }
 
+        console.log(`🗑️ Admin ${authResult.user.email} deleted course: ${id}`);
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error(`Error deleting course ${id}:`, error);
-        return NextResponse.json({ error: 'Failed to delete course' }, { status: 500 });
+        return safeErrorResponse(error, 'Failed to delete course');
     }
 }

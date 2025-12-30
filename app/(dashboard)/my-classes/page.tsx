@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Clock, PlayCircle, CheckCircle2, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function MyClassesPage() {
     const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function MyClassesPage() {
     const [filter, setFilter] = useState<"all" | "inProgress" | "completed">("all");
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const { t } = useTranslation();
 
     // Fetch courses from API
     useEffect(() => {
@@ -47,7 +49,7 @@ export default function MyClassesPage() {
     };
 
     if (!user || isLoading) {
-        return <div className="text-neutral-400">Loading...</div>;
+        return <div className="text-neutral-400">{t.loading}</div>;
     }
 
     const enrolledCourses = courses.filter(c =>
@@ -73,9 +75,9 @@ export default function MyClassesPage() {
     return (
         <div className="space-y-6">
             <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-                <h1 className="text-3xl font-bold text-white">My Classes</h1>
+                <h1 className="text-3xl font-bold text-white">{t.myClasses.title}</h1>
                 <p className="text-neutral-400 mt-1">
-                    {enrolledCourses.length} {enrolledCourses.length === 1 ? "course" : "courses"} enrolled
+                    {enrolledCourses.length} {enrolledCourses.length === 1 ? t.course.enrolled : t.myClasses.totalCourses.toLowerCase()}
                 </p>
             </div>
 
@@ -87,7 +89,7 @@ export default function MyClassesPage() {
                             <BookOpen className="w-5 h-5 text-blue-400" />
                         </div>
                         <div>
-                            <p className="text-sm text-neutral-400">Total Courses</p>
+                            <p className="text-sm text-neutral-400">{t.myClasses.totalCourses}</p>
                             <p className="text-2xl font-bold text-white">{stats.total}</p>
                         </div>
                     </div>
@@ -99,7 +101,7 @@ export default function MyClassesPage() {
                             <TrendingUp className="w-5 h-5 text-yellow-400" />
                         </div>
                         <div>
-                            <p className="text-sm text-neutral-400">In Progress</p>
+                            <p className="text-sm text-neutral-400">{t.myClasses.inProgress}</p>
                             <p className="text-2xl font-bold text-white">{stats.inProgress}</p>
                         </div>
                     </div>
@@ -111,7 +113,7 @@ export default function MyClassesPage() {
                             <CheckCircle2 className="w-5 h-5 text-green-400" />
                         </div>
                         <div>
-                            <p className="text-sm text-neutral-400">Completed</p>
+                            <p className="text-sm text-neutral-400">{t.myClasses.completed}</p>
                             <p className="text-2xl font-bold text-white">{stats.completed}</p>
                         </div>
                     </div>
@@ -127,7 +129,7 @@ export default function MyClassesPage() {
                         : "text-neutral-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
-                    All Courses
+                    {t.myClasses.all}
                 </button>
                 <button
                     onClick={() => handleFilterChange("inProgress")}
@@ -136,7 +138,7 @@ export default function MyClassesPage() {
                         : "text-neutral-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
-                    In Progress
+                    {t.myClasses.inProgress}
                 </button>
                 <button
                     onClick={() => handleFilterChange("completed")}
@@ -145,7 +147,7 @@ export default function MyClassesPage() {
                         : "text-neutral-400 hover:text-white hover:bg-white/5"
                         }`}
                 >
-                    Completed
+                    {t.myClasses.completed}
                 </button>
             </div>
 
@@ -198,7 +200,7 @@ export default function MyClassesPage() {
 
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between text-sm">
-                                                    <span className="text-neutral-400">Progress</span>
+                                                    <span className="text-neutral-400">{t.course.progress}</span>
                                                     <span className="text-white font-medium">{progress}%</span>
                                                 </div>
                                                 <Progress value={progress} className="h-2 bg-white/10" />

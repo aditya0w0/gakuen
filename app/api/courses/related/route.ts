@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { findSimilarCourses } from '@/lib/ml/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
     try {
         const { courseId, allCourses } = await request.json();

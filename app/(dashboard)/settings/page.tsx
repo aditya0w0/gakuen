@@ -5,6 +5,7 @@ import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { ChevronRight, Trash2, Camera } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useTranslation } from "@/lib/i18n";
 
 export default function SettingsPage() {
     const { user, refreshUser } = useAuth();
@@ -12,6 +13,7 @@ export default function SettingsPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [tempName, setTempName] = useState("");
     const [isUploading, setIsUploading] = useState(false);
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (user) {
@@ -28,7 +30,7 @@ export default function SettingsPage() {
             // Upload using new API
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('type', 'avatars');
+            formData.append('type', 'avatar');
             formData.append('id', user.id);
 
             const res = await fetch('/api/upload', {
@@ -73,7 +75,7 @@ export default function SettingsPage() {
     if (!user) {
         return (
             <div className="flex justify-center items-center h-[50vh] text-neutral-400">
-                Loading...
+                {t.loading}
             </div>
         );
     }
@@ -83,18 +85,18 @@ export default function SettingsPage() {
             <div className="w-full max-w-2xl space-y-8">
                 {/* Header */}
                 <div>
-                    <h1 className="text-3xl font-bold text-white">Settings</h1>
-                    <p className="text-neutral-400 mt-1">Manage your account and preferences</p>
+                    <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">{t.settingsPage.title}</h1>
+                    <p className="text-neutral-500 dark:text-neutral-400 mt-1">{t.settingsPage.description}</p>
                 </div>
 
                 {/* Profile Section */}
                 <div className="space-y-2">
                     <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 px-4">
-                        Profile
+                        {t.settingsPage.profile}
                     </h2>
-                    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                    <div className="bg-white dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10 overflow-hidden shadow-sm dark:shadow-none">
                         {/* Avatar */}
-                        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                        <div className="p-4 border-b border-neutral-100 dark:border-white/5 flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="relative group">
                                     {user.avatar ? (
@@ -104,7 +106,7 @@ export default function SettingsPage() {
                                             className="h-16 w-16 rounded-full object-cover border-2 border-white/10 group-hover:border-blue-500 transition-colors"
                                         />
                                     ) : (
-                                        <div className="h-16 w-16 rounded-full bg-neutral-800 flex items-center justify-center text-xl font-bold text-white border-2 border-white/10 group-hover:border-blue-500 transition-colors">
+                                        <div className="h-16 w-16 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center text-xl font-bold text-neutral-600 dark:text-white border-2 border-neutral-300 dark:border-white/10 group-hover:border-blue-500 transition-colors">
                                             {user.name?.[0]?.toUpperCase() || "U"}
                                         </div>
                                     )}
@@ -125,35 +127,35 @@ export default function SettingsPage() {
                                     )}
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-white">Profile Picture</div>
-                                    <div className="text-xs text-neutral-400 mt-1">Click to upload a new avatar</div>
+                                    <div className="text-sm font-medium text-neutral-900 dark:text-white">{t.settingsPage.profilePicture}</div>
+                                    <div className="text-xs text-neutral-400 mt-1">{t.settingsPage.uploadAvatar}</div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Name */}
                         {isEditing ? (
-                            <div className="p-4 border-b border-white/5">
-                                <label className="text-sm text-neutral-400">Name</label>
+                            <div className="p-4 border-b border-neutral-100 dark:border-white/5">
+                                <label className="text-sm text-neutral-500 dark:text-neutral-400">{t.settingsPage.name}</label>
                                 <div className="flex gap-2 mt-2">
                                     <input
                                         type="text"
                                         value={tempName}
                                         onChange={(e) => setTempName(e.target.value)}
                                         autoFocus
-                                        className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="flex-1 px-3 py-2 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                     <button
                                         onClick={() => setIsEditing(false)}
-                                        className="px-4 py-2 text-sm text-neutral-400 hover:text-white"
+                                        className="px-4 py-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
                                     >
-                                        Cancel
+                                        {t.cancel}
                                     </button>
                                     <button
                                         onClick={handleSaveName}
                                         className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                     >
-                                        Save
+                                        {t.save}
                                     </button>
                                 </div>
                             </div>
@@ -163,11 +165,11 @@ export default function SettingsPage() {
                                     setTempName(name);
                                     setIsEditing(true);
                                 }}
-                                className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors border-b border-white/5"
+                                className="w-full p-4 flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors border-b border-neutral-100 dark:border-white/5"
                             >
                                 <div className="text-left">
-                                    <div className="text-sm text-neutral-400">Name</div>
-                                    <div className="text-white mt-0.5">{name || "Not set"}</div>
+                                    <div className="text-sm text-neutral-500 dark:text-neutral-400">{t.settingsPage.name}</div>
+                                    <div className="text-neutral-900 dark:text-white mt-0.5">{name || "Not set"}</div>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-neutral-500" />
                             </button>
@@ -176,8 +178,8 @@ export default function SettingsPage() {
                         {/* Email */}
                         <div className="p-4 flex items-center justify-between">
                             <div>
-                                <div className="text-sm text-neutral-400">Email</div>
-                                <div className="text-white mt-0.5">{user.email}</div>
+                                <div className="text-sm text-neutral-500 dark:text-neutral-400">{t.settingsPage.email}</div>
+                                <div className="text-neutral-900 dark:text-white mt-0.5">{user.email}</div>
                             </div>
                         </div>
                     </div>
@@ -186,15 +188,15 @@ export default function SettingsPage() {
                 {/* Security Section */}
                 <div className="space-y-2">
                     <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 px-4">
-                        Security
+                        {t.settingsPage.security}
                     </h2>
-                    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden">
+                    <div className="bg-white dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10 overflow-hidden shadow-sm dark:shadow-none">
                         <Link href="/settings/security">
-                            <button className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+                            <button className="w-full p-4 flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
                                 <div className="text-left">
-                                    <div className="text-white">Password & Email</div>
+                                    <div className="text-neutral-900 dark:text-white">{t.settingsPage.passwordEmail}</div>
                                     <div className="text-sm text-neutral-400 mt-0.5">
-                                        Change your password or email address
+                                        {t.settingsPage.changePassword}
                                     </div>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-neutral-500" />
@@ -206,41 +208,41 @@ export default function SettingsPage() {
                 {/* Notifications Section */}
                 <div className="space-y-2">
                     <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 px-4">
-                        Notifications
+                        {t.settingsPage.notifications}
                     </h2>
-                    <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden divide-y divide-white/5">
+                    <div className="bg-white dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10 overflow-hidden divide-y divide-neutral-100 dark:divide-white/5 shadow-sm dark:shadow-none">
                         <div className="p-4 flex items-center justify-between">
                             <div>
-                                <div className="text-white">Email Notifications</div>
+                                <div className="text-neutral-900 dark:text-white">{t.settingsPage.emailNotifications}</div>
                                 <div className="text-sm text-neutral-400 mt-0.5">
-                                    Course updates and announcements
+                                    {t.settingsPage.courseUpdates}
                                 </div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" defaultChecked className="sr-only peer" />
-                                <div className="w-11 h-6 bg-white/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                <div className="w-11 h-6 bg-neutral-200 dark:bg-white/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
 
                         <div className="p-4 flex items-center justify-between">
                             <div>
-                                <div className="text-white">Course Reminders</div>
-                                <div className="text-sm text-neutral-400 mt-0.5">Daily learning reminders</div>
+                                <div className="text-neutral-900 dark:text-white">{t.settingsPage.courseReminders}</div>
+                                <div className="text-sm text-neutral-400 mt-0.5">{t.settingsPage.dailyReminders}</div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" defaultChecked className="sr-only peer" />
-                                <div className="w-11 h-6 bg-white/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                <div className="w-11 h-6 bg-neutral-200 dark:bg-white/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
 
                         <div className="p-4 flex items-center justify-between">
                             <div>
-                                <div className="text-white">Achievements</div>
-                                <div className="text-sm text-neutral-400 mt-0.5">Badges and milestones</div>
+                                <div className="text-neutral-900 dark:text-white">{t.settingsPage.achievements}</div>
+                                <div className="text-sm text-neutral-400 mt-0.5">{t.settingsPage.badgesMilestones}</div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" defaultChecked className="sr-only peer" />
-                                <div className="w-11 h-6 bg-white/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                <div className="w-11 h-6 bg-neutral-200 dark:bg-white/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
                     </div>
@@ -249,7 +251,7 @@ export default function SettingsPage() {
                 {/* Danger Zone */}
                 <div className="space-y-2">
                     <h2 className="text-xs font-semibold uppercase tracking-wider text-red-400 px-4">
-                        Danger Zone
+                        {t.settingsPage.dangerZone}
                     </h2>
                     <div className="bg-red-500/10 rounded-xl border border-red-500/20 overflow-hidden">
                         <button
@@ -259,10 +261,10 @@ export default function SettingsPage() {
                             <div className="text-left">
                                 <div className="text-red-400 font-medium flex items-center gap-2">
                                     <Trash2 className="w-4 h-4" />
-                                    Delete Account
+                                    {t.settingsPage.deleteAccount}
                                 </div>
                                 <div className="text-sm text-red-300/70 mt-0.5">
-                                    Permanently delete your account and all data
+                                    {t.settingsPage.deleteWarning}
                                 </div>
                             </div>
                         </button>

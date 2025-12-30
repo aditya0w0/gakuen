@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { requireAuth, safeErrorResponse } from '@/lib/api/auth-guard';
+import { sanitizePath, validateFileType } from '@/lib/api/validators';
+
+export const dynamic = 'force-dynamic';
 
 // Upload types and their target folders
 const UPLOAD_PATHS = {
@@ -14,15 +18,32 @@ const UPLOAD_PATHS = {
 
 type UploadType = keyof typeof UPLOAD_PATHS;
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
+        // 🔒 SECURITY: Require authentication
+        const authResult = await requireAuth(request);
+        if (!authResult.authenticated) {
+            return authResult.response;
+        }
+
         const formData = await request.formData();
         const file = formData.get('file') as File;
         const type = formData.get('type') as UploadType;
-        const id = formData.get('id') as string; // userId, courseId, etc.
+        const id = formData.get('id') as string;
 
         if (!file || !type) {
             return NextResponse.json({ error: 'Missing file or type' }, { status: 400 });
+        }
+
+        // 🔒 SECURITY: Validate file type
+        const fileValidation = validateFileType(file);
+        if (!fileValidation.valid) {
+            return NextResponse.json({ error: fileValidation.error }, { status: 400 });
+        }
+
+        // 🔒 SECURITY: Validate upload type
+        if (!UPLOAD_PATHS[type]) {
+            return NextResponse.json({ error: 'Invalid upload type' }, { status: 400 });
         }
 
         // Get file buffer
@@ -34,20 +55,26 @@ export async function POST(request: Request) {
             .webp({ quality: 90 })
             .toBuffer();
 
-        // Generate filename
-        const filename = id
-            ? `${id}-${uuidv4().slice(0, 8)}.webp`
+        // 🔒 SECURITY: Sanitize ID to prevent path traversal
+        const safeId = id ? sanitizePath(id) : '';
+
+        // Generate filename with sanitized ID
+        const filename = safeId
+            ? `${safeId}-${uuidv4().slice(0, 8)}.webp`
             : `${uuidv4()}.webp`;
 
-        // Determine folder path
-        let folderPath = UPLOAD_PATHS[type] || 'public/uploads';
+        // Determine folder path (verified safe paths only)
+        let folderPath: string = UPLOAD_PATHS[type];
 
-        // For courses/lessons, create subfolder structure
-        if (type === 'course' && id) {
-            folderPath = `public/uploads/courses/${id}`;
-        } else if (type === 'lesson' && id) {
+        // For courses/lessons, create subfolder structure with sanitized IDs
+        if (type === 'course' && safeId) {
+            folderPath = `public/uploads/courses/${safeId}`;
+        } else if (type === 'lesson' && safeId) {
             const courseId = formData.get('courseId') as string;
-            folderPath = `public/uploads/courses/${courseId}/lessons/${id}`;
+            const safeCourseId = sanitizePath(courseId || '');
+            if (safeCourseId) {
+                folderPath = `public/uploads/courses/${safeCourseId}/lessons/${safeId}`;
+            }
         }
 
         // Ensure directory exists
@@ -71,8 +98,8 @@ export async function POST(request: Request) {
             filename
         });
 
-    } catch (error: any) {
-        console.error('Upload error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        // 🔒 SECURITY: Don't expose internal errors
+        return safeErrorResponse(error, 'Upload failed');
     }
 }

@@ -3,24 +3,111 @@
 import { useAuth } from "@/components/auth/AuthContext";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { CourseCard } from "@/components/course/CourseCard";
-import { BookOpen, TrendingUp, Award, Flame } from "lucide-react";
+import { BookOpen, TrendingUp, Award, Flame, Sparkles } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { useTranslation } from "@/lib/i18n";
+
+// Apple-style spring animation config
+const spring = {
+    type: "spring",
+    stiffness: 300,
+    damping: 30,
+};
+
+// Stagger container variants
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.1,
+        },
+    },
+};
+
+// Item fade up variants
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: { type: "spring" as const, stiffness: 300, damping: 30 },
+    },
+} as const;
+
+// Stats card with number animation
+function StatCard({ icon: Icon, value, label, color, delay = 0 }: {
+    icon: typeof BookOpen;
+    value: number | string;
+    label: string;
+    color: string;
+    delay?: number;
+}) {
+    const colorClasses = {
+        blue: { bg: "bg-blue-500/10 dark:bg-blue-500/10", text: "text-blue-600 dark:text-blue-400", border: "hover:border-blue-500/30" },
+        purple: { bg: "bg-purple-500/10 dark:bg-purple-500/10", text: "text-purple-600 dark:text-purple-400", border: "hover:border-purple-500/30" },
+        green: { bg: "bg-green-500/10 dark:bg-green-500/10", text: "text-green-600 dark:text-green-400", border: "hover:border-green-500/30" },
+        orange: { bg: "bg-orange-500/10 dark:bg-orange-500/10", text: "text-orange-600 dark:text-orange-400", border: "hover:border-orange-500/30" },
+    }[color] || { bg: "bg-blue-500/10 dark:bg-blue-500/10", text: "text-blue-600 dark:text-blue-400", border: "hover:border-blue-500/30" };
+
+    return (
+        <motion.div
+            variants={itemVariants}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            className={`bg-white/80 dark:bg-black/20 backdrop-blur-sm p-5 rounded-2xl border border-neutral-200 dark:border-white/5 ${colorClasses.border} transition-colors cursor-default shadow-sm dark:shadow-none`}
+        >
+            <div className="flex items-center justify-between mb-3">
+                <motion.div
+                    className={`p-2.5 ${colorClasses.bg} rounded-xl`}
+                    whileHover={{ rotate: [0, -10, 10, 0] }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <Icon className={`w-5 h-5 ${colorClasses.text}`} />
+                </motion.div>
+            </div>
+            <motion.div
+                className="text-3xl font-bold text-neutral-900 dark:text-white mb-1"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: "spring" as const, stiffness: 300, damping: 30, delay: delay + 0.3 }}
+            >
+                {value}
+            </motion.div>
+            <div className="text-sm text-neutral-500 dark:text-neutral-400">{label}</div>
+        </motion.div>
+    );
+}
 
 export default function UserDashboard() {
     const { user, isLoading: isUserLoading } = useAuth();
     const [allCourses, setAllCourses] = useState<any[]>([]);
     const [isLoadingCourses, setIsLoadingCourses] = useState(true);
-    const [isMounted, setIsMounted] = useState(false);
+    const [localUser, setLocalUser] = useState(user);
+    const [mounted, setMounted] = useState(false);
+    const { t } = useTranslation();
 
-    // Mark as mounted (client-side only)
+    // Prevent hydration mismatch by deferring render
     useEffect(() => {
-        setIsMounted(true);
+        setMounted(true);
     }, []);
 
-    // Load courses from API
     useEffect(() => {
-        fetch('/api/courses')
+        if (user) setLocalUser(user);
+    }, [user]);
+
+    useEffect(() => {
+        if (!user && !isUserLoading) {
+            const cachedUser = hybridStorage.auth.getSession();
+            if (cachedUser) setLocalUser(cachedUser);
+        }
+    }, [user, isUserLoading]);
+
+    useEffect(() => {
+        fetch('/api/courses', { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
                 setAllCourses(data);
@@ -32,34 +119,32 @@ export default function UserDashboard() {
             });
     }, []);
 
-    // Calculate stats directly from user and progress - no separate state needed
+    const currentUser = localUser || user;
+
     const stats = useMemo(() => {
-        if (!user || !isMounted) {
-            return null;
+        if (!currentUser) {
+            return { coursesEnrolled: 0, lessonsCompleted: 0, hoursLearned: 0, currentStreak: 7 };
         }
         const progress = hybridStorage.progress.get();
         return {
-            coursesEnrolled: user.enrolledCourses?.length || 0,
+            coursesEnrolled: currentUser.enrolledCourses?.length || 0,
             lessonsCompleted: progress?.completedLessons?.length || 0,
             hoursLearned: progress?.totalHours || 0,
             currentStreak: progress?.currentStreak || 7,
         };
-    }, [user, isMounted]);
+    }, [currentUser]);
 
     const [recommendedCourses, setRecommendedCourses] = useState<any[]>([]);
 
     const enrolledCourses = useMemo(() => {
-        if (!user?.enrolledCourses?.length) return [];
-        return allCourses.filter(c => user.enrolledCourses.includes(c.id));
-    }, [user, allCourses]);
+        if (!currentUser?.enrolledCourses?.length) return [];
+        return allCourses.filter(c => currentUser.enrolledCourses.includes(c.id));
+    }, [currentUser, allCourses]);
 
-    // ML Recommendation Logic
     useEffect(() => {
         async function fetchRecommendations() {
             if (enrolledCourses.length > 0 && allCourses.length > 0) {
-                // Get recommendations based on the LAST enrolled course (most recent interest)
                 const lastCourseId = enrolledCourses[enrolledCourses.length - 1].id;
-
                 try {
                     const res = await fetch('/api/courses/related', {
                         method: 'POST',
@@ -67,136 +152,165 @@ export default function UserDashboard() {
                         body: JSON.stringify({ courseId: lastCourseId, allCourses }),
                     });
                     const data = await res.json();
-
-                    // Filter out already enrolled courses from recommendations
-                    const newRecommendations = data.filter((c: any) => !user?.enrolledCourses?.includes(c.id));
+                    const newRecommendations = data.filter((c: any) => !currentUser?.enrolledCourses?.includes(c.id));
                     setRecommendedCourses(newRecommendations);
                 } catch (error) {
                     console.error("Failed to fetch ML recommendations", error);
-                    // Fallback to basic shuffle if ML fails
-                    setRecommendedCourses(allCourses.filter(c => !user?.enrolledCourses?.includes(c.id)).slice(0, 3));
+                    setRecommendedCourses(allCourses.filter(c => !currentUser?.enrolledCourses?.includes(c.id)).slice(0, 3));
                 }
             } else if (allCourses.length > 0) {
-                // New user? Just show top rated or random
                 setRecommendedCourses(allCourses.slice(0, 3));
             }
         }
+        if (allCourses.length > 0) fetchRecommendations();
+    }, [enrolledCourses, allCourses, currentUser]);
 
-        if (allCourses.length > 0) {
-            fetchRecommendations();
-        }
-    }, [enrolledCourses, allCourses, user]);
-
-    // Show loading state while AuthContext is loading
-    if (isUserLoading || !user) {
+    // Show consistent loading state on server and client until mounted
+    if (!mounted || (isUserLoading && !currentUser)) {
         return (
             <div className="flex items-center justify-center h-[50vh]">
-                <div className="text-neutral-400">Loading...</div>
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
 
-    const firstName = user.name?.split(" ")[0] || "Student";
+    const firstName = currentUser?.name?.split(" ")[0] || "Student";
 
     return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold text-white">
-                    Welcome back, {firstName}!
-                </h1>
-                <p className="text-neutral-400 mt-1">Continue your learning journey</p>
-            </div>
+        <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+            className="space-y-10"
+        >
+            {/* Welcome Header */}
+            <motion.div variants={itemVariants}>
+                <motion.h1
+                    className="text-4xl font-bold text-neutral-900 dark:text-white tracking-tight"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ type: "spring" as const, stiffness: 300, damping: 30, delay: 0.1 }}
+                >
+                    {t.userDash.welcomeBack}, {firstName}!
+                </motion.h1>
+                <motion.p
+                    className="text-neutral-600 dark:text-neutral-400 mt-2 text-lg"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                >
+                    {t.userDash.continueJourney}
+                </motion.p>
+            </motion.div>
 
-            {/* Stats Grid - Always render with actual values */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-black/20 backdrop-blur-sm p-5 rounded-xl border border-white/5 hover:border-blue-500/30 transition-all">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2.5 bg-blue-500/10 rounded-lg">
-                            <BookOpen className="w-5 h-5 text-blue-400" />
-                        </div>
-                    </div>
-                    <div className="text-3xl font-bold text-white mb-1">{stats?.coursesEnrolled ?? 0}</div>
-                    <div className="text-sm text-neutral-400">Courses Enrolled</div>
-                </div>
-
-                <div className="bg-black/20 backdrop-blur-sm p-5 rounded-xl border border-white/5 hover:border-purple-500/30 transition-all">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2.5 bg-purple-500/10 rounded-lg">
-                            <TrendingUp className="w-5 h-5 text-purple-400" />
-                        </div>
-                    </div>
-                    <div className="text-3xl font-bold text-white mb-1">{stats?.hoursLearned ?? 0}h</div>
-                    <div className="text-sm text-neutral-400">Hours Learned</div>
-                </div>
-
-                <div className="bg-black/20 backdrop-blur-sm p-5 rounded-xl border border-white/5 hover:border-green-500/30 transition-all">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2.5 bg-green-500/10 rounded-lg">
-                            <Award className="w-5 h-5 text-green-400" />
-                        </div>
-                    </div>
-                    <div className="text-3xl font-bold text-white mb-1">{stats?.lessonsCompleted ?? 0}</div>
-                    <div className="text-sm text-neutral-400">Lessons Completed</div>
-                </div>
-
-                <div className="bg-black/20 backdrop-blur-sm p-5 rounded-xl border border-white/5 hover:border-orange-500/30 transition-all">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="p-2.5 bg-orange-500/10 rounded-lg">
-                            <Flame className="w-5 h-5 text-orange-400" />
-                        </div>
-                    </div>
-                    <div className="text-3xl font-bold text-white mb-1">{stats?.currentStreak ?? 7}</div>
-                    <div className="text-sm text-neutral-400">Day Streak</div>
-                </div>
-            </div>
+            {/* Stats Grid */}
+            <motion.div
+                variants={containerVariants}
+                className="grid grid-cols-2 md:grid-cols-4 gap-4"
+            >
+                <StatCard icon={BookOpen} value={stats.coursesEnrolled} label={t.userDash.coursesEnrolled} color="blue" delay={0} />
+                <StatCard icon={TrendingUp} value={`${stats.hoursLearned}h`} label={t.userDash.hoursLearned} color="purple" delay={0.1} />
+                <StatCard icon={Award} value={stats.lessonsCompleted} label={t.userDash.lessonsCompleted} color="green" delay={0.2} />
+                <StatCard icon={Flame} value={stats.currentStreak} label={t.userDash.dayStreak} color="orange" delay={0.3} />
+            </motion.div>
 
             {/* Continue Learning Section */}
             {enrolledCourses.length > 0 && (
-                <div>
-                    <h2 className="text-xl font-semibold text-white mb-4">Continue Learning</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {enrolledCourses.map(course => (
-                            <CourseCard
+                <motion.div variants={itemVariants}>
+                    <motion.h2
+                        className="text-2xl font-semibold text-neutral-900 dark:text-white mb-6"
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                    >
+                        {t.userDash.continueLearning}
+                    </motion.h2>
+                    <motion.div
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                        variants={containerVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                    >
+                        {enrolledCourses.map((course, index) => (
+                            <motion.div
                                 key={course.id}
-                                course={course}
-                                showProgress
-                            />
+                                variants={itemVariants}
+                                whileHover={{ y: -4 }}
+                                transition={{ type: "spring" as const, stiffness: 300, damping: 30 }}
+                            >
+                                <CourseCard course={course} index={index} />
+                            </motion.div>
                         ))}
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
 
             {/* Recommended Courses (ML Powered) */}
-            <div>
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                        <h2 className="text-xl font-semibold text-white">Recommended for You</h2>
-                        <span className="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/20">
-                            ML Powered
-                        </span>
+            <motion.div variants={itemVariants}>
+                <motion.div
+                    className="flex items-center justify-between mb-6"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                >
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">{t.userDash.recommendedForYou}</h2>
+                        <motion.span
+                            className="text-xs bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/20 flex items-center gap-1.5"
+                            animate={{ scale: [1, 1.02, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                        >
+                            <Sparkles className="w-3 h-3" />
+                            {t.userDash.aiPowered}
+                        </motion.span>
                     </div>
                     <Link
                         href="/browse"
-                        className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                        className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-purple-300 transition-colors font-medium"
                     >
-                        Browse All Courses →
+                        {t.userDash.browseAll} →
                     </Link>
-                </div>
+                </motion.div>
+
                 {isLoadingCourses ? (
-                    <div className="text-neutral-400">Loading courses...</div>
+                    <motion.div
+                        className="flex items-center gap-3 text-neutral-400"
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                        <div className="w-5 h-5 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
+                        {t.loading}
+                    </motion.div>
                 ) : recommendedCourses.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {recommendedCourses.slice(0, 3).map(course => (
-                            <CourseCard
+                    <motion.div
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                        variants={containerVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                    >
+                        {recommendedCourses.slice(0, 3).map((course, index) => (
+                            <motion.div
                                 key={course.id}
-                                course={course}
-                            />
+                                variants={itemVariants}
+                                whileHover={{ y: -4 }}
+                                transition={{ type: "spring" as const, stiffness: 300, damping: 30 }}
+                            >
+                                <CourseCard course={course} index={index} />
+                            </motion.div>
                         ))}
-                    </div>
+                    </motion.div>
                 ) : (
-                    <div className="text-neutral-400">No recommendations available</div>
+                    <motion.div
+                        className="text-neutral-500 dark:text-neutral-400 py-8 text-center bg-neutral-50 dark:bg-white/5 rounded-2xl border border-neutral-200 dark:border-white/5"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                    >
+                        {t.userDash.noRecommendations}
+                    </motion.div>
                 )}
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 }

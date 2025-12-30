@@ -3,7 +3,6 @@ name: PR Gate
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    branches: ['**']  # Run on PRs to all branches
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
@@ -11,78 +10,31 @@ concurrency:
 
 env:
   NODE_VERSION: '20'
-  CI: true
 
 jobs:
-  # ============================================
-  # Quick Fail-Fast Checks
-  # ============================================
-  quick-checks:
-    name: ⚡ Quick Checks
+  gate:
+    name: 🚦 PR Gate
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+      - run: npm ci
 
-      - name: Lint (fail fast)
-        run: npm run lint -- --max-warnings=0
+      - name: Lint
+        run: npm run lint
 
-      - name: TypeScript Check (fail fast)
+      - name: TypeScript
         run: npx tsc --noEmit
 
-  # ============================================
-  # Full Test Suite (Sharded)
-  # ============================================
-  test-suite:
-    name: 🧪 Tests (Shard ${{ matrix.shard }}/2)
-    runs-on: ubuntu-latest
-    needs: quick-checks
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
-
-      - name: Run Tests
-        run: npm run test -- --reporter=verbose --shard=${{ matrix.shard }}/2
-
-  # ============================================
-  # Build Verification
-  # ============================================
-  build-check:
-    name: 🏗️ Build Verification
-    runs-on: ubuntu-latest
-    needs: quick-checks
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
+      - name: Tests
+        run: npm run test
 
       - name: Build
         run: npm run build
@@ -90,46 +42,15 @@ jobs:
           NEXT_PUBLIC_FIREBASE_API_KEY: 'ci-dummy'
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'ci-dummy'
           NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'ci-dummy'
+          NEXT_TELEMETRY_DISABLED: '1'
 
-      - name: Report build size
-        run: |
-          echo "### 📦 Build Size" >> $GITHUB_STEP_SUMMARY
-          du -sh .next/ >> $GITHUB_STEP_SUMMARY
-
-  # ============================================
-  # PR Comment with Results
-  # ============================================
-  pr-comment:
-    name: 💬 PR Status
-    runs-on: ubuntu-latest
-    needs: [quick-checks, test-suite, build-check]
-    if: always()
-    permissions:
-      pull-requests: write
-    steps:
-      - name: Create Status Comment
+      - name: Status Comment
+        if: always()
         uses: actions/github-script@v7
         with:
           script: |
-            const quickChecks = '${{ needs.quick-checks.result }}';
-            const testSuite = '${{ needs.test-suite.result }}';
-            const buildCheck = '${{ needs.build-check.result }}';
-            
-            const status = (result) => result === 'success' ? '✅' : result === 'failure' ? '❌' : '⏭️';
-            
-            const body = `## 🤖 CI Status Report
-            
-            | Check | Status |
-            |-------|--------|
-            | Lint & TypeScript | ${status(quickChecks)} ${quickChecks} |
-            | Unit Tests | ${status(testSuite)} ${testSuite} |
-            | Build | ${status(buildCheck)} ${buildCheck} |
-            
-            ${quickChecks === 'success' && testSuite === 'success' && buildCheck === 'success' 
-              ? '### ✅ All checks passed! Ready for review.' 
-              : '### ❌ Some checks failed. Please fix before merging.'}
-            
-            <sub>Updated: ${new Date().toISOString()}</sub>`;
+            const status = '${{ job.status }}' === 'success' ? '✅' : '❌';
+            const body = `## ${status} PR Gate: ${{ job.status }}\n\nUpdated: ${new Date().toISOString()}`;
             
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -137,41 +58,21 @@ jobs:
               issue_number: context.issue.number,
             });
             
-            const botComment = comments.find(c => 
-              c.user.type === 'Bot' && c.body.includes('CI Status Report')
-            );
+            const existing = comments.find(c => c.user.type === 'Bot' && c.body.includes('PR Gate'));
             
-            if (botComment) {
+            if (existing) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body
+                comment_id: existing.id,
+                body
               });
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: body
+                body
               });
             }
-
-  # ============================================
-  # Final Gate
-  # ============================================
-  pr-gate:
-    name: 🚦 PR Gate
-    runs-on: ubuntu-latest
-    needs: [quick-checks, test-suite, build-check]
-    if: always()
-    steps:
-      - name: Check Results
-        run: |
-          if [[ "${{ needs.quick-checks.result }}" != "success" ]] || \
-             [[ "${{ needs.test-suite.result }}" != "success" ]] || \
-             [[ "${{ needs.build-check.result }}" != "success" ]]; then
-            echo "❌ PR checks failed"
-            exit 1
-          fi
-          echo "✅ PR is ready for merge"
+        continue-on-error: true

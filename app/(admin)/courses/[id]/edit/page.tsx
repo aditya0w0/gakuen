@@ -1,16 +1,10 @@
 "use client";
 
-import { Lesson } from "@/lib/constants/demo-data";
+import { Lesson, Course } from "@/lib/constants/demo-data";
 import { Component } from "@/lib/cms/types";
 import {
     ChevronDown,
-    Settings,
-    FileText,
-    Image as ImageIcon,
-    Box,
-    Users,
     Eye,
-    BookOpen,
     Save,
     ChevronLeft,
     Plus,
@@ -18,20 +12,17 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
-import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { ComponentRenderer } from "@/components/cms/ComponentRenderer";
 import { ComponentPalette } from "@/components/cms/ComponentPalette";
 import { DesignControls } from "@/components/cms/DesignControls";
 import { ContextMenu } from "@/components/cms/ContextMenu";
 import { CourseSettings } from "@/components/cms/CourseSettings";
 import { fetchCourse, updateCourse } from "@/lib/api/courseApi";
-import { saveCourseMetadata } from "@/lib/firebase/firestore";
-
-// --- Sub-components for Layout ---
+import { saveCourseMetadata } from \"@/lib/firebase/firestore\";\n\n// --- Sub-components for Layout ---
 
 
 const TopBar = ({
-    title,
     onSave,
     isSaving,
     onPreview,
@@ -40,7 +31,6 @@ const TopBar = ({
     onViewChange,
     isPublished
 }: {
-    title: string;
     onSave: () => void;
     isSaving: boolean;
     onPreview: () => void;
@@ -105,7 +95,7 @@ const TopBar = ({
 export default function CourseEditorPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: courseId } = use(params);
 
-    const [course, setCourse] = useState<any>(null);
+    const [course, setCourse] = useState<Course | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -121,6 +111,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     const [courseAuthor, setCourseAuthor] = useState('');
     const [isPublished, setIsPublished] = useState(false);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const idCounterRef = useRef(0);
 
 
     // Load course from API
@@ -198,6 +189,8 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
             title: `Lesson ${lessons.length + 1}`,
             type: "cms",
             duration: "10 min",
+            content: "",
+            order: lessons.length + 1,
             components: [],
         };
         setLessons([...lessons, newLesson]);
@@ -260,7 +253,49 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
         setSelectedComponentId(null);
     };
 
-    // ... (context menu handlers) ...
+    // Context menu handlers
+    const handleDuplicateComponent = (component: Component) => {
+        if (editingIndex === null) return;
+        idCounterRef.current += 1;
+        const newComponent = { ...component, id: `${component.type}-dup-${idCounterRef.current}` };
+        const index = components.findIndex(c => c.id === component.id);
+        const newComponents = [...components];
+        newComponents.splice(index + 1, 0, newComponent);
+        handleUpdateLesson(editingIndex, { components: newComponents });
+        setContextMenu(null);
+    };
+
+    const handleDeleteFromContextMenu = (component: Component) => {
+        if (editingIndex === null) return;
+        const newComponents = components.filter(c => c.id !== component.id);
+        handleUpdateLesson(editingIndex, { components: newComponents });
+        setContextMenu(null);
+    };
+
+    const handleMoveComponentUp = (component: Component) => {
+        if (editingIndex === null) return;
+        const index = components.findIndex(c => c.id === component.id);
+        if (index <= 0) return;
+        const newComponents = [...components];
+        [newComponents[index - 1], newComponents[index]] = [newComponents[index], newComponents[index - 1]];
+        handleUpdateLesson(editingIndex, { components: newComponents });
+        setContextMenu(null);
+    };
+
+    const handleMoveComponentDown = (component: Component) => {
+        if (editingIndex === null) return;
+        const index = components.findIndex(c => c.id === component.id);
+        if (index >= components.length - 1) return;
+        const newComponents = [...components];
+        [newComponents[index], newComponents[index + 1]] = [newComponents[index + 1], newComponents[index]];
+        handleUpdateLesson(editingIndex, { components: newComponents });
+        setContextMenu(null);
+    };
+
+    const handleCopyComponent = (component: Component) => {
+        navigator.clipboard.writeText(JSON.stringify(component, null, 2));
+        setContextMenu(null);
+    };
 
     return (
         <div className="flex flex-col h-screen bg-zinc-950 text-gray-300 font-sans antialiased overflow-hidden selection:bg-indigo-500/30 selection:text-indigo-200">
@@ -434,21 +469,24 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
             </div>
 
             {/* Context Menu */}
-            {contextMenu && (
-                <ContextMenu
-                    x={contextMenu.x}
-                    y={contextMenu.y}
-                    component={components.find(c => c.id === contextMenu.componentId) || null}
-                    onClose={() => setContextMenu(null)}
-                    onDuplicate={handleDuplicateComponent}
-                    onDelete={handleDeleteFromContextMenu}
-                    onMoveUp={handleMoveComponentUp}
-                    onMoveDown={handleMoveComponentDown}
-                    onCopy={handleCopyComponent}
-                    canMoveUp={components.findIndex(c => c.id === contextMenu.componentId) > 0}
-                    canMoveDown={components.findIndex(c => c.id === contextMenu.componentId) < components.length - 1}
-                />
-            )}
+            {contextMenu && (() => {
+                const component = components.find(c => c.id === contextMenu.componentId) || null;
+                return (
+                    <ContextMenu
+                        x={contextMenu.x}
+                        y={contextMenu.y}
+                        component={component}
+                        onClose={() => setContextMenu(null)}
+                        onDuplicate={() => component && handleDuplicateComponent(component)}
+                        onDelete={() => component && handleDeleteFromContextMenu(component)}
+                        onMoveUp={() => component && handleMoveComponentUp(component)}
+                        onMoveDown={() => component && handleMoveComponentDown(component)}
+                        onCopy={() => component && handleCopyComponent(component)}
+                        canMoveUp={components.findIndex(c => c.id === contextMenu.componentId) > 0}
+                        canMoveDown={components.findIndex(c => c.id === contextMenu.componentId) < components.length - 1}
+                    />
+                );
+            })()}
         </div>
     );
 }

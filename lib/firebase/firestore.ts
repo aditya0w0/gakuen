@@ -6,6 +6,7 @@ import {
     updateDoc,
     serverTimestamp,
     Timestamp,
+    FieldValue,
 } from "firebase/firestore";
 import { getFirebaseDB, isFirebaseEnabled } from "./config";
 import { User } from "@/lib/constants/demo-data";
@@ -33,7 +34,9 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
             avatar: data.avatar,
             enrolledCourses: data.enrolledCourses,
             completedLessons: [], // Loaded separately from progress
-            createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+            createdAt: data.createdAt
+                ? (data.createdAt as Timestamp).toDate().toISOString()
+                : new Date().toISOString(),
         };
     } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -49,7 +52,7 @@ export const createUserProfile = async (user: User): Promise<void> => {
 
     try {
         // Build document, filtering out undefined values (Firestore doesn't accept them)
-        const userDoc: Record<string, any> = {
+        const userDoc: Record<string, string | string[] | FieldValue> = {
             uid: user.id,
             email: user.email,
             name: user.name,
@@ -81,7 +84,7 @@ export const updateUserProfile = async (
 
     try {
         // Filter out undefined values
-        const cleanUpdates: Record<string, any> = { updatedAt: serverTimestamp() };
+        const cleanUpdates: Record<string, string | string[] | FieldValue> = { updatedAt: serverTimestamp() };
         Object.entries(updates).forEach(([key, value]) => {
             if (value !== undefined) {
                 cleanUpdates[key] = value;

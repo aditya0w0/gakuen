@@ -3,7 +3,7 @@ import { Course } from '@/lib/constants/demo-data';
 // Fetch course by ID
 export async function fetchCourse(id: string): Promise<Course | null> {
     try {
-        const response = await fetch(`/api/courses/${id}`);
+        const response = await fetch(`/api/courses/${id}`, { cache: 'no-store' });
         if (!response.ok) {
             return null;
         }
@@ -23,6 +23,7 @@ export async function updateCourse(id: string, course: Course): Promise<boolean>
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(course),
+            cache: 'no-store',
         });
         return response.ok;
     } catch (error) {
@@ -34,7 +35,7 @@ export async function updateCourse(id: string, course: Course): Promise<boolean>
 // Fetch all courses
 export async function fetchAllCourses(): Promise<Course[]> {
     try {
-        const response = await fetch('/api/courses');
+        const response = await fetch('/api/courses', { cache: 'no-store' });
         if (!response.ok) {
             return [];
         }
