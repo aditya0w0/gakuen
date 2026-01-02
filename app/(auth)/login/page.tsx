@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAnime } from "@/components/animations/useAnime";
 import { useState, FormEvent, useEffect, useRef } from "react";
-import { Loader2, Mail, Lock, AlertCircle, User as UserIcon, Eye, EyeOff, Check, X } from "lucide-react";
+import { Loader2, Mail, Lock, AlertCircle, User as UserIcon, Eye, EyeOff, Check, X, Shield, FileText } from "lucide-react";
 import Link from "next/link";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -28,6 +28,8 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isRecoveringSession, setIsRecoveringSession] = useState(false);
+    const [tosAccepted, setTosAccepted] = useState(false);
+    const [showTosModal, setShowTosModal] = useState(false);
     const sessionRecoveryAttempted = useRef(false);
 
     // Session recovery: After hard refresh, Firebase Auth restores the user from IndexedDB
@@ -273,6 +275,48 @@ export default function LoginPage() {
                             </div>
                         )}
 
+                        {/* TOS Checkbox - Only for signup */}
+                        {mode === "signup" && (
+                            <div className="space-y-2 pt-2">
+                                <div className="flex items-start gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (!tosAccepted) {
+                                                setShowTosModal(true);
+                                            } else {
+                                                setTosAccepted(false);
+                                            }
+                                        }}
+                                        className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${tosAccepted
+                                                ? 'bg-blue-600 border-blue-600 dark:bg-white dark:border-white'
+                                                : 'border-neutral-300 dark:border-white/30 hover:border-blue-500'
+                                            }`}
+                                    >
+                                        {tosAccepted && <Check className="w-3 h-3 text-white dark:text-black" />}
+                                    </button>
+                                    <label className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                                        I agree to the{' '}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowTosModal(true)}
+                                            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                                        >
+                                            Terms of Service
+                                        </button>{' '}
+                                        and{' '}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowTosModal(true)}
+                                            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                                        >
+                                            Privacy Policy
+                                        </button>
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+
                         {(error || authError) && (
                             <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg">
                                 <AlertCircle className="h-4 w-4 text-red-500 dark:text-red-400 flex-shrink-0" />
@@ -282,8 +326,11 @@ export default function LoginPage() {
 
                         <Button
                             type="submit"
-                            disabled={isLoading}
-                            className="w-full h-11 bg-blue-600 text-white hover:bg-blue-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200 font-medium"
+                            disabled={isLoading || (mode === "signup" && !tosAccepted)}
+                            className={`w-full h-11 font-medium transition-all ${(mode === "signup" && !tosAccepted)
+                                    ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 cursor-not-allowed'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200'
+                                }`}
                         >
                             {isLoading ? (
                                 <>
@@ -291,7 +338,10 @@ export default function LoginPage() {
                                     {mode === "signup" ? "Creating account..." : "Signing in..."}
                                 </>
                             ) : (
-                                mode === "signup" ? "Create Account" : "Sign In"
+                                <>
+                                    {mode === "signup" && !tosAccepted && <Shield className="mr-2 h-4 w-4" />}
+                                    {mode === "signup" ? (tosAccepted ? "Create Account" : "Accept Terms to Continue") : "Sign In"}
+                                </>
                             )}
                         </Button>
                     </form>
@@ -339,6 +389,107 @@ export default function LoginPage() {
                     </p>
                 </CardContent>
             </Card>
+
+            {/* TOS Modal */}
+            {showTosModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="w-full max-w-2xl max-h-[80vh] bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-200 dark:border-white/10 flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center gap-3 p-6 border-b border-neutral-200 dark:border-white/10">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
+                                <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Terms of Service & Privacy Policy</h2>
+                                <p className="text-sm text-neutral-500 dark:text-neutral-400">Please read carefully before proceeding</p>
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 text-sm text-neutral-700 dark:text-neutral-300">
+                            <section>
+                                <h3 className="font-bold text-neutral-900 dark:text-white mb-2">1. Acceptance of Terms</h3>
+                                <p>By accessing or using Gakuen (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not access or use the Service. These terms constitute a legally binding agreement between you and Gakuen.</p>
+                            </section>
+
+                            <section>
+                                <h3 className="font-bold text-neutral-900 dark:text-white mb-2">2. Description of Service</h3>
+                                <p>Gakuen provides an AI-powered educational platform including but not limited to: AI tutoring services, course materials, progress tracking, and personalized learning experiences. The Service is provided &quot;as is&quot; and we reserve the right to modify, suspend, or discontinue any part of the Service at any time.</p>
+                            </section>
+
+                            <section>
+                                <h3 className="font-bold text-neutral-900 dark:text-white mb-2">3. User Accounts</h3>
+                                <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must provide accurate, current, and complete information during registration. You may not share your account with others or allow unauthorized access.</p>
+                            </section>
+
+                            <section>
+                                <h3 className="font-bold text-neutral-900 dark:text-white mb-2">4. Privacy & Data Collection</h3>
+                                <p>We collect and process personal data as described in our Privacy Policy. By using the Service, you consent to: (a) Collection of usage data, learning progress, and interaction patterns; (b) Processing of data by AI systems for personalization; (c) Storage of data on secure cloud servers; (d) Use of anonymized data for service improvement.</p>
+                            </section>
+
+                            <section>
+                                <h3 className="font-bold text-neutral-900 dark:text-white mb-2">5. AI-Generated Content Disclaimer</h3>
+                                <p>The Service uses artificial intelligence to generate educational content. AI-generated content may contain errors or inaccuracies. You should verify important information from authoritative sources. We are not liable for decisions made based on AI-generated content.</p>
+                            </section>
+
+                            <section>
+                                <h3 className="font-bold text-neutral-900 dark:text-white mb-2">6. Intellectual Property</h3>
+                                <p>All content, features, and functionality of the Service are owned by Gakuen and protected by international copyright, trademark, and other intellectual property laws. You may not reproduce, distribute, or create derivative works without express written permission.</p>
+                            </section>
+
+                            <section>
+                                <h3 className="font-bold text-neutral-900 dark:text-white mb-2">7. Payment & Refunds</h3>
+                                <p>Paid features are billed in advance on a subscription basis. Refunds are provided in accordance with applicable law. We reserve the right to change pricing with 30 days notice. Continued use after price changes constitutes acceptance.</p>
+                            </section>
+
+                            <section>
+                                <h3 className="font-bold text-neutral-900 dark:text-white mb-2">8. Limitation of Liability</h3>
+                                <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, GAKUEN SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, OR GOODWILL. OUR TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT PAID BY YOU IN THE PAST 12 MONTHS.</p>
+                            </section>
+
+                            <section>
+                                <h3 className="font-bold text-neutral-900 dark:text-white mb-2">9. Indemnification</h3>
+                                <p>You agree to indemnify and hold harmless Gakuen and its officers, directors, employees, and agents from any claims, damages, losses, or expenses arising from your use of the Service or violation of these Terms.</p>
+                            </section>
+
+                            <section>
+                                <h3 className="font-bold text-neutral-900 dark:text-white mb-2">10. Governing Law</h3>
+                                <p>These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which Gakuen operates, without regard to conflict of law principles. Any disputes shall be resolved through binding arbitration.</p>
+                            </section>
+
+                            <section>
+                                <h3 className="font-bold text-neutral-900 dark:text-white mb-2">11. Changes to Terms</h3>
+                                <p>We reserve the right to modify these Terms at any time. We will notify users of material changes via email or through the Service. Continued use after changes constitute acceptance of the new Terms.</p>
+                            </section>
+
+                            <section className="bg-neutral-100 dark:bg-white/5 p-4 rounded-lg border border-neutral-200 dark:border-white/10">
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400">Last updated: January 2025. By clicking &quot;I Accept&quot; below, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service and Privacy Policy.</p>
+                            </section>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center gap-3 p-6 border-t border-neutral-200 dark:border-white/10">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowTosModal(false)}
+                                className="flex-1 h-11 border-neutral-200 dark:border-white/10"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    setTosAccepted(true);
+                                    setShowTosModal(false);
+                                }}
+                                className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-medium"
+                            >
+                                <Check className="mr-2 h-4 w-4" />
+                                I Accept
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
