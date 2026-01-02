@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { useLanguage, useTranslation } from "@/lib/i18n";
-import { LogOut, Sun, Moon, Globe, ChevronDown, User, Settings } from "lucide-react";
+import { LogOut, Sun, Moon, Globe, ChevronDown, User, Settings, AlertCircle, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -47,13 +47,15 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
 
     if (!user) return null;
 
+    // Check if profile is incomplete
+    const isProfileIncomplete = !user.firstName || !user.lastName || !user.phone;
+
     return (
         <div ref={menuRef} className="relative">
-            {/* Avatar Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
-                    "flex items-center gap-3 p-2 rounded-xl transition-all hover:bg-neutral-100 dark:hover:bg-white/5",
+                    "relative flex items-center gap-3 p-2 rounded-xl transition-all hover:bg-neutral-100 dark:hover:bg-white/5",
                     collapsed && "justify-center",
                     isOpen && "bg-neutral-100 dark:bg-white/5"
                 )}
@@ -65,9 +67,13 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
                         className="h-9 w-9 rounded-full object-cover ring-2 ring-neutral-200 dark:ring-white/10"
                     />
                 ) : (
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white">
+                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white">
                         {user.name?.[0]?.toUpperCase() || "U"}
                     </div>
+                )}
+                {/* Profile Incomplete Indicator */}
+                {isProfileIncomplete && (
+                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-neutral-900 animate-pulse" />
                 )}
                 {!collapsed && (
                     <>
@@ -103,7 +109,7 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
                                 {user.avatar ? (
                                     <img src={user.avatar} alt={user.name} className="h-10 w-10 rounded-full object-cover" />
                                 ) : (
-                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white">
+                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white">
                                         {user.name?.[0]?.toUpperCase() || "U"}
                                     </div>
                                 )}
@@ -117,12 +123,34 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
                         {/* Menu Items */}
                         <div className="p-2">
                             {/* Profile Link */}
-                            <Link href="/settings" onClick={() => setIsOpen(false)}>
-                                <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors">
-                                    <User className="w-4 h-4" />
-                                    <span>{t.settings}</span>
+                            <Link href="/settings/profile" onClick={() => setIsOpen(false)}>
+                                <button className="w-full flex items-center justify-between px-3 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <User className="w-4 h-4" />
+                                        <span>Profile</span>
+                                    </div>
+                                    {isProfileIncomplete && (
+                                        <span className="w-2 h-2 bg-red-500 rounded-full" />
+                                    )}
                                 </button>
                             </Link>
+
+                            {/* Subscription Status */}
+                            {user.subscription?.tier && user.subscription.tier !== 'free' ? (
+                                <div className="flex items-center justify-between px-3 py-2.5 text-sm">
+                                    <div className="flex items-center gap-3 text-indigo-600 dark:text-indigo-400">
+                                        <Sparkles className="w-4 h-4" />
+                                        <span className="font-medium capitalize">{user.subscription.tier} Plan</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Link href="/pricing" onClick={() => setIsOpen(false)}>
+                                    <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/10 rounded-lg transition-colors">
+                                        <Sparkles className="w-4 h-4" />
+                                        <span>Upgrade Plan</span>
+                                    </button>
+                                </Link>
+                            )}
 
                             {/* Theme Toggle */}
                             <button

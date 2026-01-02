@@ -15,18 +15,23 @@ import { initAdmin } from '../lib/auth/firebase-admin';
 
 async function setAdmin(emailOrUid: string) {
     try {
-        const adminAuth = initAdmin();
+        const admin = initAdmin();
+        if (!admin) {
+            throw new Error('Firebase Admin not initialized');
+        }
+
+        const auth = admin.auth();
 
         // Get user by email or UID
         let user;
         if (emailOrUid.includes('@')) {
-            user = await adminAuth.getUserByEmail(emailOrUid);
+            user = await auth.getUserByEmail(emailOrUid);
         } else {
-            user = await adminAuth.getUser(emailOrUid);
+            user = await auth.getUser(emailOrUid);
         }
 
         // Set admin custom claim
-        await adminAuth.setCustomUserClaims(user.uid, { role: 'admin' });
+        await auth.setCustomUserClaims(user.uid, { role: 'admin' });
 
         console.log('✅ Admin role set successfully!');
         console.log(`User: ${user.email} (${user.uid})`);

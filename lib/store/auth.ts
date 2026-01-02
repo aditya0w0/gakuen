@@ -1,4 +1,4 @@
-import { User } from "../constants/demo-data";
+import { User } from "@/lib/types";
 
 const AUTH_STORAGE_KEY = "gakuen_auth";
 const SESSION_EXPIRY_HOURS = 24;

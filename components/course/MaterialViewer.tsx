@@ -1,12 +1,16 @@
 "use client";
 
-import { Lesson } from "@/lib/constants/demo-data";
+import { Lesson } from "@/lib/types";
 import { CheckCircle, FileText, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { animate } from "@/components/animations/useAnime";
 import { ComponentRenderer } from "@/components/cms/ComponentRenderer";
 import { useTimeTracker } from "@/lib/hooks/useTimeTracker";
+import { useTranslatedLesson } from "@/lib/hooks/useTranslatedCourse";
+import { useTranslatedComponents } from "@/lib/hooks/useTranslatedComponents";
+import { useLanguage } from "@/lib/i18n";
+import DOMPurify from "dompurify";
 
 interface MaterialViewerProps {
     lesson: Lesson;
@@ -17,6 +21,17 @@ interface MaterialViewerProps {
 export function MaterialViewer({ lesson, onComplete, isCompleted }: MaterialViewerProps) {
     // Track time spent on this lesson
     useTimeTracker();
+    const { language } = useLanguage();
+
+    // Auto-translate lesson content based on selected language
+    const translated = useTranslatedLesson(
+        lesson.id,
+        lesson.title,
+        lesson.content || ""
+    );
+
+    // Auto-translate CMS component content
+    const translatedCms = useTranslatedComponents(lesson.id, lesson.components);
 
     const contentRef = useRef<HTMLDivElement>(null);
     const [scrollProgress, setScrollProgress] = useState(0);
@@ -99,7 +114,7 @@ export function MaterialViewer({ lesson, onComplete, isCompleted }: MaterialView
         componentsCount: lesson.components?.length || 0,
     });
 
-    // Render component-based lessons
+    // Render component-based lessons with translation
     if (lesson.components && lesson.components.length > 0) {
         return (
             <div className="flex-1 relative">
@@ -109,13 +124,30 @@ export function MaterialViewer({ lesson, onComplete, isCompleted }: MaterialView
                     className="h-full overflow-y-auto p-8"
                 >
                     <div className="max-w-4xl mx-auto space-y-6">
-                        {lesson.components.map((component) => (
-                            <ComponentRenderer
-                                key={component.id}
-                                component={component}
-                                isEditing={false}
-                            />
-                        ))}
+                        {/* Loading skeleton while translating CMS components */}
+                        {translatedCms.loading ? (
+                            <div className="space-y-6 animate-pulse">
+                                <div className="h-8 bg-neutral-700 rounded w-2/3" />
+                                <div className="space-y-3">
+                                    <div className="h-4 bg-neutral-700 rounded w-full" />
+                                    <div className="h-4 bg-neutral-700 rounded w-5/6" />
+                                    <div className="h-4 bg-neutral-700 rounded w-4/5" />
+                                </div>
+                                <div className="h-6 bg-neutral-700 rounded w-1/2" />
+                                <div className="space-y-3">
+                                    <div className="h-4 bg-neutral-700 rounded w-full" />
+                                    <div className="h-4 bg-neutral-700 rounded w-3/4" />
+                                </div>
+                            </div>
+                        ) : (
+                            translatedCms.components.map((component) => (
+                                <ComponentRenderer
+                                    key={component.id}
+                                    component={component}
+                                    isEditing={false}
+                                />
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
@@ -132,7 +164,17 @@ export function MaterialViewer({ lesson, onComplete, isCompleted }: MaterialView
                     className="h-full overflow-y-auto p-8"
                 >
                     <div className="max-w-3xl mx-auto prose prose-invert prose-neutral">
-                        <div dangerouslySetInnerHTML={{ __html: lesson.content || "" }} />
+                        {/* Loading skeleton while translating */}
+                        {translated.loading ? (
+                            <div className="space-y-4 animate-pulse">
+                                <div className="h-6 bg-neutral-700 rounded w-2/3" />
+                                <div className="h-4 bg-neutral-700 rounded w-full" />
+                                <div className="h-4 bg-neutral-700 rounded w-5/6" />
+                                <div className="h-4 bg-neutral-700 rounded w-4/5" />
+                            </div>
+                        ) : (
+                            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(translated.content || lesson.content || "") }} />
+                        )}
                     </div>
                 </div>
 
@@ -162,7 +204,7 @@ export function MaterialViewer({ lesson, onComplete, isCompleted }: MaterialView
                     />
                     {lesson.content && (
                         <div className="mt-4 prose prose-invert prose-neutral">
-                            <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
+                            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(lesson.content) }} />
                         </div>
                     )}
                 </div>

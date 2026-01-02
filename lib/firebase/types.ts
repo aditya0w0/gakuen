@@ -8,6 +8,27 @@ export interface FirebaseUser {
     role: "admin" | "user";
     enrolledCourses: string[];
     avatar?: string;
+    // Profile fields
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+    phone?: string;
+    bio?: string;
+    // Subscription
+    subscription?: {
+        tier: "free" | "basic" | "mid" | "pro";
+        status: "active" | "cancelled" | "expired";
+        startDate?: string;
+        endDate?: string;
+        billingCycle?: "monthly" | "yearly";
+        aiUsage?: {
+            proRequestsToday: number;
+            flashRequestsToday: number;
+            lastResetDate: string;
+        };
+        purchasedCourses?: string[];
+        purchasedBundles?: string[];
+    };
     createdAt: Timestamp;
     updatedAt: Timestamp;
 }

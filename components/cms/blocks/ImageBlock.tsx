@@ -1,5 +1,6 @@
 "use client";
 
+import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
 import { ImageComponent } from "@/lib/cms/types";
 import { Upload, ImageIcon, Wand2, Loader2, X } from "lucide-react";
 import { useState, useRef } from "react";
@@ -47,25 +48,21 @@ export function ImageBlock({
 
         setIsGenerating(true);
         try {
-            console.log('🎨 Client: Requesting image generation...');
-            const response = await fetch('/api/ai/generate-image', {
+            const response = await authenticatedFetch('/api/ai/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt }),
             });
 
             const data = await response.json();
-            console.log('📦 Client: Received response:', data);
 
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to generate image');
             }
 
             if (data.imageUrl && onUpdate) {
-                console.log('💾 Uploading image to filesystem...');
-
                 // Upload image to get permanent URL
-                const uploadResponse = await fetch('/api/upload-image', {
+                const uploadResponse = await authenticatedFetch('/api/upload-image', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ image: data.imageUrl }),
@@ -73,21 +70,18 @@ export function ImageBlock({
 
                 if (uploadResponse.ok) {
                     const { url } = await uploadResponse.json();
-                    console.log('✅ Client: Updating component with permanent URL:', url);
                     onUpdate({ ...component, url });
                 } else {
-                    console.log('⚠️ Upload failed, using data URL');
+                    // Fallback to data URL if upload fails
                     onUpdate({ ...component, url: data.imageUrl });
                 }
 
                 setShowPromptInput(false);
                 setPrompt("");
-            } else {
-                console.warn('⚠️ No imageUrl in response or onUpdate not available');
             }
-        } catch (error: any) {
-            console.error('❌ Client: Image generation failed:', error);
-            alert(`Failed to generate image: ${error.message}`);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            alert(`Failed to generate image: ${message}`);
         } finally {
             setIsGenerating(false);
         }

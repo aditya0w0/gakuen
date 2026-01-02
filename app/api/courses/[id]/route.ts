@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCourse, saveCourse, deleteCourse } from '@/lib/server/fileOperations';
-import { Course } from '@/lib/constants/demo-data';
+import { Course } from '@/lib/types';
 import { requireAdmin, safeErrorResponse } from '@/lib/api/auth-guard';
 import { validateCourseId } from '@/lib/api/validators';
 

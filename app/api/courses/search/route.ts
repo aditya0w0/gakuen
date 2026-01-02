@@ -1,9 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { searchCourses } from '@/lib/ml/server';
+import { requireAuth, safeErrorResponse } from '@/lib/api/auth-guard';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+    // 🔒 SECURITY: Require authentication (uses ML resources)
+    const auth = await requireAuth(request);
+    if (!auth.authenticated) return auth.response;
+
     try {
         const { query, allCourses } = await request.json();
 

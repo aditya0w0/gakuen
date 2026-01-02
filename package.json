@@ -24,6 +24,7 @@
     "animejs": "^4.2.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "critters": "^0.0.23",
     "dompurify": "^3.3.1",
     "dotenv": "^17.2.3",
     "firebase": "^12.7.0",
@@ -36,7 +37,7 @@
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.0",
-    "sharp": "^0.34.5",
+    "sharp": "^0.33.5",
     "swr": "^2.3.8",
     "tailwind-merge": "^3.4.0",
     "uuid": "^13.0.0"

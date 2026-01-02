@@ -1,5 +1,5 @@
 import { pipeline } from '@xenova/transformers';
-import { Course } from '@/lib/constants/demo-data';
+import { Course } from '@/lib/types';
 
 // Singleton for model loading
 class MLService {

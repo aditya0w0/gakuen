@@ -1,17 +1,19 @@
 "use client";
 
-import { Course } from "@/lib/constants/demo-data";
+import { Course } from "@/lib/types";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { enrollmentManager } from "@/lib/storage/enrollment";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { PlayCircle, Clock, BarChart, Check, Plus, ChevronRight } from "lucide-react";
+import { PlayCircle, Clock, BarChart, Check, Plus, ChevronRight, ShoppingCart } from "lucide-react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useRef, useEffect, useState } from "react";
 import { animate } from "@/components/animations/useAnime";
 import { useAuth } from "../auth/AuthContext";
 import { useTranslation } from "@/lib/i18n";
+import { useTranslatedCourse } from "@/lib/hooks/useTranslatedCourse";
 
 interface CourseCardProps {
     course: Course;
@@ -21,6 +23,7 @@ interface CourseCardProps {
 
 export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
     const { user, refreshUser } = useAuth();
     const [isEnrolled, setIsEnrolled] = useState(false);
     const [isEnrolling, setIsEnrolling] = useState(false);
@@ -28,9 +31,20 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
     const progress = hybridStorage.progress.getCourseProgress(course.id);
     const { t } = useTranslation();
 
+    // Auto-translate course content
+    const translated = useTranslatedCourse(course.id, course.title, course.description);
+
+    // Check if user has subscription that grants full course access
+    const subscriptionTier = user?.subscription?.tier || 'free';
+    const hasActiveSubscription = user?.subscription?.status === 'active' && subscriptionTier !== 'free';
+    // Pro = 100% access, Mid = 50% access, Basic = 30% access - for simplicity, treat active subscription as having access
+    const hasSubscriptionAccess = hasActiveSubscription && (subscriptionTier === 'pro' || subscriptionTier === 'mid');
+
     useEffect(() => {
-        setIsEnrolled(enrollmentManager.isEnrolled(course.id));
-    }, [course.id, user]);
+        // User has access if: enrolled, OR has active paid subscription (mid/pro)
+        const enrolled = enrollmentManager.isEnrolled(course.id);
+        setIsEnrolled(enrolled || hasSubscriptionAccess);
+    }, [course.id, user, hasSubscriptionAccess]);
 
     // Reset image error state when thumbnail changes
     useEffect(() => {
@@ -77,7 +91,7 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
                 <div className="relative h-full flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-zinc-900/40 border border-neutral-200 dark:border-white/5 shadow-lg dark:shadow-2xl transition-all duration-500 hover:-translate-y-1 hover:shadow-xl dark:hover:shadow-blue-900/10 hover:border-neutral-300 dark:hover:border-white/10">
 
                     {/* Image Section - The Hero */}
-                    <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-blue-100 dark:from-blue-900/50 to-purple-100 dark:to-purple-900/50">
+                    <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-blue-100 dark:from-blue-900/50 to-indigo-100 dark:to-indigo-900/50">
                         {/* Always render the fallback behind the image */}
                         <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${showFallback ? 'opacity-100' : 'opacity-0'}`}>
                             <span className="text-4xl font-bold text-neutral-300 dark:text-white/20">{course.title.charAt(0)}</span>
@@ -105,6 +119,19 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
                                 </span>
                             )}
                         </div>
+
+                        {/* Price Badge */}
+                        <div className="absolute top-3 right-3">
+                            {course.isFree || course.price === 0 ? (
+                                <span className="text-xs font-bold text-white bg-green-500 px-2.5 py-1 rounded-full shadow-lg">
+                                    Free
+                                </span>
+                            ) : (
+                                <span className="text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 px-2.5 py-1 rounded-full shadow-lg">
+                                    ${course.price}
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {/* Content Section - Glassmorphic */}
@@ -117,12 +144,25 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
                             </div>
                         </div>
 
+                        {/* Title with loading skeleton */}
                         <h3 className="text-lg font-bold text-neutral-900 dark:text-white leading-tight mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                            {course.title}
+                            {translated.loading ? (
+                                <span className="inline-block w-3/4 h-5 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+                            ) : (
+                                translated.title
+                            )}
                         </h3>
 
+                        {/* Description with loading skeleton */}
                         <p className="text-sm text-neutral-600 dark:text-zinc-400 line-clamp-2 mb-6 flex-1">
-                            {course.description}
+                            {translated.loading ? (
+                                <span className="space-y-2 block">
+                                    <span className="inline-block w-full h-4 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+                                    <span className="inline-block w-2/3 h-4 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+                                </span>
+                            ) : (
+                                translated.description
+                            )}
                         </p>
 
                         {/* Footer Action */}
@@ -157,16 +197,32 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
                                         </div>
                                     </div>
 
-                                    <button
-                                        onClick={handleEnroll}
-                                        disabled={isEnrolling}
-                                        className="relative overflow-hidden bg-neutral-900 dark:bg-white text-white dark:text-black px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-neutral-700 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group/btn"
-                                    >
-                                        <span className="relative z-10 flex items-center gap-2">
-                                            {isEnrolling ? '...' : t.course.enroll}
-                                            {!isEnrolling && <Plus size={14} className="transition-transform group-hover/btn:rotate-90" />}
-                                        </span>
-                                    </button>
+                                    {course.isFree || course.price === 0 ? (
+                                        <button
+                                            onClick={handleEnroll}
+                                            disabled={isEnrolling}
+                                            className="relative overflow-hidden bg-neutral-900 dark:bg-white text-white dark:text-black px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-neutral-700 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group/btn"
+                                        >
+                                            <span className="relative z-10 flex items-center gap-2">
+                                                {isEnrolling ? '...' : t.course.enroll}
+                                                {!isEnrolling && <Plus size={14} className="transition-transform group-hover/btn:rotate-90" />}
+                                            </span>
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                router.push(`/checkout/${course.id}`);
+                                            }}
+                                            className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:from-blue-700 hover:to-indigo-700 transition-colors group/btn"
+                                        >
+                                            <span className="relative z-10 flex items-center gap-2">
+                                                ${course.price}
+                                                <ShoppingCart size={14} />
+                                            </span>
+                                        </button>
+                                    )}
                                 </>
                             )}
                         </div>

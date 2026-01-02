@@ -7,6 +7,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GlobalErrorHandler } from "@/components/GlobalErrorHandler";
 import { ThemeProvider } from "@/components/theme";
 import { LanguageProvider } from "@/lib/i18n";
+import { CookieConsent } from "@/components/CookieConsent";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,6 +24,7 @@ const geistMono = Geist_Mono({
 
 // SEO Metadata
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://gakuen.app"),
   title: {
     default: "Gakuen - Modern Learning Platform",
     template: "%s | Gakuen"
@@ -143,6 +146,7 @@ export default function RootLayout({
                   <main className="relative z-10">
                     {children}
                   </main>
+                  <CookieConsent />
                 </div>
               </ErrorBoundary>
             </AuthProvider>

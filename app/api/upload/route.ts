@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { requireAuth, safeErrorResponse } from '@/lib/api/auth-guard';
+import { withAuthTracked, safeErrorResponse } from '@/lib/api/auth-guard';
 import { sanitizePath, validateFileType } from '@/lib/api/validators';
 
 export const dynamic = 'force-dynamic';
@@ -18,14 +18,8 @@ const UPLOAD_PATHS = {
 
 type UploadType = keyof typeof UPLOAD_PATHS;
 
-export async function POST(request: NextRequest) {
+export const POST = withAuthTracked(async (request, { user }) => {
     try {
-        // 🔒 SECURITY: Require authentication
-        const authResult = await requireAuth(request);
-        if (!authResult.authenticated) {
-            return authResult.response;
-        }
-
         const formData = await request.formData();
         const file = formData.get('file') as File;
         const type = formData.get('type') as UploadType;
@@ -102,4 +96,5 @@ export async function POST(request: NextRequest) {
         // 🔒 SECURITY: Don't expose internal errors
         return safeErrorResponse(error, 'Upload failed');
     }
-}
+});
+

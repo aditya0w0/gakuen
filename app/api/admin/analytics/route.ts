@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, safeErrorResponse } from '@/lib/api/auth-guard';
-import { getSummary, getStats, getAllRecords } from '@/lib/api/analytics';
+import { getAnalyticsSummary } from '@/lib/analytics/firestore-analytics';
+import { getSummary as getInMemorySummary, getStats, getAllRecords } from '@/lib/api/analytics';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/admin/analytics
  * Get API usage analytics (admin only)
+ * Uses Firestore for persistent data, falls back to in-memory
  */
 export async function GET(request: NextRequest) {
     try {
@@ -23,7 +25,18 @@ export async function GET(request: NextRequest) {
 
         switch (type) {
             case 'summary':
-                return NextResponse.json(getSummary());
+                // Try Firestore first, fall back to in-memory
+                try {
+                    const firestoreData = await getAnalyticsSummary(30);
+                    // If Firestore has data, use it
+                    if (firestoreData.month.calls > 0) {
+                        return NextResponse.json(firestoreData);
+                    }
+                } catch (e) {
+                    console.warn('Firestore analytics unavailable, using in-memory:', e);
+                }
+                // Fallback to in-memory
+                return NextResponse.json(getInMemorySummary());
 
             case 'range':
                 if (!startDate || !endDate) {

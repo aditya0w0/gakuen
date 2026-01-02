@@ -1,4 +1,5 @@
-import { User } from "@/lib/constants/demo-data";
+import { User } from "@/lib/types";
+import { logger } from "@/lib/logger";
 
 /**
  * Cookie-based session management for server-side middleware access
@@ -20,7 +21,7 @@ export const authCookies = {
         // Set cookie with 7-day expiry
         document.cookie = `user-session=${encodeURIComponent(JSON.stringify(sessionData))}; path=/; max-age=604800; SameSite=Lax`;
 
-        console.log('✅ Session cookie set for user:', user.email);
+        logger.info('Session cookie set', { email: user.email }, 'authCookies');
     },
 
     /**
@@ -28,7 +29,7 @@ export const authCookies = {
      */
     clear(): void {
         document.cookie = 'user-session=; path=/; max-age=0';
-        console.log('🗑️ Session cookie cleared');
+        logger.info('Session cookie cleared', null, 'authCookies');
     },
 
     /**

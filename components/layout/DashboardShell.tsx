@@ -1,27 +1,40 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, BookOpen, Settings, Home, Users, ChevronLeft, ChevronRight, Compass, BarChart3, BookMarked } from "lucide-react";
+import { LayoutDashboard, BookOpen, Settings, Home, Users, ChevronLeft, ChevronRight, Compass, BarChart3, BookMarked, Bell, Tag } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 import { UserMenu } from "./UserMenu";
+import { NotificationCenter } from "./NotificationCenter";
 import { useTranslation } from "@/lib/i18n";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const pathname = usePathname();
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
+    const [mounted, setMounted] = useState(false);
     const { t } = useTranslation();
 
-    const navItems = user?.role === "admin"
+    // Prevent hydration mismatch - render consistent state during SSR
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // Use user nav during SSR to prevent hydration mismatch, then switch after mount
+    const isAdmin = mounted && user?.role === "admin";
+
+    const navItems = isAdmin
         ? [
             { icon: LayoutDashboard, label: t.dashboard, href: "/dashboard" },
-            { icon: BookMarked, label: "Courses", href: "/courses" },
-            { icon: Users, label: "Users", href: "/users" },
-            { icon: BarChart3, label: "Analytics", href: "/analytics" },
+            { icon: BookMarked, label: t.admin.courses, href: "/courses" },
+            { icon: Users, label: t.admin.users, href: "/users" },
+            { icon: Bell, label: t.settingsPage.notifications, href: "/notifications" },
+            { icon: BarChart3, label: t.admin.analytics, href: "/analytics" },
+            { icon: Tag, label: "Coupons", href: "/coupons" },
             { icon: Settings, label: t.settings, href: "/settings" },
         ]
         : [
@@ -36,7 +49,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             {/* Desktop Sidebar */}
             <aside
                 className={cn(
-                    "border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 backdrop-blur-md hidden md:flex flex-col transition-all duration-300 relative",
+                    "border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 backdrop-blur-md hidden md:flex flex-col transition-all duration-300 relative z-30",
                     isCollapsed ? "w-20" : "w-64"
                 )}
             >
@@ -50,15 +63,46 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
                 <div className={cn("p-6 flex items-center", isCollapsed ? "justify-center" : "")}>
                     {isCollapsed ? (
-                        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white cursor-help" title="Gakuen">
-                            G
-                        </div>
+                        <>
+                            <Image
+                                src="/logo-light.png"
+                                alt="Gakuen"
+                                width={32}
+                                height={32}
+                                className="rounded-lg dark:hidden"
+                            />
+                            <Image
+                                src="/logo-dark.png"
+                                alt="Gakuen"
+                                width={32}
+                                height={32}
+                                className="rounded-lg hidden dark:block"
+                            />
+                        </>
                     ) : (
-                        <div>
-                            <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">Gakuen</h1>
-                            <p className="text-xs text-neutral-500 mt-1">
-                                {user?.role === "admin" ? t.dash.adminPortal : t.dash.studentPortal}
-                            </p>
+                        <div className="flex items-center gap-3">
+                            <>
+                                <Image
+                                    src="/logo-light.png"
+                                    alt="Gakuen"
+                                    width={36}
+                                    height={36}
+                                    className="rounded-lg dark:hidden"
+                                />
+                                <Image
+                                    src="/logo-dark.png"
+                                    alt="Gakuen"
+                                    width={36}
+                                    height={36}
+                                    className="rounded-lg hidden dark:block"
+                                />
+                            </>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">Gakuen</h1>
+                                <p className="text-xs text-neutral-500 mt-0.5">
+                                    {user?.role === "admin" ? t.dash.adminPortal : t.dash.studentPortal}
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -84,15 +128,74 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
                 {/* User Menu at Bottom */}
                 <div className={cn("p-3 border-t border-neutral-200 dark:border-neutral-800")}>
-                    <UserMenu collapsed={isCollapsed} />
+                    {isCollapsed ? (
+                        <div className="flex flex-col gap-4 items-center">
+                            <NotificationCenter collapsed />
+                            <UserMenu collapsed />
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                                <UserMenu />
+                            </div>
+                            <NotificationCenter />
+                        </div>
+                    )}
                 </div>
             </aside>
 
+            {/* Desktop Sidebar */}
+            {/* ... aside code ... */}
+
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0 bg-neutral-50 dark:bg-neutral-950">
-                <main className="flex-1 p-4 pb-20 md:pb-8 md:p-8 overflow-y-auto">
+                {/* Mobile Top Bar */}
+                <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 sticky top-0 z-40">
+                    <div className="flex items-center gap-2">
+                        <Image
+                            src="/logo-light.png"
+                            alt="Gakuen"
+                            width={32}
+                            height={32}
+                            className="rounded-lg dark:hidden"
+                        />
+                        <Image
+                            src="/logo-dark.png"
+                            alt="Gakuen"
+                            width={32}
+                            height={32}
+                            className="rounded-lg hidden dark:block"
+                        />
+                        <span className="font-bold text-lg tracking-tight">Gakuen</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <NotificationCenter collapsed />
+                        <UserMenu collapsed />
+                    </div>
+                </header>
+
+                <main className="flex-1 p-4 pb-24 md:pb-12 md:p-8 overflow-y-auto">
                     {children}
                 </main>
+
+                {/* GPT-style Footer - User only, not admin */}
+                {!isAdmin && (
+                    <footer className="hidden md:flex items-center justify-center py-3 px-4 border-t border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 backdrop-blur-sm">
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                            Gakuen uses AI for translations and course generation. Content may vary.{" "}
+                            <button
+                                onClick={() => {
+                                    // Trigger cookie consent modal
+                                    const event = new CustomEvent('openCookiePreferences');
+                                    window.dispatchEvent(event);
+                                }}
+                                className="text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                                Cookie Preferences
+                            </button>
+                        </p>
+                    </footer>
+                )}
             </div>
 
             {/* Mobile Bottom Navigation - PWA Style */}

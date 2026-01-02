@@ -1,5 +1,5 @@
 // Hybrid storage: Auth operations with signup support
-import { User } from "../constants/demo-data";
+import { User } from "@/lib/types";
 import { localCache } from "./local-cache";
 import { syncManager } from "./sync-manager";
 import { firebaseAuth } from "../firebase/auth";
@@ -11,6 +11,13 @@ export const hybridStorage = {
         async login(email: string, password: string): Promise<User> {
             if (!isFirebaseEnabled()) {
                 throw new Error("Firebase is not configured. Please set up Firebase authentication.");
+            }
+
+            // 🔒 CLEAR existing session before new login (enforce single session)
+            localCache.clear();
+            if (typeof window !== 'undefined') {
+                const { authCookies } = await import('../auth/cookies');
+                authCookies.clear();
             }
 
             const user = await firebaseAuth.signIn(email, password);
@@ -36,6 +43,12 @@ export const hybridStorage = {
                 // Set user immediately
                 localCache.user.set(user);
 
+                // Set cookie for middleware access (consistency with login)
+                if (typeof window !== 'undefined') {
+                    const { authCookies } = await import('../auth/cookies');
+                    authCookies.set(user);
+                }
+
                 // Initialize empty progress (don't pull - new user has none)
                 const emptyProgress = {
                     completedLessons: [],
@@ -56,6 +69,13 @@ export const hybridStorage = {
         async signInWithGoogle(): Promise<User> {
             if (!isFirebaseEnabled()) {
                 throw new Error("Google sign-in requires Firebase");
+            }
+
+            // 🔒 CLEAR existing session before new login (enforce single session)
+            localCache.clear();
+            if (typeof window !== 'undefined') {
+                const { authCookies } = await import('../auth/cookies');
+                authCookies.clear();
             }
 
             const user = await firebaseAuth.signInWithGoogle();
@@ -90,7 +110,16 @@ export const hybridStorage = {
         },
 
         async logout(): Promise<void> {
-            await syncManager.syncNow();
+            // Sync with timeout - don't block logout if sync hangs
+            try {
+                await Promise.race([
+                    syncManager.syncNow(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Sync timeout')), 3000))
+                ]);
+            } catch (e) {
+                console.warn('Logout sync skipped:', e);
+            }
+
             localCache.clear();
 
             // Clear httpOnly cookie via API

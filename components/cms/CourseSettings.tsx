@@ -1,5 +1,6 @@
 "use client";
 
+import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
 import { useState } from "react";
 import { Upload, Wand2, Loader2, X } from "lucide-react";
 
@@ -46,48 +47,38 @@ export function CourseSettings({
     const handleGenerateThumbnail = async () => {
         if (!prompt.trim()) return;
 
-        console.log('🎨 Starting thumbnail generation with prompt:', prompt);
         setIsGenerating(true);
         try {
             // Generate image
-            console.log('📡 Calling /api/ai/generate-image...');
-            const response = await fetch('/api/ai/generate-image', {
+            const response = await authenticatedFetch('/api/ai/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt }),
             });
 
-            console.log('📥 Got response:', response.status, response.ok);
             if (!response.ok) throw new Error('Failed to generate');
 
             const data = await response.json();
-            console.log('✅ Generated image URL length:', data.imageUrl?.length);
 
             // Upload to get permanent URL
-            console.log('💾 Uploading to /api/upload-image...');
-            const uploadResponse = await fetch('/api/upload-image', {
+            const uploadResponse = await authenticatedFetch('/api/upload-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ image: data.imageUrl }),
             });
 
-            console.log('📥 Upload response:', uploadResponse.status, uploadResponse.ok);
             if (uploadResponse.ok) {
                 const { url } = await uploadResponse.json();
-                console.log('✅ Uploaded to:', url);
-                console.log('🔄 Calling onThumbnailChange with:', url);
                 onThumbnailChange?.(url);
-                console.log('✅ Thumbnail state updated!');
                 setShowPrompt(false);
                 setPrompt("");
             } else {
                 const error = await uploadResponse.text();
-                console.error('❌ Upload failed:', error);
                 alert(`Upload failed: ${error}`);
             }
-        } catch (error: any) {
-            console.error('❌ Thumbnail generation failed:', error);
-            alert(`Failed to generate thumbnail: ${error.message}`);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            alert(`Failed to generate thumbnail: ${message}`);
         } finally {
             setIsGenerating(false);
         }

@@ -1,5 +1,6 @@
 "use client";
 
+import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Maximize2, Minimize2, Sparkles, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -91,7 +92,7 @@ export function CourseChatBot({ course, onToggleSidebar }: CourseChatBotProps) {
         setIsLoading(true);
 
         try {
-            const res = await fetch('/api/ai/chat', {
+            const res = await authenticatedFetch('/api/ai/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -110,8 +111,7 @@ export function CourseChatBot({ course, onToggleSidebar }: CourseChatBotProps) {
                 content: data.content,
                 modelUsed: data.modelUsed
             }]);
-        } catch (error) {
-            console.error(error);
+        } catch {
             setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please try again." }]);
         } finally {
             setIsLoading(false);
@@ -179,7 +179,7 @@ export function CourseChatBot({ course, onToggleSidebar }: CourseChatBotProps) {
                                     className={cn(
                                         "p-2.5 rounded-full transition-all",
                                         isDeepMode
-                                            ? "bg-purple-500/20 text-purple-400"
+                                            ? "bg-indigo-500/20 text-indigo-400"
                                             : "hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300"
                                     )}
                                     title="Deep Explain Mode"

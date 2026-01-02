@@ -15,23 +15,77 @@ import {
     AlignCenter,
     AlignRight,
     AlignJustify,
-    Trash2
+    Trash2,
+    Type,
+    Image,
+    Video,
+    Code,
+    MousePointerClick,
+    Minus,
+    MoveVertical,
+    Plus
 } from "lucide-react";
 import { useState } from "react";
+import { COMPONENT_REGISTRY, createComponent } from "@/lib/cms/registry";
 
 interface DesignControlsProps {
     component: Component | null;
     onUpdate: (component: Component) => void;
     onDelete: () => void;
+    onAddComponent?: (component: Component) => void;
 }
 
-export function DesignControls({ component, onUpdate, onDelete }: DesignControlsProps) {
+const iconMap: Record<string, any> = {
+    Type,
+    AlignLeft,
+    Image,
+    Video,
+    Code,
+    MousePointerClick,
+    Minus,
+    MoveVertical,
+};
+
+export function DesignControls({ component, onUpdate, onDelete, onAddComponent }: DesignControlsProps) {
     const [activeTab, setActiveTab] = useState<'design' | 'settings'>('design');
 
     if (!component) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-zinc-500 p-6 text-center">
-                <p className="text-sm">Select a component to edit its properties</p>
+            <div className="flex flex-col h-full bg-zinc-950 border-l border-zinc-800 overflow-hidden">
+                <div className="p-4 border-b border-zinc-800">
+                    <h3 className="text-sm font-semibold text-white">Components</h3>
+                    <p className="text-xs text-zinc-500 mt-1">Drag or click to add</p>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+                    {COMPONENT_REGISTRY.map((meta) => {
+                        const Icon = iconMap[meta.icon] || Type;
+                        return (
+                            <button
+                                key={meta.type}
+                                onClick={() => {
+                                    if (onAddComponent) {
+                                        const newComponent = createComponent(meta.type);
+                                        onAddComponent(newComponent);
+                                    }
+                                }}
+                                draggable
+                                onDragStart={(e) => {
+                                    e.dataTransfer.setData('componentType', meta.type);
+                                    e.dataTransfer.effectAllowed = 'copy';
+                                }}
+                                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-800 hover:border-zinc-700 transition-colors text-left group cursor-grab active:cursor-grabbing"
+                            >
+                                <div className="w-8 h-8 rounded-md bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-indigo-400 group-hover:border-indigo-500/30 transition-colors shrink-0">
+                                    <Icon size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="text-sm font-medium text-zinc-300 group-hover:text-white">{meta.name}</div>
+                                    <div className="text-[10px] text-zinc-500 truncate">{meta.description}</div>
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
         );
     }

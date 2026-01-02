@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
+import Link from "next/link";
 import {
     Search,
-    Users,
-    Shield,
-    ShieldAlert,
     RefreshCw,
     ChevronLeft,
     ChevronRight,
@@ -40,7 +38,6 @@ export default function UsersPage() {
     const [search, setSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState<'all' | 'student' | 'admin'>('all');
     const [page, setPage] = useState(1);
-    const [updating, setUpdating] = useState<string | null>(null);
 
     const fetchUsers = useCallback(async () => {
         setIsLoading(true);
@@ -76,30 +73,22 @@ export default function UsersPage() {
         fetchUsers();
     };
 
-    const handleRoleChange = async (userId: string, newRole: 'student' | 'admin') => {
-        setUpdating(userId);
-        try {
-            const res = await fetch('/api/admin/users', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId,
-                    updates: { role: newRole },
-                }),
-            });
+    // Format date - handle NaN safely
+    const formatJoinDate = (dateStr?: string) => {
+        if (!dateStr) return 'Recently';
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return 'Recently';
 
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || 'Failed to update');
-            }
+        const now = Date.now();
+        const diff = now - date.getTime();
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-            // Refresh list
-            await fetchUsers();
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Update failed');
-        } finally {
-            setUpdating(null);
-        }
+        if (days === 0) return 'Today';
+        if (days === 1) return 'Yesterday';
+        if (days < 7) return `${days} days ago`;
+        if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+        if (days < 365) return `${Math.floor(days / 30)} months ago`;
+        return `${Math.floor(days / 365)} years ago`;
     };
 
     if (authLoading || !isAdmin) {
@@ -115,15 +104,15 @@ export default function UsersPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">User Management</h1>
-                    <p className="text-neutral-400 text-sm">
+                    <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">User Management</h1>
+                    <p className="text-neutral-600 dark:text-neutral-400 text-sm">
                         {data ? `${data.total} users total` : 'Loading...'}
                     </p>
                 </div>
                 <button
                     onClick={fetchUsers}
                     disabled={isLoading}
-                    className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-lg text-sm transition-colors"
                 >
                     <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
                     Refresh
@@ -140,7 +129,7 @@ export default function UsersPage() {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search by name or email..."
-                            className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
                 </form>
@@ -150,8 +139,8 @@ export default function UsersPage() {
                             key={role}
                             onClick={() => { setRoleFilter(role); setPage(1); }}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${roleFilter === role
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-zinc-800 text-neutral-400 hover:text-white'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                                 }`}
                         >
                             {role === 'all' ? 'All' : role.charAt(0).toUpperCase() + role.slice(1)}
@@ -161,25 +150,25 @@ export default function UsersPage() {
             </div>
 
             {error && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-600 dark:text-red-400">
                     {error}
                 </div>
             )}
 
             {/* Users Table */}
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="text-left text-neutral-500 border-b border-zinc-800 bg-zinc-900/50">
+                            <tr className="text-left text-neutral-500 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
                                 <th className="px-4 py-3">User</th>
                                 <th className="px-4 py-3">Email</th>
-                                <th className="px-4 py-3">Role</th>
                                 <th className="px-4 py-3">Courses</th>
+                                <th className="px-4 py-3">Joined</th>
                                 <th className="px-4 py-3">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="text-neutral-300">
+                        <tbody className="text-neutral-700 dark:text-neutral-300">
                             {isLoading ? (
                                 <tr>
                                     <td colSpan={5} className="px-4 py-8 text-center text-neutral-500">
@@ -194,7 +183,7 @@ export default function UsersPage() {
                                 </tr>
                             ) : (
                                 data?.users.map((user) => (
-                                    <tr key={user.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
+                                    <tr key={user.id} className="border-b border-neutral-100 dark:border-neutral-800/50 hover:bg-neutral-50 dark:hover:bg-neutral-800/30">
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
                                                 {user.avatar ? (
@@ -204,40 +193,29 @@ export default function UsersPage() {
                                                         className="w-8 h-8 rounded-full object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center">
-                                                        <UserIcon size={16} className="text-neutral-400" />
+                                                    <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+                                                        <UserIcon size={16} className="text-neutral-500 dark:text-neutral-400" />
                                                     </div>
                                                 )}
-                                                <span className="font-medium text-white">{user.name || 'Unknown'}</span>
+                                                <span className="font-medium text-neutral-900 dark:text-white">{user.name || 'Unknown'}</span>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3 text-neutral-400">{user.email}</td>
+                                        <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{user.email}</td>
                                         <td className="px-4 py-3">
-                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${user.role === 'admin'
-                                                    ? 'bg-purple-500/20 text-purple-400'
-                                                    : 'bg-blue-500/20 text-blue-400'
-                                                }`}>
-                                                {user.role === 'admin' ? (
-                                                    <ShieldAlert size={12} />
-                                                ) : (
-                                                    <Shield size={12} />
-                                                )}
-                                                {user.role}
+                                            <span className="text-blue-600 dark:text-blue-400">
+                                                {user.enrolledCourses?.length || 0} courses
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 text-neutral-400">
-                                            {user.enrolledCourses?.length || 0}
+                                        <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
+                                            {formatJoinDate(user.createdAt)}
                                         </td>
                                         <td className="px-4 py-3">
-                                            <select
-                                                value={user.role}
-                                                onChange={(e) => handleRoleChange(user.id, e.target.value as 'student' | 'admin')}
-                                                disabled={updating === user.id}
-                                                className="bg-zinc-800 border border-zinc-700 text-neutral-300 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                                            <Link
+                                                href={`/users/${user.id}`}
+                                                className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
                                             >
-                                                <option value="student">Student</option>
-                                                <option value="admin">Admin</option>
-                                            </select>
+                                                View
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))
@@ -248,7 +226,7 @@ export default function UsersPage() {
 
                 {/* Pagination */}
                 {data && data.pages > 1 && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-800 bg-zinc-900/30">
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/30">
                         <span className="text-neutral-500 text-sm">
                             Page {data.page} of {data.pages}
                         </span>
@@ -256,14 +234,14 @@ export default function UsersPage() {
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page <= 1}
-                                className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="p-2 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <ChevronLeft size={16} />
                             </button>
                             <button
                                 onClick={() => setPage(p => Math.min(data.pages, p + 1))}
                                 disabled={page >= data.pages}
-                                className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="p-2 bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <ChevronRight size={16} />
                             </button>

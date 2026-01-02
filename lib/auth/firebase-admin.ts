@@ -1,17 +1,28 @@
-import { initializeApp, getApps, cert, ServiceAccount } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, ServiceAccount, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
-let adminInitialized = false;
+let adminApp: App | null = null;
 
 export function initAdmin() {
-    if (adminInitialized) {
-        return getAuth();
+    // Check if already initialized
+    if (adminApp) {
+        return {
+            app: adminApp,
+            auth: () => getAuth(adminApp!),
+            firestore: () => getFirestore(adminApp!),
+        };
     }
 
-    // Check if already initialized
-    if (getApps().length > 0) {
-        adminInitialized = true;
-        return getAuth();
+    // Check if app already exists
+    const apps = getApps();
+    if (apps.length > 0) {
+        adminApp = apps[0];
+        return {
+            app: adminApp,
+            auth: () => getAuth(adminApp!),
+            firestore: () => getFirestore(adminApp!),
+        };
     }
 
     // Initialize from environment variables
@@ -21,12 +32,15 @@ export function initAdmin() {
         privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
     };
 
-    initializeApp({
+    adminApp = initializeApp({
         credential: cert(serviceAccount),
     });
 
-    adminInitialized = true;
     console.log('✅ Firebase Admin SDK initialized');
 
-    return getAuth();
+    return {
+        app: adminApp,
+        auth: () => getAuth(adminApp!),
+        firestore: () => getFirestore(adminApp!),
+    };
 }

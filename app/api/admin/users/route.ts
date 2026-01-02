@@ -36,24 +36,27 @@ export async function GET(request: NextRequest) {
         const page = parseInt(searchParams.get('page') || '1', 10);
         const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-        // Try to fetch users from Firebase
+        // Try to fetch users from Firebase using Admin SDK
         try {
-            const { collection, getDocs } = await import('firebase/firestore');
-            const { getFirebaseDB, isFirebaseEnabled } = await import('@/lib/firebase/config');
+            const { initAdmin } = await import('@/lib/auth/firebase-admin');
+            const admin = initAdmin();
 
-            if (isFirebaseEnabled()) {
-                const db = getFirebaseDB();
-                if (db) {
-                    const usersRef = collection(db, 'users');
-                    const snapshot = await getDocs(usersRef);
-                    usersCache = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data(),
-                    })) as User[];
-                }
+            if (admin) {
+                console.log('Fetching users from Firebase Admin SDK...');
+                const db = admin.firestore();
+                const snapshot = await db.collection('users').get();
+
+                usersCache = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                })) as User[];
+
+                console.log(`✅ Fetched ${usersCache.length} users from Firebase Admin SDK`);
+            } else {
+                console.log('⚠️ Firebase Admin not initialized');
             }
         } catch (e) {
-            console.log('Firebase not available, using cache');
+            console.error('❌ Firebase Admin fetch error:', e);
         }
 
         // Filter users
@@ -133,23 +136,23 @@ export async function PATCH(request: NextRequest) {
             );
         }
 
-        // Update in Firebase
+        // Update in Firebase using Admin SDK
         try {
-            const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
-            const { getFirebaseDB, isFirebaseEnabled } = await import('@/lib/firebase/config');
+            const { initAdmin } = await import('@/lib/auth/firebase-admin');
+            const admin = initAdmin();
 
-            if (isFirebaseEnabled()) {
-                const db = getFirebaseDB();
-                if (db) {
-                    await updateDoc(doc(db, 'users', userId), {
-                        ...cleanUpdates,
-                        updatedAt: serverTimestamp(),
-                        updatedBy: authResult.user.id,
-                    });
-                }
+            if (admin) {
+                const db = admin.firestore();
+                const { FieldValue } = await import('firebase-admin/firestore');
+                await db.collection('users').doc(userId).update({
+                    ...cleanUpdates,
+                    updatedAt: FieldValue.serverTimestamp(),
+                    updatedBy: authResult.user.id,
+                });
+                console.log(`✅ Updated user ${userId} in Firebase Admin SDK`);
             }
         } catch (e) {
-            console.error('Firebase update failed:', e);
+            console.error('Firebase Admin update failed:', e);
         }
 
         // Update local cache

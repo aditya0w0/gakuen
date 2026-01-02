@@ -1,7 +1,8 @@
 "use client";
 
+import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
 import { useState } from "react";
-import { Course } from "@/lib/constants/demo-data";
+import { Course } from "@/lib/types";
 import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
 import { CourseCard } from "@/components/course/CourseCard";
 import { cn } from "@/lib/utils";
@@ -22,15 +23,15 @@ export function AICourseSelector({ courses }: AICourseSelectorProps) {
 
         setIsLoading(true);
         try {
-            const res = await fetch('/api/ai/recommend', {
+            const res = await authenticatedFetch('/api/ai/recommend', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query, courses }),
             });
             const data = await res.json();
             setRecommendation(data);
-        } catch (error) {
-            console.error("AI Recommendation failed", error);
+        } catch {
+            // Silent fail - recommendation is optional
         } finally {
             setIsLoading(false);
         }
@@ -100,7 +101,7 @@ export function AICourseSelector({ courses }: AICourseSelectorProps) {
                 {recommendedCourse && (
                     <div className="w-full md:w-80 flex-shrink-0 animate-in fade-in slide-in-from-right-4 duration-700">
                         <div className="relative">
-                            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-30"></div>
+                            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl blur opacity-30"></div>
                             <CourseCard course={recommendedCourse} index={0} />
                         </div>
                     </div>

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { Course } from '@/lib/constants/demo-data';
+import { Course } from '@/lib/types';
 
 const DATA_DIR = path.join(process.cwd(), 'data', 'courses');
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Lesson } from "@/lib/constants/demo-data";
+import { Lesson } from "@/lib/types";
 import { MaterialViewer } from "@/components/course/MaterialViewer";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { useAuth } from "@/components/auth/AuthContext";

@@ -65,7 +65,7 @@ export default function LandingPage() {
         {/* Ambient Background */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[150px] animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '1s' }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-white/5 to-transparent rounded-full" />
         </div>
 
@@ -77,10 +77,10 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.1 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-white/10 mb-8"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-white/10 mb-8"
               >
                 <Sparkles className="w-4 h-4 text-blue-400" />
-                <span className="text-sm font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                <span className="text-sm font-medium bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
                   AI-Powered Learning Platform
                 </span>
               </motion.div>
@@ -94,11 +94,11 @@ export default function LandingPage() {
                 The future of
                 <br />
                 <span className="relative">
-                  <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent">
                     education
                   </span>
                   <motion.span
-                    className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                    className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
                     initial={{ scaleX: 0 }}
                     animate={{ scaleX: 1 }}
                     transition={{ duration: 0.8, delay: 0.8 }}
@@ -146,7 +146,7 @@ export default function LandingPage() {
               >
                 <div className="flex -space-x-2">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 border-2 border-[#0a0a0a] flex items-center justify-center text-xs font-bold">
+                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 border-2 border-[#0a0a0a] flex items-center justify-center text-xs font-bold">
                       {String.fromCharCode(64 + i)}
                     </div>
                   ))}
@@ -172,8 +172,8 @@ export default function LandingPage() {
             >
               <div className="relative">
                 {/* Main Video Container */}
-                <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-purple-500/10 bg-gradient-to-br from-neutral-900 to-neutral-950">
-                  <div className="aspect-[4/3] bg-gradient-to-br from-blue-900/50 via-purple-900/50 to-pink-900/50 flex items-center justify-center">
+                <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-indigo-500/10 bg-gradient-to-br from-neutral-900 to-neutral-950">
+                  <div className="aspect-[4/3] bg-gradient-to-br from-blue-900/50 via-indigo-900/50 to-pink-900/50 flex items-center justify-center">
                     {/* Fake Dashboard Preview */}
                     <div className="w-full h-full p-6 flex flex-col">
                       <div className="flex items-center gap-2 mb-4">
@@ -193,8 +193,8 @@ export default function LandingPage() {
                           </div>
                         </div>
                         <div className="space-y-4">
-                          <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl p-3 border border-white/5">
-                            <Sparkles className="w-4 h-4 text-purple-400 mb-2" />
+                          <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl p-3 border border-white/5">
+                            <Sparkles className="w-4 h-4 text-indigo-400 mb-2" />
                             <div className="h-2 w-full bg-white/20 rounded" />
                           </div>
                           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
@@ -250,7 +250,7 @@ export default function LandingPage() {
             {[
               { value: "10K+", label: "Active Learners", color: "from-blue-400 to-cyan-400" },
               { value: "$2M+", label: "Revenue Generated", color: "from-green-400 to-emerald-400" },
-              { value: "95%", label: "Course Completion", color: "from-purple-400 to-pink-400" },
+              { value: "95%", label: "Course Completion", color: "from-indigo-400 to-pink-400" },
               { value: "4.9★", label: "User Rating", color: "from-yellow-400 to-orange-400" },
             ].map((stat, i) => (
               <motion.div
@@ -281,14 +281,14 @@ export default function LandingPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-20"
           >
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-sm font-medium mb-6">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-6">
               <Brain className="w-4 h-4" />
               Powered by Advanced AI
             </span>
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
               Intelligence that
               <br />
-              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-red-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-indigo-400 via-pink-400 to-red-400 bg-clip-text text-transparent">
                 understands you
               </span>
             </h2>
@@ -299,12 +299,12 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: Brain, title: "Smart Tutoring", desc: "AI tutor available 24/7 that answers questions, explains concepts, and guides your learning journey.", gradient: "from-purple-500 to-pink-500" },
+              { icon: Brain, title: "Smart Tutoring", desc: "AI tutor available 24/7 that answers questions, explains concepts, and guides your learning journey.", gradient: "from-indigo-500 to-pink-500" },
               { icon: Target, title: "Adaptive Learning", desc: "Courses that automatically adjust difficulty and content based on your performance and learning style.", gradient: "from-blue-500 to-cyan-500" },
               { icon: Zap, title: "Instant Feedback", desc: "Real-time assessment and personalized recommendations to keep you on the fastest path to mastery.", gradient: "from-yellow-500 to-orange-500" },
               { icon: BarChart3, title: "Progress Analytics", desc: "Deep insights into your learning patterns, strengths, and areas for improvement with AI-powered analysis.", gradient: "from-green-500 to-emerald-500" },
               { icon: Users, title: "Peer Matching", desc: "AI connects you with study partners and mentors who complement your learning style and goals.", gradient: "from-pink-500 to-rose-500" },
-              { icon: Shield, title: "Quality Assurance", desc: "Every course is AI-verified for accuracy, completeness, and pedagogical effectiveness.", gradient: "from-indigo-500 to-purple-500" },
+              { icon: Shield, title: "Quality Assurance", desc: "Every course is AI-verified for accuracy, completeness, and pedagogical effectiveness.", gradient: "from-indigo-500 to-indigo-500" },
             ].map((feature, i) => (
               <motion.div
                 key={i}
@@ -312,7 +312,7 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 p-8 hover:border-white/20 transition-all hover:shadow-2xl hover:shadow-purple-500/5"
+                className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 p-8 hover:border-white/20 transition-all hover:shadow-2xl hover:shadow-indigo-500/5"
               >
                 <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
                   <feature.icon className="w-7 h-7 text-white" />
@@ -329,7 +329,7 @@ export default function LandingPage() {
       </section>
 
       {/* TESTIMONIAL / TRUST */}
-      <section className="py-32 px-6 bg-gradient-to-b from-transparent via-purple-950/10 to-transparent">
+      <section className="py-32 px-6 bg-gradient-to-b from-transparent via-indigo-950/10 to-transparent">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -344,11 +344,11 @@ export default function LandingPage() {
             </div>
             <blockquote className="text-2xl md:text-3xl lg:text-4xl font-medium leading-relaxed mb-8">
               "Gakuen's AI tutor completely transformed how I learn. It's like having a
-              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"> personal teacher</span> who knows
+              <span className="bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent"> personal teacher</span> who knows
               exactly what I need, available whenever I need it."
             </blockquote>
             <div className="flex items-center justify-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-xl font-bold">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-pink-600 flex items-center justify-center text-xl font-bold">
                 S
               </div>
               <div className="text-left">
@@ -371,7 +371,7 @@ export default function LandingPage() {
         >
           <div className="relative rounded-[3rem] overflow-hidden">
             {/* Animated Gradient Background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 animate-gradient-x" />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-pink-600 animate-gradient-x" />
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzBoLTJ2Mmgydi0yem0tNCAwaC0ydjJoMnYtMnptLTQgMGgtMnYyaDJ2LTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
 
             <div className="relative px-8 py-20 md:px-16 md:py-24 text-center">
@@ -405,7 +405,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="flex items-center gap-2">
               <span className="text-xl font-bold">Gakuen</span>
-              <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full">AI</span>
+              <span className="px-2 py-0.5 text-xs bg-indigo-500/20 text-indigo-400 rounded-full">AI</span>
             </div>
             <div className="flex items-center gap-8 text-neutral-500 text-sm">
               <Link href="#" className="hover:text-white transition-colors">Privacy</Link>

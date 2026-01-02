@@ -1,5 +1,5 @@
 // localStorage cache operations
-import { User } from "../constants/demo-data";
+import { User } from "@/lib/types";
 const CACHE_KEYS = {
     USER: "gakuen_user_cache",
     PROGRESS: "gakuen_progress_cache",

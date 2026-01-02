@@ -8,7 +8,64 @@ export const dynamic = 'force-dynamic';
 // GET is public - anyone can browse courses
 export async function GET() {
     try {
-        const courses = await listCourses();
+        let courses = await listCourses();
+
+        // Try to add enrollment and rating data from Firebase
+        try {
+            const { collection, getDocs } = await import('firebase/firestore');
+            const { getFirebaseDB, isFirebaseEnabled } = await import('@/lib/firebase/config');
+
+            if (isFirebaseEnabled()) {
+                const db = getFirebaseDB();
+                if (db) {
+                    // Get enrollments
+                    const enrollmentsRef = collection(db, 'enrollments');
+                    const enrollmentsSnapshot = await getDocs(enrollmentsRef);
+
+                    // Count enrollments per course
+                    const enrollmentCounts: Record<string, number> = {};
+                    enrollmentsSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        const courseId = data.courseId;
+                        if (courseId) {
+                            enrollmentCounts[courseId] = (enrollmentCounts[courseId] || 0) + 1;
+                        }
+                    });
+
+                    // Get reviews/ratings
+                    const reviewsRef = collection(db, 'reviews');
+                    const reviewsSnapshot = await getDocs(reviewsRef);
+
+                    // Calculate average rating per course
+                    const courseRatings: Record<string, { sum: number; count: number }> = {};
+                    reviewsSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        const courseId = data.courseId;
+                        const rating = data.rating;
+                        if (courseId && typeof rating === 'number') {
+                            if (!courseRatings[courseId]) {
+                                courseRatings[courseId] = { sum: 0, count: 0 };
+                            }
+                            courseRatings[courseId].sum += rating;
+                            courseRatings[courseId].count += 1;
+                        }
+                    });
+
+                    // Merge data into courses
+                    courses = courses.map(course => ({
+                        ...course,
+                        enrolledCount: enrollmentCounts[course.id] || 0,
+                        rating: courseRatings[course.id]
+                            ? Math.round((courseRatings[course.id].sum / courseRatings[course.id].count) * 10) / 10
+                            : 0,
+                    }));
+                }
+            }
+        } catch (e) {
+            console.log('Firebase enrollment/rating data not available:', e);
+            // Continue with file-based data
+        }
+
         return NextResponse.json(courses, {
             headers: {
                 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/components/auth/AuthContext";
-import { Course } from "@/lib/constants/demo-data";
+import { Course } from "@/lib/types";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";

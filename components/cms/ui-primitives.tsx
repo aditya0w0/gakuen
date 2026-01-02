@@ -97,28 +97,83 @@ export const IconButton = ({ icon, active, onClick, className }: { icon: React.R
     </button>
 );
 
-export const ColorInput = ({ label, value, onChange }: { label?: string; value: string; onChange: (val: string) => void }) => (
-    <div>
-        {label && <InputLabel>{label}</InputLabel>}
-        <div className="flex items-center bg-zinc-800 border border-zinc-700 rounded-md overflow-hidden group focus-within:ring-1 focus-within:ring-indigo-500 h-10">
+export const ColorInput = ({ label, value, onChange }: { label?: string; value: string; onChange: (val: string) => void }) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+
+    const presetColors = [
+        '#ffffff', '#000000', '#ef4444', '#f97316', '#eab308',
+        '#22c55e', '#14b8a6', '#3b82f6', '#8b5cf6', '#ec4899',
+        '#6b7280', '#d4d4d8', '#a3a3a3', '#525252', '#1f2937',
+    ];
+
+    return (
+        <div className="relative">
+            {label && <InputLabel>{label}</InputLabel>}
             <div
-                className="w-9 h-full border-r border-zinc-700 shrink-0 cursor-pointer transition-colors hover:opacity-90"
-                style={{ backgroundColor: value }}
-                onClick={() => {
-                    // In a real implementation this would trigger the actual picker,
-                    // for now we rely on the hex input or external picker logic
-                }}
-            ></div>
-            <input
-                type="text"
-                value={value.replace('#', '')}
-                onChange={(e) => onChange(`#${e.target.value}`)}
-                className="bg-transparent px-3 py-2 text-sm text-gray-200 flex-1 focus:outline-none font-mono uppercase w-full h-full"
-            />
-            <span className="px-2 text-zinc-600 text-xs select-none">HEX</span>
+                className="flex items-center bg-zinc-800 border border-zinc-700 rounded-md overflow-hidden group focus-within:ring-1 focus-within:ring-indigo-500 h-10 cursor-pointer hover:border-zinc-600 transition-colors"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <div
+                    className="w-9 h-full border-r border-zinc-700 shrink-0 transition-colors"
+                    style={{ backgroundColor: value }}
+                />
+                <div className="bg-transparent px-3 py-2 text-sm text-gray-200 flex-1 font-mono uppercase">
+                    {value.replace('#', '')}
+                </div>
+                <span className="px-2 text-zinc-600 text-xs select-none">HEX</span>
+            </div>
+
+            {/* Color Picker Modal */}
+            {isOpen && (
+                <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+                    <div className="absolute top-full left-0 mt-2 z-50 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl p-4 w-64 animate-in fade-in zoom-in-95 duration-150">
+                        <div className="text-xs font-semibold text-zinc-400 mb-3">COLOR PICKER</div>
+
+                        {/* Preset Colors */}
+                        <div className="grid grid-cols-5 gap-2 mb-4">
+                            {presetColors.map((color) => (
+                                <button
+                                    key={color}
+                                    className={`w-8 h-8 rounded-md border-2 transition-all hover:scale-110 ${value.toLowerCase() === color.toLowerCase()
+                                            ? 'border-indigo-500 ring-2 ring-indigo-500/30'
+                                            : 'border-zinc-700 hover:border-zinc-500'
+                                        }`}
+                                    style={{ backgroundColor: color }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onChange(color);
+                                    }}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Custom Hex Input */}
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={value}
+                                onChange={(e) => onChange(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-gray-200 font-mono uppercase focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                placeholder="#000000"
+                            />
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsOpen(false);
+                                }}
+                                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-md transition-colors"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
-    </div>
-);
+    );
+};
 
 export const PrimaryButton = ({ children, icon: Icon, className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { icon?: LucideIcon }) => (
     <button

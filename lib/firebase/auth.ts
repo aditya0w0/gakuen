@@ -9,8 +9,18 @@ import {
     GoogleAuthProvider,
 } from "firebase/auth";
 import { getFirebaseAuth, isFirebaseEnabled } from "./config";
-import { User } from "@/lib/constants/demo-data";
+// import { User } from "@/lib/types"; // Removed
 import { getUserProfile, createUserProfile } from "./firestore";
+
+export interface User {
+    id: string;
+    email: string;
+    name: string;
+    role: "admin" | "user";
+    avatar?: string;
+    username?: string;
+    [key: string]: any;
+}
 
 export const firebaseAuth = {
     // Sign in with email/password
@@ -36,7 +46,25 @@ export const firebaseAuth = {
             throw new Error('Failed to set auth token');
         }
 
-        const profile = await getUserProfile(credential.user.uid);
+        let profile = await getUserProfile(credential.user.uid);
+
+        // FALLBACK: Create profile if user exists in Firebase Auth but not Firestore
+        // This handles legacy/migrated users who have Auth but no Firestore profile
+        if (!profile) {
+            console.log('📝 Creating Firestore profile for legacy user:', credential.user.uid);
+            const newUser: User = {
+                id: credential.user.uid,
+                email: credential.user.email || email,
+                name: credential.user.displayName || email.split('@')[0],
+                role: "user",
+                enrolledCourses: [],
+                completedLessons: [],
+                createdAt: new Date().toISOString(),
+            };
+            await createUserProfile(newUser);
+            profile = newUser;
+        }
+
         return profile;
     },
 
@@ -50,6 +78,22 @@ export const firebaseAuth = {
         if (!auth) throw new Error("Firebase auth not initialized");
 
         const credential = await createUserWithEmailAndPassword(auth, email, password);
+
+        // Get Firebase ID token
+        const idToken = await credential.user.getIdToken();
+
+        // Set httpOnly cookie via API (secure)
+        const tokenResponse = await fetch('/api/auth/set-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+        });
+
+        if (!tokenResponse.ok) {
+            console.error('Failed to set auth cookie during signup');
+            // Don't throw - user is created, just might need to login again if middleware is strict
+            // But ideally we want auto-login
+        }
 
         const newUser: User = {
             id: credential.user.uid,
@@ -154,4 +198,32 @@ export const firebaseAuth = {
         const auth = getFirebaseAuth();
         return auth?.currentUser || null;
     },
+
+    // Refresh the server-side session cookie using client SDK
+    // Call this when you get a 401 or want to extend the session
+    async refreshSession(): Promise<boolean> {
+        if (!isFirebaseEnabled()) return false;
+
+        const auth = getFirebaseAuth();
+        const user = auth?.currentUser;
+
+        if (!user) return false;
+
+        try {
+            // Force refresh ID token
+            const idToken = await user.getIdToken(true);
+
+            // Set new httpOnly cookie
+            const res = await fetch('/api/auth/set-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken }),
+            });
+
+            return res.ok;
+        } catch (e) {
+            console.error("Failed to refresh session", e);
+            return false;
+        }
+    }
 };

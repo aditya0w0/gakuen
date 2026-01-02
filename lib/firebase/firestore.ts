@@ -9,7 +9,7 @@ import {
     FieldValue,
 } from "firebase/firestore";
 import { getFirebaseDB, isFirebaseEnabled } from "./config";
-import { User } from "@/lib/constants/demo-data";
+import { User } from "@/lib/types";
 import type { FirebaseUser, FirebaseProgress } from "./types";
 
 // User Operations
@@ -32,6 +32,15 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
             name: data.name,
             role: data.role,
             avatar: data.avatar,
+            // Profile fields
+            firstName: data.firstName,
+            lastName: data.lastName,
+            username: data.username,
+            phone: data.phone,
+            bio: data.bio,
+            // Subscription
+            subscription: data.subscription,
+            // Course data
             enrolledCourses: data.enrolledCourses,
             completedLessons: [], // Loaded separately from progress
             createdAt: data.createdAt
@@ -44,11 +53,11 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
     }
 };
 
-export const createUserProfile = async (user: User): Promise<void> => {
-    if (!isFirebaseEnabled()) return;
+export const createUserProfile = async (user: User): Promise<User> => {
+    if (!isFirebaseEnabled()) return user;
 
     const db = getFirebaseDB();
-    if (!db) return;
+    if (!db) return user;
 
     try {
         // Build document, filtering out undefined values (Firestore doesn't accept them)
@@ -67,7 +76,10 @@ export const createUserProfile = async (user: User): Promise<void> => {
             userDoc.avatar = user.avatar;
         }
 
-        await setDoc(doc(db, "users", user.id), userDoc);
+        // Use merge to avoid overwriting existing data during race conditions
+        // (e.g., multiple concurrent API calls creating profile simultaneously)
+        await setDoc(doc(db, "users", user.id), userDoc, { merge: true });
+        return user;
     } catch (error) {
         console.error("Error creating user profile:", error);
         throw error;
@@ -75,7 +87,7 @@ export const createUserProfile = async (user: User): Promise<void> => {
 };
 export const updateUserProfile = async (
     userId: string,
-    updates: Partial<Pick<User, "name" | "avatar" | "enrolledCourses">>
+    updates: Partial<Pick<User, "name" | "avatar" | "enrolledCourses" | "firstName" | "lastName" | "username" | "phone" | "bio" | "subscription">>
 ): Promise<void> => {
     if (!isFirebaseEnabled()) return;
 
@@ -84,14 +96,16 @@ export const updateUserProfile = async (
 
     try {
         // Filter out undefined values
-        const cleanUpdates: Record<string, string | string[] | FieldValue> = { updatedAt: serverTimestamp() };
+        const cleanUpdates: Record<string, unknown> = { updatedAt: serverTimestamp() };
         Object.entries(updates).forEach(([key, value]) => {
             if (value !== undefined) {
                 cleanUpdates[key] = value;
             }
         });
 
-        await updateDoc(doc(db, "users", userId), cleanUpdates);
+        // Use setDoc with merge instead of updateDoc
+        // This ensures the update works even if the profile doesn't exist yet
+        await setDoc(doc(db, "users", userId), cleanUpdates, { merge: true });
     } catch (error) {
         console.error("Error updating user profile:", error);
         throw error;

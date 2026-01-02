@@ -25,11 +25,18 @@ const isLowPowerDevice = () => {
 };
 
 export const ModernBackground = ({ className }: { className?: string }) => {
+    const [mounted, setMounted] = useState(false);
     const [isLowPower, setIsLowPower] = useState(true); // Default to low power (safer)
 
     useEffect(() => {
+        setMounted(true);
         setIsLowPower(isLowPowerDevice());
     }, []);
+
+    // Don't render anything until after hydration to prevent mismatch
+    if (!mounted) {
+        return null;
+    }
 
     // Ultra-lightweight mode for mobile/low-power devices
     if (isLowPower) {

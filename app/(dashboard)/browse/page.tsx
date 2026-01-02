@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Course } from "@/lib/constants/demo-data";
+import { Course } from "@/lib/types";
 import { CourseCard } from "@/components/course/CourseCard";
 import { Search, Compass, Sparkles } from "lucide-react";
 import { AICourseSelector } from "@/components/ai/AICourseSelector";

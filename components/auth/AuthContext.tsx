@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User } from "@/lib/constants/demo-data";
+import { User } from "@/lib/types";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { initFirebase } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
@@ -120,16 +120,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(newUser);
 
             // CRITICAL: Set loading to false BEFORE navigation
-            // This ensures the dashboard component sees isLoading=false
             setIsLoading(false);
 
-            console.log('✅ User state set, navigating to dashboard...');
+            console.log('✅ User state set, navigating to user dashboard...');
 
             // Use replace to prevent back-button issues
             // Small delay to ensure React has flushed the state updates
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Force navigation to user dashboard
             router.replace("/user");
         } catch (err) {
+            console.error('❌ Signup failed:', err);
             const errorMessage = err instanceof Error ? err.message : "Signup failed";
             setError(errorMessage);
             setIsLoading(false);
@@ -147,25 +149,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const refreshUser = async () => {
-        // Try to get latest from Firebase first
-        const { getUserProfile } = await import('@/lib/firebase/firestore');
-        const { firebaseAuth } = await import('@/lib/firebase/auth');
+        try {
+            const { getUserProfile } = await import('@/lib/firebase/firestore');
+            const { firebaseAuth } = await import('@/lib/firebase/auth');
+            const { localCache } = await import('@/lib/storage/local-cache');
 
-        const currentFirebaseUser = firebaseAuth.getCurrentUser();
-        if (currentFirebaseUser) {
-            const firebaseProfile = await getUserProfile(currentFirebaseUser.uid);
-            if (firebaseProfile) {
-                setUser(firebaseProfile);
-                // Also update localStorage
-                hybridStorage.auth.getSession(); // This triggers cache update
+            // Try to get user ID from multiple sources
+            let userId: string | null = null;
+
+            // First try: Current Firebase user
+            const currentFirebaseUser = firebaseAuth.getCurrentUser();
+            if (currentFirebaseUser) {
+                userId = currentFirebaseUser.uid;
+            }
+
+            // Second try: Current React state
+            if (!userId && user) {
+                userId = user.id;
+            }
+
+            // Third try: Local cache
+            if (!userId) {
+                const cachedUser = localCache.user.get() as { id?: string } | null;
+                if (cachedUser?.id) {
+                    userId = cachedUser.id;
+                }
+            }
+
+            if (!userId) {
+                console.warn('⚠️ refreshUser: No user ID found from any source');
                 return;
             }
-        }
 
-        // Fall back to localStorage
-        const cachedUser = hybridStorage.auth.getSession();
-        if (cachedUser) {
-            setUser(cachedUser);
+            // Fetch FRESH profile from Firestore (bypasses any cache)
+            const firebaseProfile = await getUserProfile(userId);
+            if (firebaseProfile) {
+                console.log('✅ refreshUser: Fetched fresh profile from Firestore', {
+                    enrolledCourses: firebaseProfile.enrolledCourses?.length,
+                    subscription: firebaseProfile.subscription?.tier
+                });
+                setUser(firebaseProfile);
+                // CRITICAL: Update localStorage so other components see the change
+                localCache.user.set(firebaseProfile);
+            } else {
+                console.warn('⚠️ refreshUser: User profile not found in Firestore');
+            }
+        } catch (error) {
+            console.error('❌ refreshUser error:', error);
         }
     };
 

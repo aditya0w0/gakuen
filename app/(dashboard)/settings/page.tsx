@@ -1,7 +1,10 @@
 "use client";
 
+import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
+
 import { useAuth } from "@/components/auth/AuthContext";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
+import { syncManager } from "@/lib/storage/sync-manager";
 import { ChevronRight, Trash2, Camera } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -33,22 +36,33 @@ export default function SettingsPage() {
             formData.append('type', 'avatar');
             formData.append('id', user.id);
 
-            const res = await fetch('/api/upload', {
+
+
+            const res = await authenticatedFetch('/api/upload', {
                 method: 'POST',
                 body: formData,
             });
 
-            if (!res.ok) throw new Error('Upload failed');
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Upload failed');
+            }
             const { url } = await res.json();
 
             // Update Profile in both local and Firebase
             await hybridStorage.profile.update(user.id, { avatar: url });
 
+            // Force immediate sync to Firestore (don't wait for debounce)
+            // This ensures avatar persists even if user hard refreshes immediately
+            await syncManager.syncNow();
+
             // Refresh Context to show new avatar instantly
             await refreshUser();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to upload avatar", error);
-            alert("Failed to upload avatar");
+            // No rollback needed - avatar state wasn't updated until after success
+            // The user's avatar remains unchanged as expected
+            alert(error.message || "Failed to upload avatar");
         } finally {
             setIsUploading(false);
         }
@@ -59,6 +73,7 @@ export default function SettingsPage() {
 
         try {
             await hybridStorage.profile.update(user.id, { name: tempName });
+            await syncManager.syncNow(); // Force immediate sync
             setName(tempName);
             setIsEditing(false);
         } catch (error) {
@@ -176,12 +191,25 @@ export default function SettingsPage() {
                         )}
 
                         {/* Email */}
-                        <div className="p-4 flex items-center justify-between">
+                        <div className="p-4 flex items-center justify-between border-b border-neutral-100 dark:border-white/5">
                             <div>
                                 <div className="text-sm text-neutral-500 dark:text-neutral-400">{t.settingsPage.email}</div>
                                 <div className="text-neutral-900 dark:text-white mt-0.5">{user.email}</div>
                             </div>
                         </div>
+
+                        {/* Profile Details Link */}
+                        <Link href="/settings/profile">
+                            <button className="w-full p-4 flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
+                                <div className="text-left">
+                                    <div className="text-neutral-900 dark:text-white">Profile Details</div>
+                                    <div className="text-sm text-neutral-400 mt-0.5">
+                                        Phone, bio, and more
+                                    </div>
+                                </div>
+                                <ChevronRight className="w-5 h-5 text-neutral-500" />
+                            </button>
+                        </Link>
                     </div>
                 </div>
 

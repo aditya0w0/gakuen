@@ -1,6 +1,6 @@
 
 import useSWR from 'swr';
-import { Course } from '@/lib/constants/demo-data'; // Ensure type safety if possible, or just use any for now
+import { Course } from '@/lib/types'; // Ensure type safety if possible, or just use any for now
 
 export function useCourse(courseId: string) {
     const { data, error, isLoading, mutate } = useSWR(

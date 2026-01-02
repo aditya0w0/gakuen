@@ -1,4 +1,4 @@
-import { Course } from '@/lib/constants/demo-data';
+import { Course } from '@/lib/types';
 
 // Fetch course by ID
 export async function fetchCourse(id: string): Promise<Course | null> {

@@ -1,8 +1,10 @@
 "use client";
 
+import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
 import { TextComponent } from "@/lib/cms/types";
 import { useState } from "react";
 import { Sparkles, Wand2, Loader2 } from "lucide-react";
+import DOMPurify from "dompurify";
 
 interface TextBlockProps {
     component: TextComponent;
@@ -45,7 +47,7 @@ export function TextBlock({
             tempDiv.innerHTML = component.content;
             const plainText = tempDiv.textContent || tempDiv.innerText;
 
-            const response = await fetch('/api/ai/improve', {
+            const response = await authenticatedFetch('/api/ai/improve', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -62,8 +64,7 @@ export function TextBlock({
             } else {
                 throw new Error('No result from AI');
             }
-        } catch (error) {
-            console.error('AI improvement error:', error);
+        } catch {
             alert('Failed to improve text');
         } finally {
             setIsProcessing(false);
@@ -125,7 +126,7 @@ export function TextBlock({
                             onUpdate({ ...component, content: e.currentTarget.innerHTML });
                         }
                     }}
-                    dangerouslySetInnerHTML={{ __html: component.content }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(component.content) }}
                     style={style}
                     className="focus:outline-none px-2 py-1"
                 />
@@ -133,6 +134,6 @@ export function TextBlock({
         );
     }
 
-    return <div style={style} dangerouslySetInnerHTML={{ __html: component.content }} />;
+    return <div style={style} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(component.content) }} />;
 }
 

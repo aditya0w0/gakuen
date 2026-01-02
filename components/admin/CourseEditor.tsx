@@ -1,6 +1,6 @@
 "use client";
 
-import { Course, Lesson } from "@/lib/constants/demo-data";
+import { Course, Lesson } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { X, Plus, Trash2, GripVertical, Edit2 } from "lucide-react";
 import { useState, useEffect } from "react";

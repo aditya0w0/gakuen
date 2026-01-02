@@ -1,45 +1,160 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 /**
  * Proxy for Edge Runtime (formerly middleware)
  * 
- * Edge Runtime doesn't support Firebase Admin SDK (node:process not available)
- * So we just check if the token EXISTS here, not validate it
- * 
- * Actual validation happens in:
- * - API routes (Node.js runtime)
- * - Server components (Node.js runtime)
- * - useRequireAdmin hook (client-side)
+ * Features:
+ * - DDoS protection (Cloudflare fallback)
+ * - Rate limiting per IP
+ * - Authentication checks
+ * - Security headers
  */
+
+// ============================================
+// DDoS Protection (In-Memory - Use Redis for production)
+// ============================================
+
+const ipRequestCounts = new Map<string, { count: number; windowStart: number; blocked: boolean; blockedUntil: number }>();
+
+const RATE_LIMIT = {
+    REQUESTS_PER_MINUTE: 120,
+    BLOCK_DURATION_MS: 15 * 60 * 1000, // 15 minutes
+};
+
+function getClientIP(request: NextRequest): string {
+    // Check Cloudflare headers first
+    const cfIP = request.headers.get('cf-connecting-ip');
+    if (cfIP) return cfIP;
+
+    const forwarded = request.headers.get('x-forwarded-for');
+    if (forwarded) return forwarded.split(',')[0].trim();
+
+    return request.headers.get('x-real-ip') || 'unknown';
+}
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+    const now = Date.now();
+    const entry = ipRequestCounts.get(ip);
+
+    // Check if blocked
+    if (entry?.blocked && entry.blockedUntil > now) {
+        return { allowed: false, retryAfter: Math.ceil((entry.blockedUntil - now) / 1000) };
+    }
+
+    // Reset if block expired or new window
+    if (!entry || entry.blocked || now - entry.windowStart >= 60000) {
+        ipRequestCounts.set(ip, { count: 1, windowStart: now, blocked: false, blockedUntil: 0 });
+        return { allowed: true };
+    }
+
+    // Check limit
+    if (entry.count >= RATE_LIMIT.REQUESTS_PER_MINUTE) {
+        // Block for repeated violations
+        entry.blocked = true;
+        entry.blockedUntil = now + RATE_LIMIT.BLOCK_DURATION_MS;
+        ipRequestCounts.set(ip, entry);
+        console.warn(`⚠️ DDoS: Blocked IP ${ip} for 15 min`);
+        return { allowed: false, retryAfter: Math.ceil(RATE_LIMIT.BLOCK_DURATION_MS / 1000) };
+    }
+
+    entry.count++;
+    return { allowed: true };
+}
+
+// Cleanup old entries every minute
+if (typeof setInterval !== 'undefined') {
+    setInterval(() => {
+        const now = Date.now();
+        for (const [ip, entry] of ipRequestCounts.entries()) {
+            if (now - entry.windowStart > 120000 && !entry.blocked) {
+                ipRequestCounts.delete(ip);
+            }
+            if (entry.blocked && entry.blockedUntil < now) {
+                ipRequestCounts.delete(ip);
+            }
+        }
+    }, 60000);
+}
+
+// ============================================
+// Route Configuration
+// ============================================
+
+const protectedRoutes = [
+    "/user",
+    "/browse",
+    "/my-classes",
+    "/settings",
+    "/dashboard",
+    "/users",
+    "/class",
+    "/courses",
+];
+
+const authRoutes = ["/login", "/signup"];
+
+// Skip DDoS check for static assets
+const skipDDoSPaths = ["/_next/", "/favicon", "/logo", "/images/", "/fonts/"];
+
+// ============================================
+// Main Proxy Function
+// ============================================
+
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // Admin routes that require authentication
-    const adminRoutes = ['/courses', '/dashboard'];
-    const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
+    // 1. DDoS Protection (skip static assets)
+    if (!skipDDoSPaths.some(p => pathname.startsWith(p))) {
+        const ip = getClientIP(request);
+        const rateLimit = checkRateLimit(ip);
 
-    if (isAdminRoute) {
-        // Just check if token exists (don't validate in Edge Runtime)
-        const token = request.cookies.get('firebase-token')?.value;
-
-        if (!token) {
-            console.log('🚫 No Firebase token, redirecting to login');
-            return NextResponse.redirect(new URL('/login', request.url));
+        if (!rateLimit.allowed) {
+            return new NextResponse(
+                JSON.stringify({ error: 'Too many requests', retryAfter: rateLimit.retryAfter }),
+                {
+                    status: 429,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Retry-After': String(rateLimit.retryAfter || 900),
+                    }
+                }
+            );
         }
-
-        // Token exists - let them through
-        // Validation will happen in API routes and useRequireAdmin hook
-        console.log('✅ Token found, allowing access (validation in API routes)');
     }
 
-    return NextResponse.next();
+    // 2. Auth Checks
+    const sessionCookie = request.cookies.get("user-session")?.value;
+    const firebaseToken = request.cookies.get("firebase-token")?.value;
+    const isAuthenticated = sessionCookie || firebaseToken;
+
+    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+    const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
+
+    if (isProtectedRoute && !isAuthenticated) {
+        const loginUrl = new URL("/login", request.url);
+        loginUrl.searchParams.set("redirect", pathname);
+        return NextResponse.redirect(loginUrl);
+    }
+
+    if (isAuthRoute && isAuthenticated) {
+        return NextResponse.redirect(new URL("/user", request.url));
+    }
+
+    // 3. Add Security Headers
+    const response = NextResponse.next();
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+    return response;
 }
 
-// Configure which routes to run proxy on
 export const config = {
     matcher: [
-        '/courses/:path*',
-        '/dashboard/:path*',
+        // All routes except static files
+        "/((?!_next/static|_next/image|favicon.ico).*)",
     ],
 };
+

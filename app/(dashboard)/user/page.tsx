@@ -3,6 +3,7 @@
 import { useAuth } from "@/components/auth/AuthContext";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { CourseCard } from "@/components/course/CourseCard";
+import { SubscriptionWidget } from "@/components/subscription/SubscriptionWidget";
 import { BookOpen, TrendingUp, Award, Flame, Sparkles } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
@@ -48,7 +49,7 @@ function StatCard({ icon: Icon, value, label, color, delay = 0 }: {
 }) {
     const colorClasses = {
         blue: { bg: "bg-blue-500/10 dark:bg-blue-500/10", text: "text-blue-600 dark:text-blue-400", border: "hover:border-blue-500/30" },
-        purple: { bg: "bg-purple-500/10 dark:bg-purple-500/10", text: "text-purple-600 dark:text-purple-400", border: "hover:border-purple-500/30" },
+        indigo: { bg: "bg-indigo-500/10 dark:bg-indigo-500/10", text: "text-indigo-600 dark:text-indigo-400", border: "hover:border-indigo-500/30" },
         green: { bg: "bg-green-500/10 dark:bg-green-500/10", text: "text-green-600 dark:text-green-400", border: "hover:border-green-500/30" },
         orange: { bg: "bg-orange-500/10 dark:bg-orange-500/10", text: "text-orange-600 dark:text-orange-400", border: "hover:border-orange-500/30" },
     }[color] || { bg: "bg-blue-500/10 dark:bg-blue-500/10", text: "text-blue-600 dark:text-blue-400", border: "hover:border-blue-500/30" };
@@ -138,7 +139,7 @@ export default function UserDashboard() {
 
     const enrolledCourses = useMemo(() => {
         if (!currentUser?.enrolledCourses?.length) return [];
-        return allCourses.filter(c => currentUser.enrolledCourses.includes(c.id));
+        return allCourses.filter(c => currentUser.enrolledCourses?.includes(c.id));
     }, [currentUser, allCourses]);
 
     useEffect(() => {
@@ -209,9 +210,14 @@ export default function UserDashboard() {
                 className="grid grid-cols-2 md:grid-cols-4 gap-4"
             >
                 <StatCard icon={BookOpen} value={stats.coursesEnrolled} label={t.userDash.coursesEnrolled} color="blue" delay={0} />
-                <StatCard icon={TrendingUp} value={`${stats.hoursLearned}h`} label={t.userDash.hoursLearned} color="purple" delay={0.1} />
+                <StatCard icon={TrendingUp} value={`${stats.hoursLearned}h`} label={t.userDash.hoursLearned} color="indigo" delay={0.1} />
                 <StatCard icon={Award} value={stats.lessonsCompleted} label={t.userDash.lessonsCompleted} color="green" delay={0.2} />
                 <StatCard icon={Flame} value={stats.currentStreak} label={t.userDash.dayStreak} color="orange" delay={0.3} />
+            </motion.div>
+
+            {/* Subscription Widget - seamless for free users */}
+            <motion.div variants={itemVariants}>
+                <SubscriptionWidget />
             </motion.div>
 
             {/* Continue Learning Section */}
@@ -257,7 +263,7 @@ export default function UserDashboard() {
                     <div className="flex items-center gap-3">
                         <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">{t.userDash.recommendedForYou}</h2>
                         <motion.span
-                            className="text-xs bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/20 flex items-center gap-1.5"
+                            className="text-xs bg-gradient-to-r from-indigo-500/20 to-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/20 flex items-center gap-1.5"
                             animate={{ scale: [1, 1.02, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
                         >
@@ -267,7 +273,7 @@ export default function UserDashboard() {
                     </div>
                     <Link
                         href="/browse"
-                        className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-purple-300 transition-colors font-medium"
+                        className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors font-medium"
                     >
                         {t.userDash.browseAll} →
                     </Link>

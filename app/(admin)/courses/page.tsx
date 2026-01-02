@@ -54,8 +54,8 @@ export default function CoursesManagementPage() {
     // Show loading while checking auth - AFTER all hooks
     if (authLoading || !isAdmin) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+            <div className="flex items-center justify-center min-h-screen bg-neutral-50 dark:bg-neutral-950">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
             </div>
         );
     }
@@ -75,7 +75,7 @@ export default function CoursesManagementPage() {
             if (!response.ok) throw new Error('Failed to create course');
 
             const { id } = await response.json();
-            router.push(`/courses/${id}/edit`);
+            router.push(`/editor/${id}`);
         } catch (error) {
             console.error('Creation failed:', error);
             alert('Failed to create course');
@@ -84,16 +84,16 @@ export default function CoursesManagementPage() {
     };
 
     if (isLoading) {
-        return <div className="flex items-center justify-center h-screen text-zinc-500">Loading courses...</div>;
+        return <div className="flex items-center justify-center h-screen text-neutral-500">Loading courses...</div>;
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">Content Management</h1>
-                    <p className="text-neutral-400 mt-1">Manage all courses and content</p>
+                    <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Content Management</h1>
+                    <p className="text-neutral-600 dark:text-neutral-400 mt-1">Manage all courses and content</p>
                 </div>
                 <Button
                     onClick={handleCreateCourse}
@@ -107,76 +107,76 @@ export default function CoursesManagementPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-                    <p className="text-sm text-neutral-400">Total Courses</p>
-                    <p className="text-2xl font-bold text-white mt-1">{courses.length}</p>
+                <div className="p-4 bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Total Courses</p>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-white mt-1">{courses.length}</p>
                 </div>
-                <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-                    <p className="text-sm text-neutral-400">Published</p>
-                    <p className="text-2xl font-bold text-white mt-1">{courses.filter(c => c.isPublished).length}</p>
+                <div className="p-4 bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Published</p>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-white mt-1">{courses.filter(c => c.isPublished).length}</p>
                 </div>
-                <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-                    <p className="text-sm text-neutral-400">Total Lessons</p>
-                    <p className="text-2xl font-bold text-white mt-1">
+                <div className="p-4 bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Total Lessons</p>
+                    <p className="text-2xl font-bold text-neutral-900 dark:text-white mt-1">
                         {courses.reduce((sum, c) => sum + (c.lessons?.length || 0), 0)}
                     </p>
                 </div>
             </div>
 
             {/* Courses Table */}
-            <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
                 <table className="w-full">
-                    <thead className="bg-white/5 border-b border-white/10">
+                    <thead className="bg-neutral-50 dark:bg-neutral-900/50 border-b border-neutral-200 dark:border-neutral-800">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">
                                 Course
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">
                                 Category
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">
                                 Lessons
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-400 uppercase">
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">
                                 Level
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-semibold text-neutral-400 uppercase">
+                            <th className="px-6 py-3 text-right text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">
                                 Actions
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                         {courses.map((course) => (
-                            <tr key={course.id} className="hover:bg-white/5 transition-colors">
+                            <tr key={course.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors">
                                 <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 min-w-0">
                                         <img
                                             src={course.thumbnail}
                                             alt={course.title}
-                                            className="w-12 h-12 rounded-lg object-cover"
+                                            className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                                         />
-                                        <div>
-                                            <p className="text-sm font-medium text-white">{course.title}</p>
-                                            <p className="text-xs text-neutral-400">{course.instructor}</p>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-neutral-900 dark:text-white truncate max-w-[200px]">{course.title}</p>
+                                            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{course.instructor}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className="text-sm text-neutral-300">{course.category}</span>
+                                    <span className="text-sm text-neutral-700 dark:text-neutral-300">{course.category}</span>
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-2">
-                                        <BookOpen className="w-4 h-4 text-neutral-400" />
-                                        <span className="text-sm text-white">{course.lessons.length}</span>
+                                        <BookOpen className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                                        <span className="text-sm text-neutral-900 dark:text-white">{course.lessons.length}</span>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
                                     <span
                                         className={`px-2 py-1 rounded text-xs font-medium ${course.level === "Beginner"
-                                            ? "bg-green-500/20 text-green-400"
+                                            ? "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400"
                                             : course.level === "Intermediate"
-                                                ? "bg-yellow-500/20 text-yellow-400"
-                                                : "bg-red-500/20 text-red-400"
+                                                ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                                                : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400"
                                             }`}
                                     >
                                         {course.level}
@@ -184,14 +184,14 @@ export default function CoursesManagementPage() {
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center justify-end gap-2">
-                                        <Link href={`/courses/${course.id}/edit`}>
-                                            <button className="p-2 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-colors">
+                                        <Link href={`/editor/${course.id}`}>
+                                            <button className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
                                                 <Edit className="w-4 h-4" />
                                             </button>
                                         </Link>
                                         <button
                                             onClick={() => setDeleteId(course.id)}
-                                            className="p-2 rounded-lg hover:bg-white/10 text-red-400 hover:text-red-300 transition-colors"
+                                            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>

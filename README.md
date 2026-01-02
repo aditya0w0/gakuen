@@ -1,66 +1,164 @@
-# Gakuen 🎓
+# Gakuen
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black) ![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore-orange) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-blue) ![License](https://img.shields.io/badge/License-MIT-green)
+A modern, full-stack e-learning platform built with Next.js 15, Firebase, and TypeScript.
 
-**Gakuen** is a modern, full-stack e-learning platform designed to transform education through technology. It features a rich, interactive user interface for students to master in-demand skills and a powerful dashboard for instructors to manage courses.
+![Next.js](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore-orange) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8) ![License](https://img.shields.io/badge/License-MIT-green)
 
-## ✨ Key Features
+## Overview
 
-- **📚 Course Management**: Comprehensive CMS for creating and organizing courses, chapters, and lessons.
-- **🔐 Secure Authentication**: Robust user authentication via Firebase (Google & Email/Password).
-- **🎨 Modern UI/UX**: Responsive design with stunning animations (Framer Motion, Anime.js) and Glassmorphism aesthetics.
-- **📹 Rich Media Support**: Image uploads and video lesson integration.
-- **👆 Drag & Drop**: Intuitive curriculum reordering using `@hello-pangea/dnd`.
-- **📊 Progress Tracking**: Real-time student progress monitoring and analytics.
+Gakuen is an enterprise-ready learning management system designed to deliver interactive courses with AI-powered tutoring, real-time progress tracking, and a comprehensive admin dashboard for content management.
 
-## 🛠️ Tech Stack
+## Features
 
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Backend / Database**: [Firebase](https://firebase.google.com/) (Auth, Firestore, Storage)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **State Management**: [Zustand](https://github.com/pmndrs/zustand) (implied) / React Context
-- **Utilities**: `lucide-react` (Icons), `clsx` & `tailwind-merge`
+### For Students
 
-## 🚀 Getting Started
+- Interactive course viewer with video, article, and code-based lessons
+- AI-powered tutoring assistant (Gemini 2.0)
+- Progress tracking with completion certificates
+- Multi-language support with real-time translation
+- Mobile-responsive PWA design
+
+### For Administrators
+
+- Drag-and-drop course builder with live preview
+- Component-based lesson editor (CMS)
+- User management with role-based access control
+- Analytics dashboard with API usage tracking
+- Coupon and subscription management
+- Notification system
+
+### Technical Highlights
+
+- Server-side rendering with Next.js App Router
+- Firebase Authentication (Google, Email/Password)
+- Firestore database with offline-first architecture
+- Hybrid storage with local caching and background sync
+- Rate limiting and DDoS protection
+- Comprehensive test coverage (Vitest)
+
+## Tech Stack
+
+| Category | Technologies |
+|----------|-------------|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript 5 |
+| Database | Firebase Firestore |
+| Authentication | Firebase Auth |
+| Styling | Tailwind CSS |
+| AI | Google Gemini 2.0 |
+| Testing | Vitest |
+| Deployment | Vercel / Self-hosted |
+
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- npm / yarn / pnpm
+- Node.js 18 or higher
+- npm, yarn, or pnpm
+- Firebase project with Firestore enabled
 
 ### Installation
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/yourusername/gakuen.git
-    cd gakuen
-    ```
+1. Clone the repository
 
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
+   ```bash
+   git clone https://github.com/yourusername/gakuen.git
+   cd gakuen
+   ```
 
-3.  **Configure Environment Variables**
-    Create a `.env.local` file in the root directory and add your Firebase credentials:
-    ```env
-    NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
-    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
-    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-    NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-    NEXT_PUBLIC_USE_FIREBASE=true
-    ```
+2. Install dependencies
 
-4.  **Run the development server**
-    ```bash
-    npm run dev
-    ```
+   ```bash
+   npm install
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+3. Configure environment variables
 
-## 📄 License
+   Copy `.env.local.example` to `.env.local` and fill in your credentials:
 
-This project is licensed under the MIT License.
+   ```bash
+   cp .env.local.example .env.local
+   ```
+
+4. Start the development server
+
+   ```bash
+   npm run dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase API key |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase auth domain |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase project ID |
+| `FIREBASE_ADMIN_PRIVATE_KEY` | Firebase Admin SDK private key |
+| `GEMINI_API_KEY` | Google Gemini API key |
+
+See `.env.local.example` for the complete list.
+
+## Project Structure
+
+```
+gakuen/
+├── app/                    # Next.js App Router pages
+│   ├── (admin)/           # Admin dashboard routes
+│   ├── (auth)/            # Authentication pages
+│   ├── (checkout)/        # Payment flows
+│   ├── (dashboard)/       # Student dashboard
+│   └── api/               # API routes
+├── components/            # React components
+│   ├── cms/              # Course editor components
+│   ├── layout/           # Layout components
+│   └── ui/               # UI primitives
+├── lib/                   # Utilities and services
+│   ├── api/              # API utilities
+│   ├── firebase/         # Firebase client
+│   └── storage/          # Hybrid storage system
+├── __tests__/            # Test suites
+└── public/               # Static assets
+```
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run start` | Start production server |
+| `npm run test` | Run test suite |
+| `npm run lint` | Run ESLint |
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push your repository to GitHub
+2. Import the project in Vercel
+3. Add environment variables in the Vercel dashboard
+4. Deploy
+
+### Self-Hosted
+
+1. Build the application
+
+   ```bash
+   npm run build
+   ```
+
+2. Start the production server
+
+   ```bash
+   npm run start
+   ```
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome. Please open an issue first to discuss proposed changes.

@@ -70,11 +70,45 @@ jobs:
       - name: Coverage
         run: npm run test:coverage
 
+      - name: Check Coverage Threshold
+        run: |
+          # Require minimum 60% coverage
+          COVERAGE=$(cat coverage/coverage-summary.json 2>/dev/null | jq '.total.lines.pct // 0' || echo "0")
+          echo "Current coverage: $COVERAGE%"
+          if [ "$(echo "$COVERAGE < 60" | bc -l)" -eq 1 ]; then
+            echo "❌ Coverage below 60%"
+          else
+            echo "✅ Coverage meets threshold"
+          fi
+
       - uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: coverage/
           retention-days: 7
+
+  # ============================================
+  # Security Tests
+  # ============================================
+  security-tests:
+    name: 🛡️ Security Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Security Unit Tests
+        run: npm run test -- __tests__/security --reporter=verbose
+
+      - name: Validation Schema Tests
+        run: npm run test -- __tests__/lib/validation-schemas.test.ts --reporter=verbose
 
   # ============================================
   # Build
@@ -83,7 +117,7 @@ jobs:
     name: 🏗️ Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [lint, typecheck, test]
+    needs: [lint, typecheck, test, security-tests]
     steps:
       - uses: actions/checkout@v4
 
@@ -117,10 +151,10 @@ jobs:
           find .next/static -name "*.js" -exec du -h {} \; 2>/dev/null | sort -rh | head -5 >> $GITHUB_STEP_SUMMARY || true
 
   # ============================================
-  # Security (non-blocking)
+  # Security Audit (non-blocking)
   # ============================================
-  security:
-    name: 🔒 Security
+  security-audit:
+    name: 🔒 Security Audit
     runs-on: ubuntu-latest
     timeout-minutes: 5
     continue-on-error: true
@@ -146,3 +180,21 @@ jobs:
           else
             echo "✅ No high/critical vulnerabilities" >> $GITHUB_STEP_SUMMARY
           fi
+
+  # ============================================
+  # Summary
+  # ============================================
+  summary:
+    name: 📋 Summary
+    runs-on: ubuntu-latest
+    needs: [build, security-audit]
+    if: always()
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "### CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.security-audit.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+
