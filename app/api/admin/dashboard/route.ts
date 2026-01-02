@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
         const db = admin.firestore();
 
-        let stats = {
+        const stats = {
             totalUsers: 0,
             activeCourses: 0,
             totalRevenue: 0,

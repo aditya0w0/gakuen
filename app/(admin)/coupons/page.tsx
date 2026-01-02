@@ -10,7 +10,6 @@ import {
     Check,
     X,
     Tag,
-    Calendar,
     Users,
     Percent,
     Loader2,
@@ -107,7 +106,7 @@ export default function CouponsPage() {
             validFrom: coupon.validFrom.split("T")[0],
             validUntil: coupon.validUntil.split("T")[0],
             maxUses: coupon.maxUses,
-            applicableTo: coupon.applicableTo as any,
+            applicableTo: coupon.applicableTo as "all" | "subscription" | "course" | "bundle",
             isActive: coupon.isActive,
         });
         setShowModal(true);
@@ -149,7 +148,7 @@ export default function CouponsPage() {
                     const res = await fetch(`/api/coupons/${id}`, { method: "DELETE" });
                     if (!res.ok) throw new Error("Failed to delete");
                     fetchCoupons();
-                } catch (err) {
+                } catch {
                     alert("Failed to delete coupon");
                 }
             },
@@ -166,7 +165,7 @@ export default function CouponsPage() {
                     const res = await fetch("/api/coupons?action=seed", { method: "PUT" });
                     if (!res.ok) throw new Error("Failed to seed");
                     fetchCoupons();
-                } catch (err) {
+                } catch {
                     alert("Failed to seed coupons");
                 }
             },
@@ -398,7 +397,7 @@ export default function CouponsPage() {
                                 <Label>Applies To</Label>
                                 <select
                                     value={formData.applicableTo}
-                                    onChange={(e) => setFormData({ ...formData, applicableTo: e.target.value as any })}
+                                    onChange={(e) => setFormData({ ...formData, applicableTo: e.target.value as "all" | "subscription" | "course" | "bundle" })}
                                     className="w-full px-3 py-2 bg-neutral-100 dark:bg-zinc-800 border border-neutral-200 dark:border-zinc-700 rounded-lg text-neutral-900 dark:text-white"
                                 >
                                     <option value="all">All</option>

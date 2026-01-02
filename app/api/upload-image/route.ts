@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         const randomStr = Math.random().toString(36).substring(7);
 
         // If filename provided, sanitize it
-        let safeName = filename ? sanitizePath(filename) : '';
+        const safeName = filename ? sanitizePath(filename) : '';
         const finalFilename = safeName
             ? `${safeName}-${timestamp}.png`
             : `img-${timestamp}-${randomStr}.png`;

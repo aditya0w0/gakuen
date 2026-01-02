@@ -21,6 +21,7 @@ import { ContextMenu } from "@/components/cms/ContextMenu";
 import { CourseSettings } from "@/components/cms/CourseSettings";
 import { fetchCourse, updateCourse } from "@/lib/api/courseApi";
 import { saveCourseMetadata } from "@/lib/firebase/firestore";
+import { createComponent } from "@/lib/cms/registry";
 
 
 const TopBar = ({
@@ -104,7 +105,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     const [isSaving, setIsSaving] = useState(false);
     const [previewMode, setPreviewMode] = useState(false);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; componentId: string } | null>(null);
-    const [copiedComponent, setCopiedComponent] = useState<Component | null>(null);
+    const [copiedComponent, setCopiedComponent] = useState<Component | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
     const [activeView, setActiveView] = useState<'content' | 'settings'>('content');
     const [courseTitle, setCourseTitle] = useState('');
     const [courseDescription, setCourseDescription] = useState('');
@@ -113,7 +114,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     const [isPublished, setIsPublished] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [draggedComponentId, setDraggedComponentId] = useState<string | null>(null);
-    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const _saveTimeoutRef = useRef<NodeJS.Timeout | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
     const idCounterRef = useRef(0);
 
 
@@ -346,7 +347,6 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                 e.preventDefault();
                                 const componentType = e.dataTransfer.getData('componentType');
                                 if (componentType && editingIndex !== null) {
-                                    const { createComponent } = require('@/lib/cms/registry');
                                     const newComponent = createComponent(componentType);
                                     handleAddComponent(newComponent);
                                 }

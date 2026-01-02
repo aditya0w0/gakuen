@@ -14,7 +14,7 @@ interface ModelPricing {
 }
 
 // Cache for model pricing
-let pricingCache: Map<string, { input: number; output: number; image?: number }> = new Map();
+const pricingCache: Map<string, { input: number; output: number; image?: number }> = new Map();
 let lastFetchTime = 0;
 const CACHE_TTL = 3600000; // 1 hour
 
