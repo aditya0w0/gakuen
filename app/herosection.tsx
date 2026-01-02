@@ -374,5 +374,143 @@ const FeaturesSection = () => {
   );
 };
 
+const RosterSection = () => {
+  const [activeUnit, setActiveUnit] = useState(0);
+
+  const units = [
+    {
+      id: 0,
+      name: "Void Drifter",
+      role: "Quantum / Hunt",
+      desc: "Specializes in single-target burst damage. Can manipulate quantum entanglement fields.",
+      stats: { atk: 90, def: 40, spd: 85 },
+      color: "from-indigo-500 to-purple-600",
+      icon: Crosshair
+    },
+    {
+      id: 1,
+      name: "Solar Cleric",
+      role: "Imaginary / Abundance",
+      desc: "Provides team-wide healing and buffs. Harnesses the power of dying stars.",
+      stats: { atk: 30, def: 80, spd: 60 },
+      color: "from-amber-300 to-yellow-500",
+      icon: Activity
+    },
+    {
+      id: 2,
+      name: "Null Tank",
+      role: "Physical / Preservation",
+      desc: "Generates massive shields. Reflects incoming damage back to attackers.",
+      stats: { atk: 50, def: 95, spd: 30 },
+      color: "from-gray-400 to-slate-600",
+      icon: Shield
+    }
+  ];
+
+  const current = units[activeUnit];
+
+  return (
+    <div className="relative py-20 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6">
+         {/* Header */}
+         <div className="flex items-center gap-4 mb-12">
+            <div className="w-16 h-1 bg-cyan-500" />
+            <h2 className="text-3xl font-black italic uppercase tracking-tighter">Deployable Units</h2>
+         </div>
+
+         <div className="flex flex-col lg:flex-row gap-8 min-h-[500px]">
+            {/* List Selection (Left) */}
+            <div className="w-full lg:w-1/3 space-y-2">
+               {units.map((unit, idx) => (
+                 <button 
+                   key={unit.id}
+                   onClick={() => setActiveUnit(idx)}
+                   className={`w-full group relative h-20 flex items-center px-6 transition-all duration-300 ${
+                     activeUnit === idx 
+                       ? 'bg-gradient-to-r from-white/10 to-transparent border-l-4 border-cyan-400 translate-x-2' 
+                       : 'bg-black/40 hover:bg-white/5 border-l-4 border-transparent hover:border-white/20'
+                   }`}
+                 >
+                    <div className="mr-4">
+                       <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${unit.color} flex items-center justify-center`}>
+                          <unit.icon size={20} className="text-white" />
+                       </div>
+                    </div>
+                    <div className="text-left">
+                       <h3 className={`font-bold uppercase text-sm ${activeUnit === idx ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
+                         {unit.name}
+                       </h3>
+                       <p className="text-[10px] text-gray-500 font-mono tracking-widest">{unit.role}</p>
+                    </div>
+                    
+                    {/* Active Indicator Arrow */}
+                    {activeUnit === idx && (
+                      <ChevronRight className="absolute right-4 text-cyan-400 animate-pulse" size={16} />
+                    )}
+                 </button>
+               ))}
+            </div>
+
+            {/* Main Display (Right) */}
+            <div className="w-full lg:w-2/3 relative">
+               {/* Background Card */}
+               <div className="absolute inset-0 bg-white/5 clip-path-slant-right backdrop-blur-sm border border-white/10" />
+               
+               {/* Content */}
+               <div className="relative z-10 p-12 flex flex-col md:flex-row gap-8 h-full items-center">
+                  
+                  {/* Character "Image" Placeholder (Abstract) */}
+                  <div className="w-64 h-64 md:w-80 md:h-full flex-shrink-0 relative group">
+                     <div className={`absolute inset-0 bg-gradient-to-b ${current.color} opacity-20 rounded-full blur-3xl group-hover:opacity-40 transition-opacity`} />
+                     <div className="relative w-full h-full border-2 border-white/10 bg-black/50 flex items-center justify-center clip-path-hexagon">
+                        <current.icon size={80} className={`text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]`} />
+                     </div>
+                     
+                     {/* Floating Particles */}
+                     <div className="absolute top-0 right-0 w-4 h-4 bg-white rounded-full animate-ping" />
+                     <div className="absolute bottom-10 left-0 w-2 h-2 bg-cyan-400 rounded-full animate-bounce" />
+                  </div>
+
+                  {/* Details */}
+                  <div className="flex-1 space-y-6">
+                     <div>
+                        <h3 className="text-4xl font-black italic text-white mb-2">{current.name}</h3>
+                        <div className="inline-block px-3 py-1 bg-white/10 rounded text-xs font-mono text-cyan-400 border border-cyan-500/30">
+                           {current.role}
+                        </div>
+                     </div>
+                     
+                     <p className="text-gray-400 leading-relaxed text-sm border-l-2 border-white/10 pl-4">
+                        {current.desc}
+                     </p>
+
+                     {/* Stats Bars */}
+                     <div className="space-y-3 pt-4">
+                        {Object.entries(current.stats).map(([key, val]) => (
+                           <div key={key} className="flex items-center gap-3">
+                              <span className="w-8 text-xs font-bold uppercase text-gray-500">{key}</span>
+                              <div className="flex-1 h-2 bg-white/10 skew-x-[-20deg] overflow-hidden">
+                                 <div 
+                                    className={`h-full bg-gradient-to-r ${current.color}`} 
+                                    style={{ width: `${val}%` }} 
+                                 />
+                              </div>
+                              <span className="text-xs font-mono text-white">{val}</span>
+                           </div>
+                        ))}
+                     </div>
+                     
+                     <button className="mt-4 px-8 py-2 bg-white text-black font-bold uppercase text-xs hover:bg-cyan-400 transition-colors skew-x-[-20deg]">
+                        <span className="inline-block skew-x-[20deg]">View Profile</span>
+                     </button>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+    </div>
+  );
+};
+
 
 export default Hero;
