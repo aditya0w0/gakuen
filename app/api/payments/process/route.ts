@@ -3,11 +3,20 @@ import { withAuthTracked, safeErrorResponse } from '@/lib/api/auth-guard';
 import { initAdmin } from '@/lib/auth/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { paymentSchema } from '@/lib/validation/schemas';
+import { isSubscriptionsEnabled } from '@/lib/admin/feature-flags';
 
 export const dynamic = 'force-dynamic';
 
 export const POST = withAuthTracked(async (request, { user }) => {
     try {
+        // 🔧 Feature flag check
+        if (!(await isSubscriptionsEnabled())) {
+            return NextResponse.json(
+                { error: 'Payments are temporarily disabled for maintenance.' },
+                { status: 503 }
+            );
+        }
+
         // Validate and sanitize input
         const body = await request.json();
         const parseResult = paymentSchema.safeParse(body);

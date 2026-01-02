@@ -4,9 +4,16 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { Course } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, BookOpen, TrendingUp, DollarSign, Eye, Edit, Trash2 } from "lucide-react";
+import { Users, BookOpen, TrendingUp, DollarSign, Eye, Edit, Trash2, Settings, Zap, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+
+interface FeatureFlags {
+    subscriptionsEnabled: boolean;
+    aiEnabled: boolean;
+    updatedAt: string;
+    updatedBy?: string;
+}
 
 interface DashboardStats {
     totalUsers: number;
@@ -29,27 +36,42 @@ export default function AdminDashboard() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [features, setFeatures] = useState<FeatureFlags | null>(null);
+    const [isTogglingFeature, setIsTogglingFeature] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // Fetch courses
-                const coursesRes = await fetch('/api/courses', { cache: 'no-store' });
-                const coursesData = await coursesRes.json();
-                setCourses(Array.isArray(coursesData) ? coursesData : []);
+                // Fetch all data in parallel for faster loading
+                const [coursesRes, statsRes, usersRes, featuresRes] = await Promise.all([
+                    fetch('/api/courses', { cache: 'no-store' }),
+                    fetch('/api/admin/dashboard'),
+                    fetch('/api/admin/users?limit=5&page=1'),
+                    fetch('/api/admin/features'),
+                ]);
 
-                // Fetch dashboard stats
-                const statsRes = await fetch('/api/admin/dashboard');
+                // Process courses
+                if (coursesRes.ok) {
+                    const coursesData = await coursesRes.json();
+                    setCourses(Array.isArray(coursesData) ? coursesData : []);
+                }
+
+                // Process stats
                 if (statsRes.ok) {
                     const statsData = await statsRes.json();
                     setStats(statsData);
                 }
 
-                // Fetch recent users
-                const usersRes = await fetch('/api/admin/users?limit=5&page=1');
+                // Process users
                 if (usersRes.ok) {
                     const usersData = await usersRes.json();
                     setRecentUsers(usersData.users || []);
+                }
+
+                // Process feature flags
+                if (featuresRes.ok) {
+                    const featuresData = await featuresRes.json();
+                    setFeatures(featuresData);
                 }
             } catch (error) {
                 console.error('Failed to fetch dashboard data:', error);
@@ -60,6 +82,29 @@ export default function AdminDashboard() {
 
         fetchDashboardData();
     }, []);
+
+    // Toggle feature handler
+    const handleToggleFeature = async (feature: 'subscriptionsEnabled' | 'aiEnabled') => {
+        if (!features || isTogglingFeature) return;
+
+        setIsTogglingFeature(feature);
+        try {
+            const res = await fetch('/api/admin/features', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [feature]: !features[feature] }),
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setFeatures(data.flags);
+            }
+        } catch (error) {
+            console.error('Failed to toggle feature:', error);
+        } finally {
+            setIsTogglingFeature(null);
+        }
+    };
 
     if (!user || user.role !== "admin") {
         return (
@@ -73,10 +118,12 @@ export default function AdminDashboard() {
         return <div className="text-neutral-400">Loading dashboard...</div>;
     }
 
-    // Format date helper
+    // Format date helper - with NaN protection
     const formatJoinedDate = (dateString?: string) => {
         if (!dateString) return 'Recently';
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Recently';
+
         const now = new Date();
         const diffMs = now.getTime() - date.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -85,7 +132,9 @@ export default function AdminDashboard() {
         if (diffDays === 1) return '1 day ago';
         if (diffDays < 7) return `${diffDays} days ago`;
         if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? 's' : ''} ago`;
-        return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? 's' : ''} ago`;
+        const months = Math.floor(diffDays / 30);
+        if (months === 0) return 'Recently';
+        return `${months} month${months > 1 ? 's' : ''} ago`;
     };
 
     return (
@@ -95,6 +144,56 @@ export default function AdminDashboard() {
                 <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Admin Dashboard</h1>
                 <p className="text-neutral-600 dark:text-neutral-400 mt-1">Platform overview and management</p>
             </div>
+
+            {/* Feature Toggles - Admin Controls */}
+            {features && (
+                <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50 animate-in fade-in duration-300">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Settings className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">Quick Controls</span>
+                    </div>
+                    <div className="flex flex-wrap gap-4">
+                        {/* Subscriptions Toggle */}
+                        <button
+                            onClick={() => handleToggleFeature('subscriptionsEnabled')}
+                            disabled={isTogglingFeature === 'subscriptionsEnabled'}
+                            className={`flex items-center gap-3 px-4 py-2 rounded-lg border transition-all ${features.subscriptionsEnabled
+                                    ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
+                                    : 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
+                                } ${isTogglingFeature === 'subscriptionsEnabled' ? 'opacity-50' : 'hover:opacity-80'}`}
+                        >
+                            <CreditCard className="w-4 h-4" />
+                            <span className="text-sm font-medium">Subscriptions</span>
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${features.subscriptionsEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                                }`}>
+                                {features.subscriptionsEnabled ? 'ON' : 'OFF'}
+                            </span>
+                        </button>
+
+                        {/* AI Toggle */}
+                        <button
+                            onClick={() => handleToggleFeature('aiEnabled')}
+                            disabled={isTogglingFeature === 'aiEnabled'}
+                            className={`flex items-center gap-3 px-4 py-2 rounded-lg border transition-all ${features.aiEnabled
+                                    ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
+                                    : 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
+                                } ${isTogglingFeature === 'aiEnabled' ? 'opacity-50' : 'hover:opacity-80'}`}
+                        >
+                            <Zap className="w-4 h-4" />
+                            <span className="text-sm font-medium">AI Features</span>
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${features.aiEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                                }`}>
+                                {features.aiEnabled ? 'ON' : 'OFF'}
+                            </span>
+                        </button>
+                    </div>
+                    {features.updatedBy && (
+                        <p className="text-xs text-amber-600 dark:text-amber-500 mt-2">
+                            Last updated by {features.updatedBy}
+                        </p>
+                    )}
+                </Card>
+            )}
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

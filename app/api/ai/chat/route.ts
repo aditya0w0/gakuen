@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIP, RateLimits } from '@/lib/api/rate-limit';
 import { initAdmin } from '@/lib/auth/firebase-admin';
 import { AI_MODELS, SUBSCRIPTION_TIERS, SubscriptionTier, checkAILimit } from '@/lib/constants/subscription';
 import { FieldValue } from 'firebase-admin/firestore';
+import { isAIEnabled } from '@/lib/admin/feature-flags';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,14 @@ const TIER_MODELS = {
 
 export async function POST(request: NextRequest) {
     try {
+        // 🔧 Feature flag check
+        if (!(await isAIEnabled())) {
+            return NextResponse.json(
+                { error: 'AI features are temporarily disabled for maintenance.' },
+                { status: 503 }
+            );
+        }
+
         // 🔒 SECURITY: Rate limiting
         const clientIP = getClientIP(request);
         const rateLimit = checkRateLimit(`ai-chat:${clientIP}`, RateLimits.AI);
