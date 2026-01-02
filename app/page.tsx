@@ -802,13 +802,14 @@ export default function LandingPage() {
               <span className="px-2 py-0.5 text-xs bg-cyan-500/20 text-cyan-400 rounded-full">AI</span>
             </div>
             <div className="flex items-center gap-8 text-neutral-500 text-sm">
-              <Link href="#" className="hover:text-white transition-colors">Privacy</Link>
-              <Link href="#" className="hover:text-white transition-colors">Terms</Link>
-              <Link href="#" className="hover:text-white transition-colors">Contact</Link>
+              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+              <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-white/5 text-center text-neutral-600 text-sm">
-            © 2025 Gakuen. AI-powered learning.
+          <div className="mt-8 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-neutral-600 text-sm">
+            <div>© 2025 Gakuen. AI-powered learning.</div>
+            <div className="text-xs text-neutral-500">All educational content is AI-generated and not protected by copyright.</div>
           </div>
         </div>
       </footer>
