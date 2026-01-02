@@ -526,35 +526,125 @@ export default function LandingPage() {
       {/* AI LEARNING MODES - Roster Style */}
       <RosterSection />
 
-      {/* TESTIMONIAL */}
-      <section className="py-32 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="flex justify-center gap-1 mb-8">
+      {/* REVIEWS - HSR Style */}
+      <section className="relative py-32 overflow-hidden border-t border-white/5">
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-indigo-950/20 to-black" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-16">
+            <div className="w-16 h-1 bg-amber-400" />
+            <h2 className="text-3xl font-black italic uppercase tracking-tighter">Trailblazer Reviews</h2>
+            <div className="flex items-center gap-1 ml-auto">
               {[1, 2, 3, 4, 5].map(i => (
-                <Star key={i} className="w-8 h-8 fill-yellow-400 text-yellow-400" />
+                <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
               ))}
+              <span className="text-amber-400 font-bold ml-2">4.9</span>
             </div>
-            <blockquote className="text-2xl md:text-3xl lg:text-4xl font-medium leading-relaxed mb-8">
-              "Finally, an AI tutor that actually
-              <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent"> understands</span> how I learn.
-              It's like having a brilliant friend who's always free to help."
-            </blockquote>
-            <div className="flex items-center justify-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-emerald-500 flex items-center justify-center text-xl font-bold">
-                S
-              </div>
-              <div className="text-left">
-                <p className="font-semibold">Sarah Chen</p>
-                <p className="text-neutral-500 text-sm">Software Engineer @ Google</p>
+          </div>
+
+          {/* Review Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                name: "Sarah Chen",
+                rank: "Lv. 70",
+                role: "Software Engineer",
+                avatar: "S",
+                color: "from-cyan-500 to-blue-600",
+                quote: "Finally, an AI tutor that actually understands how I learn. Like having a brilliant friend who's always free.",
+                rating: 5,
+              },
+              {
+                name: "Marcus Rivera",
+                rank: "Lv. 45",
+                role: "CS Student",
+                avatar: "M",
+                color: "from-amber-400 to-orange-500",
+                quote: "Went from struggling in algorithms to acing my interviews. The adaptive learning is game-changing.",
+                rating: 5,
+              },
+              {
+                name: "Emily Zhang",
+                rank: "Lv. 82",
+                role: "Tech Lead @ Meta",
+                avatar: "E",
+                color: "from-purple-500 to-pink-500",
+                quote: "I've tried every learning platform. This is the only one that feels like it was built for engineers.",
+                rating: 5,
+              },
+            ].map((review, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: i * 0.15 }}
+                className="group relative"
+              >
+                {/* Card */}
+                <div className="relative bg-black/60 backdrop-blur-sm border border-white/10 p-6 hover:border-white/20 transition-all duration-300 clip-path-slant-left">
+
+                  {/* Rating */}
+                  <div className="flex gap-0.5 mb-4">
+                    {[...Array(review.rating)].map((_, j) => (
+                      <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+
+                  {/* Quote */}
+                  <blockquote className="text-gray-300 text-sm leading-relaxed mb-6 italic">
+                    "{review.quote}"
+                  </blockquote>
+
+                  {/* User Info */}
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${review.color} flex items-center justify-center text-white font-bold text-lg`}>
+                      {review.avatar}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white">{review.name}</span>
+                        <span className="text-[10px] font-mono text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded">{review.rank}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{review.role}</span>
+                    </div>
+                  </div>
+
+                  {/* Corner Accent */}
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/10 group-hover:border-amber-400/50 transition-colors" />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Bottom Stats Bar */}
+          <div className="mt-16 flex flex-col md:flex-row items-center justify-center gap-8 text-center">
+            <div className="flex items-center gap-3">
+              <Users className="text-cyan-400" size={24} />
+              <div>
+                <div className="text-2xl font-black text-white">50,000+</div>
+                <div className="text-[10px] text-gray-500 uppercase tracking-widest">Active Users</div>
               </div>
             </div>
-          </motion.div>
+            <div className="w-px h-12 bg-white/10 hidden md:block" />
+            <div className="flex items-center gap-3">
+              <Star className="text-amber-400 fill-amber-400" size={24} />
+              <div>
+                <div className="text-2xl font-black text-white">4.9/5.0</div>
+                <div className="text-[10px] text-gray-500 uppercase tracking-widest">Average Rating</div>
+              </div>
+            </div>
+            <div className="w-px h-12 bg-white/10 hidden md:block" />
+            <div className="flex items-center gap-3">
+              <Zap className="text-emerald-400" size={24} />
+              <div>
+                <div className="text-2xl font-black text-white">1M+ Hours</div>
+                <div className="text-[10px] text-gray-500 uppercase tracking-widest">Learning Time</div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
