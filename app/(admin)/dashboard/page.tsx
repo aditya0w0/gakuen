@@ -11,6 +11,11 @@ import { useState, useEffect } from "react";
 interface FeatureFlags {
     subscriptionsEnabled: boolean;
     aiEnabled: boolean;
+    freeCoursesMode: boolean;
+    disableRateLimits: boolean;
+    aiUnlimitedMode: boolean;
+    aiUnlockUntil?: string;
+    aiWhitelist: string[];
     updatedAt: string;
     updatedBy?: string;
 }
@@ -84,7 +89,7 @@ export default function AdminDashboard() {
     }, []);
 
     // Toggle feature handler
-    const handleToggleFeature = async (feature: 'subscriptionsEnabled' | 'aiEnabled') => {
+    const handleToggleFeature = async (feature: 'subscriptionsEnabled' | 'aiEnabled' | 'freeCoursesMode' | 'disableRateLimits' | 'aiUnlimitedMode') => {
         if (!features || isTogglingFeature) return;
 
         setIsTogglingFeature(feature);
@@ -151,20 +156,23 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-2 mb-3">
                         <Settings className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                         <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">Quick Controls</span>
+                        <span className="text-xs text-amber-600 dark:text-amber-500">(Admin Only)</span>
                     </div>
-                    <div className="flex flex-wrap gap-4">
+
+                    {/* Row 1: Main Toggles */}
+                    <div className="flex flex-wrap gap-3 mb-3">
                         {/* Subscriptions Toggle */}
                         <button
                             onClick={() => handleToggleFeature('subscriptionsEnabled')}
                             disabled={isTogglingFeature === 'subscriptionsEnabled'}
-                            className={`flex items-center gap-3 px-4 py-2 rounded-lg border transition-all ${features.subscriptionsEnabled
-                                    ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
-                                    : 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-all ${features.subscriptionsEnabled
+                                ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
+                                : 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
                                 } ${isTogglingFeature === 'subscriptionsEnabled' ? 'opacity-50' : 'hover:opacity-80'}`}
                         >
-                            <CreditCard className="w-4 h-4" />
-                            <span className="text-sm font-medium">Subscriptions</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${features.subscriptionsEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                            <CreditCard className="w-3.5 h-3.5" />
+                            <span className="font-medium">Payments</span>
+                            <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${features.subscriptionsEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                                 }`}>
                                 {features.subscriptionsEnabled ? 'ON' : 'OFF'}
                             </span>
@@ -174,21 +182,73 @@ export default function AdminDashboard() {
                         <button
                             onClick={() => handleToggleFeature('aiEnabled')}
                             disabled={isTogglingFeature === 'aiEnabled'}
-                            className={`flex items-center gap-3 px-4 py-2 rounded-lg border transition-all ${features.aiEnabled
-                                    ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
-                                    : 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-all ${features.aiEnabled
+                                ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
+                                : 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
                                 } ${isTogglingFeature === 'aiEnabled' ? 'opacity-50' : 'hover:opacity-80'}`}
                         >
-                            <Zap className="w-4 h-4" />
-                            <span className="text-sm font-medium">AI Features</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${features.aiEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                            <Zap className="w-3.5 h-3.5" />
+                            <span className="font-medium">AI</span>
+                            <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${features.aiEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                                 }`}>
                                 {features.aiEnabled ? 'ON' : 'OFF'}
                             </span>
                         </button>
                     </div>
+
+                    {/* Row 2: Special Modes */}
+                    <div className="flex flex-wrap gap-3 pt-3 border-t border-amber-200 dark:border-amber-800/50">
+                        {/* Free Courses Mode */}
+                        <button
+                            onClick={() => handleToggleFeature('freeCoursesMode')}
+                            disabled={isTogglingFeature === 'freeCoursesMode'}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-all ${features.freeCoursesMode
+                                ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-700 text-purple-800 dark:text-purple-300'
+                                : 'bg-neutral-100 dark:bg-neutral-800/50 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
+                                } ${isTogglingFeature === 'freeCoursesMode' ? 'opacity-50' : 'hover:opacity-80'}`}
+                        >
+                            <BookOpen className="w-3.5 h-3.5" />
+                            <span className="font-medium">Free Courses</span>
+                            {features.freeCoursesMode && (
+                                <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-purple-500 text-white">ACTIVE</span>
+                            )}
+                        </button>
+
+                        {/* Disable Rate Limits */}
+                        <button
+                            onClick={() => handleToggleFeature('disableRateLimits')}
+                            disabled={isTogglingFeature === 'disableRateLimits'}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-all ${features.disableRateLimits
+                                ? 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-300'
+                                : 'bg-neutral-100 dark:bg-neutral-800/50 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
+                                } ${isTogglingFeature === 'disableRateLimits' ? 'opacity-50' : 'hover:opacity-80'}`}
+                        >
+                            <TrendingUp className="w-3.5 h-3.5" />
+                            <span className="font-medium">No Limits</span>
+                            {features.disableRateLimits && (
+                                <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-orange-500 text-white">ACTIVE</span>
+                            )}
+                        </button>
+
+                        {/* Unlock All AI */}
+                        <button
+                            onClick={() => handleToggleFeature('aiUnlimitedMode')}
+                            disabled={isTogglingFeature === 'aiUnlimitedMode'}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-all ${features.aiUnlimitedMode
+                                ? 'bg-indigo-100 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-800 dark:text-indigo-300'
+                                : 'bg-neutral-100 dark:bg-neutral-800/50 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400'
+                                } ${isTogglingFeature === 'aiUnlimitedMode' ? 'opacity-50' : 'hover:opacity-80'}`}
+                        >
+                            <Zap className="w-3.5 h-3.5" />
+                            <span className="font-medium">Unlock All AI</span>
+                            {features.aiUnlimitedMode && (
+                                <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-indigo-500 text-white">PRO FOR ALL</span>
+                            )}
+                        </button>
+                    </div>
+
                     {features.updatedBy && (
-                        <p className="text-xs text-amber-600 dark:text-amber-500 mt-2">
+                        <p className="text-xs text-amber-600 dark:text-amber-500 mt-3">
                             Last updated by {features.updatedBy}
                         </p>
                     )}

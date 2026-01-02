@@ -6,7 +6,7 @@ import { checkRateLimit, getClientIP, RateLimits } from '@/lib/api/rate-limit';
 import { initAdmin } from '@/lib/auth/firebase-admin';
 import { AI_MODELS, SUBSCRIPTION_TIERS, SubscriptionTier, checkAILimit } from '@/lib/constants/subscription';
 import { FieldValue } from 'firebase-admin/firestore';
-import { isAIEnabled } from '@/lib/admin/feature-flags';
+import { isAIEnabled, shouldBypassRateLimits, shouldUnlockAI } from '@/lib/admin/feature-flags';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,20 +31,25 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // 🔒 SECURITY: Rate limiting
-        const clientIP = getClientIP(request);
-        const rateLimit = checkRateLimit(`ai-chat:${clientIP}`, RateLimits.AI);
-        if (!rateLimit.allowed) {
-            return NextResponse.json(
-                { error: 'Too many requests. Please wait before trying again.' },
-                {
-                    status: 429,
-                    headers: {
-                        'Retry-After': String(Math.ceil((rateLimit.resetTime - Date.now()) / 1000)),
-                        'X-RateLimit-Remaining': '0',
+        // 🔧 Check if rate limits should be bypassed
+        const bypassRateLimits = await shouldBypassRateLimits();
+
+        // 🔒 SECURITY: Rate limiting (unless bypassed)
+        if (!bypassRateLimits) {
+            const clientIP = getClientIP(request);
+            const rateLimit = checkRateLimit(`ai-chat:${clientIP}`, RateLimits.AI);
+            if (!rateLimit.allowed) {
+                return NextResponse.json(
+                    { error: 'Too many requests. Please wait before trying again.' },
+                    {
+                        status: 429,
+                        headers: {
+                            'Retry-After': String(Math.ceil((rateLimit.resetTime - Date.now()) / 1000)),
+                            'X-RateLimit-Remaining': '0',
+                        }
                     }
-                }
-            );
+                );
+            }
         }
 
         // 🔒 SECURITY: Require authentication
@@ -97,7 +102,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Determine model based on tier and mode
-        let modelToUse = TIER_MODELS[userTier];
+        // Check if AI should be unlocked for all (promo/testing)
+        const unlockAI = await shouldUnlockAI(authResult.user.id);
+        const effectiveTier = unlockAI ? 'pro' : userTier;
+        let modelToUse = TIER_MODELS[effectiveTier];
         let usingProModel = false;
 
         // Check if user wants Pro model and has access

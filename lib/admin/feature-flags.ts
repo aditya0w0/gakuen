@@ -6,8 +6,18 @@
 import { initAdmin } from '@/lib/auth/firebase-admin';
 
 export interface FeatureFlags {
+    // Master toggles
     subscriptionsEnabled: boolean;
     aiEnabled: boolean;
+
+    // Enhanced options
+    freeCoursesMode: boolean;        // When true, all courses are free (for testing/promo)
+    disableRateLimits: boolean;      // When true, rate limits are bypassed
+    aiUnlimitedMode: boolean;        // When true, all users get pro-tier AI
+    aiUnlockUntil?: string;          // ISO date - unlock AI for all until this date
+    aiWhitelist: string[];           // User IDs that bypass AI restrictions
+
+    // Meta
     updatedAt: string;
     updatedBy?: string;
 }
@@ -15,6 +25,10 @@ export interface FeatureFlags {
 const DEFAULT_FLAGS: FeatureFlags = {
     subscriptionsEnabled: true,
     aiEnabled: true,
+    freeCoursesMode: false,
+    disableRateLimits: false,
+    aiUnlimitedMode: false,
+    aiWhitelist: [],
     updatedAt: new Date().toISOString(),
 };
 
@@ -43,7 +57,8 @@ export async function getFeatureFlags(): Promise<FeatureFlags> {
         const doc = await db.collection('config').doc('features').get();
 
         if (doc.exists) {
-            cachedFlags = doc.data() as FeatureFlags;
+            // Merge with defaults to ensure all fields exist
+            cachedFlags = { ...DEFAULT_FLAGS, ...doc.data() } as FeatureFlags;
         } else {
             // Create default if doesn't exist
             await db.collection('config').doc('features').set(DEFAULT_FLAGS);
@@ -95,9 +110,76 @@ export async function isSubscriptionsEnabled(): Promise<boolean> {
 }
 
 /**
+ * Check if courses should be free (for promo/testing)
+ */
+export async function isFreeCoursesMode(): Promise<boolean> {
+    const flags = await getFeatureFlags();
+    // Free courses when: explicitly enabled OR subscriptions disabled
+    return flags.freeCoursesMode || !flags.subscriptionsEnabled;
+}
+
+/**
  * Quick check if AI features are enabled
  */
 export async function isAIEnabled(): Promise<boolean> {
     const flags = await getFeatureFlags();
     return flags.aiEnabled;
+}
+
+/**
+ * Check if rate limits should be bypassed
+ */
+export async function shouldBypassRateLimits(): Promise<boolean> {
+    const flags = await getFeatureFlags();
+    return flags.disableRateLimits;
+}
+
+/**
+ * Check if user should get unlimited AI access
+ * Returns true if: aiUnlimitedMode is on, user is whitelisted, or within unlock period
+ */
+export async function shouldUnlockAI(userId?: string): Promise<boolean> {
+    const flags = await getFeatureFlags();
+
+    // Global unlimited mode
+    if (flags.aiUnlimitedMode) return true;
+
+    // Check unlock period
+    if (flags.aiUnlockUntil) {
+        const unlockDate = new Date(flags.aiUnlockUntil);
+        if (Date.now() < unlockDate.getTime()) {
+            return true;
+        }
+    }
+
+    // Check whitelist
+    if (userId && flags.aiWhitelist?.includes(userId)) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Add user to AI whitelist
+ */
+export async function addToAIWhitelist(userId: string, updatedBy?: string): Promise<FeatureFlags> {
+    const flags = await getFeatureFlags();
+    const whitelist = [...(flags.aiWhitelist || [])];
+
+    if (!whitelist.includes(userId)) {
+        whitelist.push(userId);
+    }
+
+    return updateFeatureFlags({ aiWhitelist: whitelist }, updatedBy);
+}
+
+/**
+ * Remove user from AI whitelist
+ */
+export async function removeFromAIWhitelist(userId: string, updatedBy?: string): Promise<FeatureFlags> {
+    const flags = await getFeatureFlags();
+    const whitelist = (flags.aiWhitelist || []).filter(id => id !== userId);
+
+    return updateFeatureFlags({ aiWhitelist: whitelist }, updatedBy);
 }
