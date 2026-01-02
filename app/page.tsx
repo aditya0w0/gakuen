@@ -2,22 +2,9 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Brain, Zap, Target, BarChart3, Users, Shield, Play, CheckCircle2, Star } from "lucide-react";
-import { motion, useScroll, useTransform, useSpring, useInView } from "framer-motion";
+import { ArrowRight, Sparkles, Brain, Zap, Target, BarChart3, Users, Shield, Play, CheckCircle2, Star, GraduationCap, Cpu, BookOpen, Clock } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
-
-// Premium counter animation hook
-function useCounter(end: number, duration: number = 2) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: true });
-  const spring = useSpring(0, { duration: duration * 1000 });
-
-  if (isInView) {
-    spring.set(end);
-  }
-
-  return { ref, value: spring };
-}
 
 export default function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -27,12 +14,10 @@ export default function LandingPage() {
     offset: ["start start", "end end"]
   });
 
-  // Parallax effects
-  const videoY = useTransform(scrollYProgress, [0, 0.3], [0, -100]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
+    <div ref={containerRef} className="min-h-screen bg-[#09090b] text-white overflow-x-hidden">
       {/* Premium Floating Navbar - KEEPING AS REQUESTED */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
@@ -60,28 +45,27 @@ export default function LandingPage() {
         </nav>
       </motion.header>
 
-      {/* HERO: Asymmetrical Video Layout */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center pt-24 pb-20 px-6 lg:px-12 overflow-hidden">
-        {/* Ambient Background */}
+      {/* HERO: Bold & Clean */}
+      <section ref={heroRef} className="relative min-h-screen flex items-center pt-24 pb-20 px-6 lg:px-12">
+        {/* Ambient Background - Cyan/Emerald only */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[150px] animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '1s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-white/5 to-transparent rounded-full" />
+          <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-cyan-500/15 rounded-full blur-[150px]" />
+          <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[150px]" />
         </div>
 
         <motion.div style={{ opacity: heroOpacity }} className="relative w-full max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
             {/* Left: Content */}
             <div className="relative z-10">
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.1 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-white/10 mb-8"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-8"
               >
-                <Sparkles className="w-4 h-4 text-blue-400" />
-                <span className="text-sm font-medium bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                  AI-Powered Learning Platform
+                <Cpu className="w-4 h-4 text-cyan-400" />
+                <span className="text-sm font-medium text-cyan-400">
+                  Powered by Gemini 2.0
                 </span>
               </motion.div>
 
@@ -91,21 +75,11 @@ export default function LandingPage() {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-8"
               >
-                The future of
+                Learn smarter.
                 <br />
-                <span className="relative">
-                  <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent">
-                    education
-                  </span>
-                  <motion.span
-                    className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ duration: 0.8, delay: 0.8 }}
-                  />
+                <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+                  Not harder.
                 </span>
-                <br />
-                is here.
               </motion.h1>
 
               <motion.p
@@ -114,9 +88,8 @@ export default function LandingPage() {
                 transition={{ duration: 0.8, delay: 0.4 }}
                 className="text-lg sm:text-xl text-neutral-400 mb-10 max-w-lg leading-relaxed"
               >
-                Experience personalized learning powered by cutting-edge AI.
-                Adaptive courses, real-time feedback, and intelligent tutoring
-                that evolves with you.
+                AI tutor that adapts to you. Ask questions, get instant explanations,
+                and master any subject at your own pace.
               </motion.p>
 
               <motion.div
@@ -126,99 +99,92 @@ export default function LandingPage() {
                 className="flex flex-wrap gap-4"
               >
                 <Link href="/login">
-                  <Button size="lg" className="bg-white text-black hover:bg-neutral-200 h-14 px-8 text-base font-semibold rounded-full shadow-2xl shadow-white/10 group">
-                    Start Free Trial
+                  <Button size="lg" className="bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-black h-14 px-8 text-base font-semibold rounded-full shadow-2xl shadow-cyan-500/20 group">
+                    Start Learning Free
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Button size="lg" variant="outline" className="h-14 px-8 text-base rounded-full border-white/20 hover:bg-white/5 group">
-                  <Play className="mr-2 w-5 h-5 text-blue-400" />
-                  Watch Demo
+                  <Play className="mr-2 w-5 h-5 text-cyan-400" />
+                  See Demo
                 </Button>
               </motion.div>
 
-              {/* Social Proof */}
+              {/* Minimal Social Proof */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.7 }}
-                className="mt-12 flex items-center gap-6"
+                className="mt-12 flex items-center gap-4 text-neutral-500 text-sm"
               >
                 <div className="flex -space-x-2">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 border-2 border-[#0a0a0a] flex items-center justify-center text-xs font-bold">
-                      {String.fromCharCode(64 + i)}
-                    </div>
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-emerald-500 border-2 border-[#09090b]" />
                   ))}
                 </div>
-                <div>
-                  <div className="flex items-center gap-1 mb-1">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                  <p className="text-sm text-neutral-500">Loved by <span className="text-white font-semibold">10,000+</span> learners</p>
-                </div>
+                <span>Join <span className="text-white font-medium">10,000+</span> learners</span>
+                <span className="text-neutral-700">•</span>
+                <span className="flex items-center gap-1">
+                  <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                  <span className="text-white font-medium">4.9</span> rating
+                </span>
               </motion.div>
             </div>
 
-            {/* Right: Asymmetrical Video/Visual */}
+            {/* Right: Visual */}
             <motion.div
-              initial={{ opacity: 0, x: 50, rotateY: -10 }}
-              animate={{ opacity: 1, x: 0, rotateY: 0 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1, delay: 0.3 }}
-              style={{ y: videoY }}
-              className="relative lg:ml-auto"
+              className="relative"
             >
               <div className="relative">
-                {/* Main Video Container */}
-                <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-indigo-500/10 bg-gradient-to-br from-neutral-900 to-neutral-950">
-                  <div className="aspect-[4/3] bg-gradient-to-br from-blue-900/50 via-indigo-900/50 to-pink-900/50 flex items-center justify-center">
-                    {/* Fake Dashboard Preview */}
-                    <div className="w-full h-full p-6 flex flex-col">
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="w-3 h-3 rounded-full bg-red-500" />
-                        <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                        <div className="w-3 h-3 rounded-full bg-green-500" />
+                {/* Main Card */}
+                <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-br from-neutral-900/80 to-neutral-950/80 backdrop-blur-sm p-8">
+                  <div className="aspect-[4/3] flex flex-col">
+                    {/* Chat Interface Preview */}
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-emerald-500 flex items-center justify-center">
+                        <Brain className="w-5 h-5 text-white" />
                       </div>
-                      <div className="flex-1 grid grid-cols-3 gap-4">
-                        <div className="col-span-2 bg-white/5 rounded-xl p-4 border border-white/5">
-                          <div className="h-3 w-1/2 bg-white/20 rounded mb-3" />
-                          <div className="h-2 w-3/4 bg-white/10 rounded mb-2" />
-                          <div className="h-2 w-full bg-white/10 rounded mb-2" />
-                          <div className="h-2 w-2/3 bg-white/10 rounded" />
-                          <div className="mt-4 flex items-center gap-2">
-                            <Brain className="w-5 h-5 text-blue-400" />
-                            <span className="text-xs text-blue-400">AI analyzing...</span>
-                          </div>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl p-3 border border-white/5">
-                            <Sparkles className="w-4 h-4 text-indigo-400 mb-2" />
-                            <div className="h-2 w-full bg-white/20 rounded" />
-                          </div>
-                          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                            <BarChart3 className="w-4 h-4 text-green-400 mb-2" />
-                            <div className="h-2 w-3/4 bg-green-500/30 rounded" />
-                          </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">AI Tutor</p>
+                        <p className="text-xs text-emerald-400">Online</p>
+                      </div>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 space-y-4">
+                      <div className="bg-white/5 rounded-2xl rounded-tl-sm p-4 max-w-[85%]">
+                        <p className="text-sm text-neutral-300">Can you explain how neural networks learn?</p>
+                      </div>
+                      <div className="bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 rounded-2xl rounded-tr-sm p-4 ml-auto max-w-[85%] border border-cyan-500/20">
+                        <p className="text-sm text-white">
+                          Neural networks learn through a process called backpropagation. Think of it like adjusting the volume knobs on a complex mixing board...
+                        </p>
+                        <div className="mt-3 flex items-center gap-2 text-xs text-cyan-400">
+                          <Sparkles className="w-3 h-3" />
+                          <span>Gemini 2.0 Flash</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Floating Cards - Asymmetrical */}
+                {/* Floating Stats */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 1 }}
-                  className="absolute -bottom-6 -left-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 shadow-xl shadow-green-500/20"
+                  className="absolute -bottom-4 -left-4 bg-[#0f0f11] rounded-2xl p-4 border border-white/10 shadow-xl"
                 >
                   <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-8 h-8 text-white" />
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    </div>
                     <div>
-                      <p className="text-white font-bold text-lg">95%</p>
-                      <p className="text-white/80 text-xs">Completion Rate</p>
+                      <p className="text-white font-bold">95%</p>
+                      <p className="text-xs text-neutral-500">Completion</p>
                     </div>
                   </div>
                 </motion.div>
@@ -227,13 +193,15 @@ export default function LandingPage() {
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 1.2 }}
-                  className="absolute -top-4 -right-4 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 shadow-xl shadow-blue-500/20"
+                  className="absolute -top-4 -right-4 bg-[#0f0f11] rounded-2xl p-4 border border-white/10 shadow-xl"
                 >
                   <div className="flex items-center gap-3">
-                    <Brain className="w-8 h-8 text-white" />
+                    <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-cyan-400" />
+                    </div>
                     <div>
-                      <p className="text-white font-bold text-lg">AI Tutor</p>
-                      <p className="text-white/80 text-xs">Always Available</p>
+                      <p className="text-white font-bold">24/7</p>
+                      <p className="text-xs text-neutral-500">Available</p>
                     </div>
                   </div>
                 </motion.div>
@@ -243,15 +211,15 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* INVESTOR STATS - Big Numbers */}
-      <section className="py-24 px-6 border-y border-white/5 bg-gradient-to-b from-transparent via-blue-950/10 to-transparent">
+      {/* STATS SECTION */}
+      <section className="py-24 px-6 border-y border-white/5">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { value: "10K+", label: "Active Learners", color: "from-blue-400 to-cyan-400" },
-              { value: "$2M+", label: "Revenue Generated", color: "from-green-400 to-emerald-400" },
-              { value: "95%", label: "Course Completion", color: "from-indigo-400 to-pink-400" },
-              { value: "4.9★", label: "User Rating", color: "from-yellow-400 to-orange-400" },
+              { value: "10K+", label: "Active Learners", color: "from-cyan-400 to-cyan-500" },
+              { value: "$2M+", label: "Revenue Generated", color: "from-emerald-400 to-emerald-500" },
+              { value: "95%", label: "Course Completion", color: "from-teal-400 to-cyan-400" },
+              { value: "4.9★", label: "User Rating", color: "from-yellow-400 to-amber-400" },
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -271,7 +239,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* AI FEATURES - The Selling Point */}
+      {/* AI FEATURES */}
       <section id="ai" className="py-32 px-6">
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -281,30 +249,30 @@ export default function LandingPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-20"
           >
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-6">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm font-medium mb-6">
               <Brain className="w-4 h-4" />
-              Powered by Advanced AI
+              AI-First Platform
             </span>
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Intelligence that
+              Your personal
               <br />
-              <span className="bg-gradient-to-r from-indigo-400 via-pink-400 to-red-400 bg-clip-text text-transparent">
-                understands you
+              <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+                AI tutor
               </span>
             </h2>
             <p className="text-xl text-neutral-400 max-w-2xl mx-auto">
-              Our AI doesn't just teach—it learns how you learn, adapting in real-time to maximize your potential.
+              Ask anything. Get instant, accurate answers tailored to your learning level.
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: Brain, title: "Smart Tutoring", desc: "AI tutor available 24/7 that answers questions, explains concepts, and guides your learning journey.", gradient: "from-indigo-500 to-pink-500" },
-              { icon: Target, title: "Adaptive Learning", desc: "Courses that automatically adjust difficulty and content based on your performance and learning style.", gradient: "from-blue-500 to-cyan-500" },
-              { icon: Zap, title: "Instant Feedback", desc: "Real-time assessment and personalized recommendations to keep you on the fastest path to mastery.", gradient: "from-yellow-500 to-orange-500" },
-              { icon: BarChart3, title: "Progress Analytics", desc: "Deep insights into your learning patterns, strengths, and areas for improvement with AI-powered analysis.", gradient: "from-green-500 to-emerald-500" },
-              { icon: Users, title: "Peer Matching", desc: "AI connects you with study partners and mentors who complement your learning style and goals.", gradient: "from-pink-500 to-rose-500" },
-              { icon: Shield, title: "Quality Assurance", desc: "Every course is AI-verified for accuracy, completeness, and pedagogical effectiveness.", gradient: "from-indigo-500 to-indigo-500" },
+              { icon: Brain, title: "Smart Tutoring", desc: "24/7 AI tutor that explains concepts, answers questions, and guides your learning.", gradient: "from-cyan-500 to-teal-500" },
+              { icon: Target, title: "Adaptive Learning", desc: "Courses adjust to your pace. Struggle with a topic? Get more practice automatically.", gradient: "from-emerald-500 to-green-500" },
+              { icon: Zap, title: "Instant Feedback", desc: "Know what's right, what's wrong, and why—in real time.", gradient: "from-amber-500 to-yellow-500" },
+              { icon: BarChart3, title: "Progress Tracking", desc: "See exactly where you stand and what to focus on next.", gradient: "from-teal-500 to-cyan-500" },
+              { icon: BookOpen, title: "Rich Content", desc: "Video, interactive exercises, and AI-generated summaries.", gradient: "from-sky-500 to-cyan-500" },
+              { icon: Shield, title: "Quality Verified", desc: "Every course is reviewed for accuracy and pedagogical quality.", gradient: "from-slate-500 to-gray-500" },
             ].map((feature, i) => (
               <motion.div
                 key={i}
@@ -312,24 +280,21 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 p-8 hover:border-white/20 transition-all hover:shadow-2xl hover:shadow-indigo-500/5"
+                className="group relative overflow-hidden rounded-3xl bg-white/[0.03] border border-white/10 p-8 hover:border-white/20 transition-all hover:bg-white/[0.05]"
               >
                 <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
                   <feature.icon className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
                 <p className="text-neutral-400 leading-relaxed">{feature.desc}</p>
-
-                {/* Hover Glow */}
-                <div className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity rounded-3xl`} />
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* TESTIMONIAL / TRUST */}
-      <section className="py-32 px-6 bg-gradient-to-b from-transparent via-indigo-950/10 to-transparent">
+      {/* TESTIMONIAL */}
+      <section className="py-32 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -343,12 +308,12 @@ export default function LandingPage() {
               ))}
             </div>
             <blockquote className="text-2xl md:text-3xl lg:text-4xl font-medium leading-relaxed mb-8">
-              "Gakuen's AI tutor completely transformed how I learn. It's like having a
-              <span className="bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent"> personal teacher</span> who knows
-              exactly what I need, available whenever I need it."
+              "Finally, an AI tutor that actually
+              <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent"> understands</span> how I learn.
+              It's like having a brilliant friend who's always free to help."
             </blockquote>
             <div className="flex items-center justify-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-pink-600 flex items-center justify-center text-xl font-bold">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-emerald-500 flex items-center justify-center text-xl font-bold">
                 S
               </div>
               <div className="text-left">
@@ -370,18 +335,18 @@ export default function LandingPage() {
           className="max-w-5xl mx-auto"
         >
           <div className="relative rounded-[3rem] overflow-hidden">
-            {/* Animated Gradient Background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-pink-600 animate-gradient-x" />
+            {/* Gradient Background - Cyan to Emerald */}
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600" />
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzBoLTJ2Mmgydi0yem0tNCAwaC0ydjJoMnYtMnptLTQgMGgtMnYyaDJ2LTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
 
             <div className="relative px-8 py-20 md:px-16 md:py-24 text-center">
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
-                Ready to transform
+                Ready to learn
                 <br />
-                your learning?
+                smarter?
               </h2>
               <p className="text-white/80 text-lg md:text-xl mb-10 max-w-xl mx-auto">
-                Join 10,000+ learners who are already experiencing the future of education.
+                Start for free. No credit card required.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/login">
@@ -391,7 +356,7 @@ export default function LandingPage() {
                   </Button>
                 </Link>
                 <Button size="lg" variant="outline" className="h-14 px-10 text-base rounded-full border-white/30 text-white hover:bg-white/10">
-                  Talk to Sales
+                  Contact Sales
                 </Button>
               </div>
             </div>
@@ -405,7 +370,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="flex items-center gap-2">
               <span className="text-xl font-bold">Gakuen</span>
-              <span className="px-2 py-0.5 text-xs bg-indigo-500/20 text-indigo-400 rounded-full">AI</span>
+              <span className="px-2 py-0.5 text-xs bg-cyan-500/20 text-cyan-400 rounded-full">AI</span>
             </div>
             <div className="flex items-center gap-8 text-neutral-500 text-sm">
               <Link href="#" className="hover:text-white transition-colors">Privacy</Link>
@@ -414,22 +379,10 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-white/5 text-center text-neutral-600 text-sm">
-            © 2025 Gakuen. Redefining education with AI.
+            © 2025 Gakuen. AI-powered learning.
           </div>
         </div>
       </footer>
-
-      {/* Custom Styles */}
-      <style jsx global>{`
-                @keyframes gradient-x {
-                    0%, 100% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                }
-                .animate-gradient-x {
-                    background-size: 200% 200%;
-                    animation: gradient-x 15s ease infinite;
-                }
-            `}</style>
     </div>
   );
 }
