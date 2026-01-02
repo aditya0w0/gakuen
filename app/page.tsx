@@ -193,16 +193,27 @@ export default function LandingPage() {
 
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({
-        x: (e.clientX / window.innerWidth) * 20,
-        y: (e.clientY / window.innerHeight) * 20
+      // Throttle with requestAnimationFrame for performance
+      if (rafRef.current) return;
+
+      rafRef.current = requestAnimationFrame(() => {
+        setMousePos({
+          x: (e.clientX / window.innerWidth) * 20,
+          y: (e.clientY / window.innerHeight) * 20
+        });
+        rafRef.current = null;
       });
     };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
   return (
@@ -306,17 +317,18 @@ export default function LandingPage() {
           {/* Right: Floating Card with Rings */}
           <div className="w-full md:w-1/2 relative mt-12 md:mt-0 h-[600px] flex items-center justify-center">
 
-            {/* Rotating Rings */}
-            <div className="absolute w-[500px] h-[500px] rounded-full border border-white/10 animate-[spin_10s_linear_infinite]" />
-            <div className="absolute w-[400px] h-[400px] rounded-full border border-cyan-500/20 animate-[spin_15s_linear_infinite_reverse]" />
-            <div className="absolute w-[600px] h-[600px] rounded-full border border-dashed border-white/5 animate-[spin_30s_linear_infinite]" />
+            {/* Rotating Rings - GPU accelerated */}
+            <div className="absolute w-[500px] h-[500px] rounded-full border border-white/10 animate-[spin_10s_linear_infinite] will-change-transform" style={{ transform: 'translateZ(0)' }} />
+            <div className="absolute w-[400px] h-[400px] rounded-full border border-cyan-500/20 animate-[spin_15s_linear_infinite_reverse] will-change-transform" style={{ transform: 'translateZ(0)' }} />
+            <div className="absolute w-[600px] h-[600px] rounded-full border border-dashed border-white/5 animate-[spin_30s_linear_infinite] will-change-transform" style={{ transform: 'translateZ(0)' }} />
 
-            {/* Main Card */}
+            {/* Main Card - GPU accelerated */}
             <div
-              className="relative w-[320px] h-[480px] bg-gray-900/80 backdrop-blur-xl border border-white/10 transition-transform duration-500 group"
+              className="relative w-[320px] h-[480px] bg-gray-900/80 backdrop-blur-xl border border-white/10 transition-transform duration-500 group will-change-transform"
               style={{
-                transform: `perspective(1000px) rotateY(${mousePos.x * 0.5}deg) rotateX(${mousePos.y * -0.5}deg)`,
-                boxShadow: '0 0 50px rgba(0, 200, 255, 0.1)'
+                transform: `perspective(1000px) rotateY(${mousePos.x * 0.5}deg) rotateX(${mousePos.y * -0.5}deg) translateZ(0)`,
+                boxShadow: '0 0 50px rgba(0, 200, 255, 0.1)',
+                backfaceVisibility: 'hidden'
               }}
             >
               {/* Card Header */}
@@ -633,22 +645,35 @@ export default function LandingPage() {
       <style jsx global>{`
         .clip-path-slant-right { clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%); }
         .clip-path-slant-left { clip-path: polygon(0 0, 100% 0, 85% 100%, 0% 100%); }
+        
+        /* GPU-accelerated marquee */
         @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          0% { transform: translateX(0) translateZ(0); }
+          100% { transform: translateX(-50%) translateZ(0); }
         }
         .animate-marquee {
           animation: marquee 20s linear infinite;
+          will-change: transform;
         }
+        
         .clip-path-hexagon { 
           clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); 
         }
+        
+        /* GPU-accelerated shine */
         @keyframes shine {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(200%); }
+          0% { transform: translateX(-100%) translateZ(0); }
+          100% { transform: translateX(200%) translateZ(0); }
         }
         .animate-shine {
           animation: shine 3s ease-in-out infinite;
+          will-change: transform;
+        }
+        
+        /* Optimize backdrop-blur for large elements */
+        .backdrop-blur-xl { 
+          -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
         }
       `}</style>
     </div>
