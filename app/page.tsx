@@ -49,6 +49,44 @@ const TechDecoration = ({ className }: { className?: string }) => (
   </div>
 );
 
+// Typing animation component
+const TypingText = ({ text, className }: { text: string; className?: string }) => {
+  const [displayText, setDisplayText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const typeSpeed = isDeleting ? 30 : 80;
+    const pauseTime = isDeleting ? 500 : 2000;
+
+    if (!isDeleting && displayText === text) {
+      setTimeout(() => setIsDeleting(true), pauseTime);
+      return;
+    }
+
+    if (isDeleting && displayText === '') {
+      setIsDeleting(false);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setDisplayText(prev =>
+        isDeleting
+          ? prev.slice(0, -1)
+          : text.slice(0, prev.length + 1)
+      );
+    }, typeSpeed);
+
+    return () => clearTimeout(timeout);
+  }, [displayText, isDeleting, text]);
+
+  return (
+    <span className={className}>
+      {displayText}
+      <span className="animate-pulse">_</span>
+    </span>
+  );
+};
+
 // Roster Section for AI Learning Modes
 const RosterSection = () => {
   const [activeUnit, setActiveUnit] = useState(0);
@@ -400,10 +438,13 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_24px,rgba(255,255,255,0.03)_1px),linear-gradient(0deg,transparent_24px,rgba(255,255,255,0.03)_1px)] bg-[length:25px_25px]" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-6">
-          {/* Header Tag */}
+          {/* Header Tag - Typing Animation */}
           <div className="flex items-center gap-2 mb-8 justify-center">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">SYSTEM STATUS // ALL SYSTEMS NOMINAL</span>
+            <TypingText
+              text="SYSTEM STATUS // ALL SYSTEMS NOMINAL"
+              className="text-[10px] font-mono text-green-400 uppercase tracking-widest"
+            />
           </div>
 
           {/* Stats Grid */}
@@ -441,11 +482,14 @@ export default function LandingPage() {
                     <span className={`text-xl font-bold text-${stat.color}-400`}>{stat.suffix}</span>
                   </div>
 
-                  {/* Bottom Bar */}
+                  {/* Bottom Bar - Animated Fill */}
                   <div className="mt-4 h-1 bg-white/5 rounded overflow-hidden">
-                    <div
+                    <motion.div
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${70 + i * 8}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1.5, delay: 0.3 + i * 0.2, ease: "easeOut" }}
                       className={`h-full bg-gradient-to-r from-${stat.color}-500 to-${stat.color}-400`}
-                      style={{ width: `${70 + i * 8}%` }}
                     />
                   </div>
 
@@ -475,10 +519,12 @@ export default function LandingPage() {
                 Core <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Modules</span>
               </h2>
             </div>
-            <p className="max-w-md text-gray-400 text-sm md:text-right font-mono border-r-2 border-white/20 pr-4">
-              Initialize learning protocols. Accessing AI... <br />
-              Select a module to begin.
-            </p>
+            <div className="max-w-md text-sm md:text-right font-mono border-r-2 border-green-400/50 pr-4">
+              <TypingText
+                text="Initialize learning protocols. Accessing AI... Select a module to begin."
+                className="text-green-400"
+              />
+            </div>
           </div>
 
           {/* Grid */}
