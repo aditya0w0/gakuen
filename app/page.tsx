@@ -502,6 +502,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </div>
       </section>
 
       {/* AI LEARNING MODES - Roster Style */}
