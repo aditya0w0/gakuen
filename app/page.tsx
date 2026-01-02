@@ -476,9 +476,15 @@ export default function LandingPage() {
           </div>
 
           {/* Secondary Info Bar */}
-          <div className="mt-20 relative">
+          <div className="mt-20 relative overflow-hidden group">
             {/* Skewed background */}
             <div className="absolute inset-0 bg-white/5 backdrop-blur-sm border border-white/10 skew-x-[-2deg]" />
+
+            {/* Shine effect - sweeps left to right */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-shine" />
+            </div>
+
             {/* Content */}
             <div className="relative p-6 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-4">
@@ -636,6 +642,13 @@ export default function LandingPage() {
         }
         .clip-path-hexagon { 
           clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); 
+        }
+        @keyframes shine {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        .animate-shine {
+          animation: shine 3s ease-in-out infinite;
         }
       `}</style>
     </div>
