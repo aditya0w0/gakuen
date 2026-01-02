@@ -512,5 +512,70 @@ const RosterSection = () => {
   );
 };
 
+const WarpSection = () => {
+  return (
+    <div className="relative py-32 overflow-hidden flex items-center justify-center">
+      {/* Background with warp tunnel effect */}
+      <div className="absolute inset-0 bg-black">
+         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/40 via-black to-black" />
+         {/* Speed lines */}
+         <div className="absolute inset-0 opacity-20" 
+              style={{ 
+                backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(255,255,255,0.1) 50px)' 
+              }} 
+         />
+      </div>
 
+      <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
+        
+        {/* Ticket Visual */}
+        <div className="relative mx-auto w-full max-w-2xl bg-gradient-to-r from-amber-200 to-amber-500 rounded-lg p-1 shadow-[0_0_50px_rgba(251,191,36,0.3)] transform hover:scale-105 transition-transform duration-500 mb-12 cursor-pointer group">
+           <div className="bg-black/90 h-full w-full rounded border border-amber-300/50 p-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
+              
+              {/* Ticket Stub (Left) */}
+              <div className="flex-1 text-left space-y-2 relative z-10">
+                 <div className="flex items-center gap-2 text-amber-400 font-mono text-xs uppercase tracking-widest">
+                    <Ticket size={12} fill="currentColor" />
+                    <span>Star Rail Pass</span>
+                 </div>
+                 <h2 className="text-3xl md:text-4xl font-black italic text-white uppercase">
+                    Board the <br/> <span className="text-amber-400">Express</span>
+                 </h2>
+                 <p className="text-gray-400 text-sm max-w-sm">
+                    Get the latest updates, character leaks, and design resources sent to your inbox.
+                 </p>
+              </div>
+
+              {/* QR / Barcode Decoration (Right) */}
+              <div className="hidden md:block w-32 h-32 border-l-2 border-dashed border-white/20 pl-8 relative">
+                 <div className="w-full h-full bg-white/5 rounded flex items-center justify-center">
+                    <div className="text-5xl font-black text-white/10">QR</div>
+                 </div>
+              </div>
+
+              {/* Shine Effect */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
+           </div>
+        </div>
+
+        {/* Input Field */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+           <input 
+             type="email" 
+             placeholder="Enter your email..." 
+             className="flex-1 bg-white/5 border border-white/10 px-4 py-3 rounded text-sm text-white focus:outline-none focus:border-cyan-400 focus:bg-white/10 transition-all placeholder:text-gray-600"
+           />
+           <button className="bg-white text-black font-bold uppercase text-xs px-8 py-3 hover:bg-cyan-400 transition-colors clip-path-slant-right">
+             Subscribe
+           </button>
+        </div>
+        
+        <p className="mt-6 text-[10px] text-gray-600 font-mono uppercase tracking-widest">
+           Join 50,000+ Trailblazers
+        </p>
+
+      </div>
+    </div>
+  )
+}
 export default Hero;
