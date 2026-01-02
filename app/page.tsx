@@ -476,28 +476,32 @@ export default function LandingPage() {
           </div>
 
           {/* Secondary Info Bar */}
-          <div className="mt-20 p-6 border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-6 clip-path-slant-right">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-cyan-500/20 rounded-full flex items-center justify-center animate-pulse">
-                <Sparkles className="text-cyan-400" size={20} />
+          <div className="mt-20 relative">
+            {/* Skewed background */}
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-sm border border-white/10 skew-x-[-2deg]" />
+            {/* Content */}
+            <div className="relative p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-cyan-500/20 rounded-full flex items-center justify-center animate-pulse">
+                  <Sparkles className="text-cyan-400" size={20} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white uppercase">AI Tutor Online</h4>
+                  <p className="text-xs text-gray-400 font-mono">Gemini 2.0 Flash ready for your questions...</p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-bold text-white uppercase">AI Tutor Online</h4>
-                <p className="text-xs text-gray-400 font-mono">Gemini 2.0 Flash ready for your questions...</p>
-              </div>
-            </div>
-            <div className="flex gap-8">
-              <div className="text-center">
-                <div className="text-2xl font-black text-white">95%</div>
-                <div className="text-[10px] text-gray-500 uppercase tracking-widest">Completion</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-black text-white">24/7</div>
-                <div className="text-[10px] text-gray-500 uppercase tracking-widest">Available</div>
+              <div className="flex gap-8">
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">95%</div>
+                  <div className="text-[10px] text-gray-500 uppercase tracking-widest">Completion</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">24/7</div>
+                  <div className="text-[10px] text-gray-500 uppercase tracking-widest">Available</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
       </section>
 
       {/* AI LEARNING MODES - Roster Style */}
