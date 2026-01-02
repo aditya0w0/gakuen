@@ -394,28 +394,64 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* STATS SECTION */}
-      <section className="py-24 px-6 border-y border-white/5">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      {/* STATS SECTION - HSR Terminal Style */}
+      <section className="relative py-16 border-y border-white/10 overflow-hidden">
+        {/* Background Grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_24px,rgba(255,255,255,0.03)_1px),linear-gradient(0deg,transparent_24px,rgba(255,255,255,0.03)_1px)] bg-[length:25px_25px]" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
+          {/* Header Tag */}
+          <div className="flex items-center gap-2 mb-8 justify-center">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">SYSTEM STATUS // ALL SYSTEMS NOMINAL</span>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { value: "10K+", label: "Active Learners", color: "from-cyan-400 to-cyan-500" },
-              { value: "$2M+", label: "Revenue Generated", color: "from-emerald-400 to-emerald-500" },
-              { value: "95%", label: "Course Completion", color: "from-teal-400 to-cyan-400" },
-              { value: "4.9★", label: "User Rating", color: "from-yellow-400 to-amber-400" },
+              { value: "10,847", label: "ACTIVE USERS", icon: Users, color: "cyan", suffix: "" },
+              { value: "2.4", label: "REVENUE", icon: Zap, color: "emerald", suffix: "M" },
+              { value: "95.7", label: "COMPLETION", icon: Target, color: "amber", suffix: "%" },
+              { value: "4.9", label: "AVG RATING", icon: Star, color: "purple", suffix: "/5" },
             ].map((stat, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="group"
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="group relative"
               >
-                <div className={`text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform`}>
-                  {stat.value}
+                {/* Card */}
+                <div className="relative bg-black/60 backdrop-blur-sm border border-white/10 p-6 hover:border-white/20 transition-all duration-300">
+                  {/* Top Glow Line */}
+                  <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-${stat.color}-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity`} />
+
+                  {/* Icon */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <stat.icon className={`text-${stat.color}-400`} size={16} />
+                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{stat.label}</span>
+                  </div>
+
+                  {/* Value */}
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-4xl md:text-5xl font-black text-white tabular-nums`}>
+                      {stat.value}
+                    </span>
+                    <span className={`text-xl font-bold text-${stat.color}-400`}>{stat.suffix}</span>
+                  </div>
+
+                  {/* Bottom Bar */}
+                  <div className="mt-4 h-1 bg-white/5 rounded overflow-hidden">
+                    <div
+                      className={`h-full bg-gradient-to-r from-${stat.color}-500 to-${stat.color}-400`}
+                      style={{ width: `${70 + i * 8}%` }}
+                    />
+                  </div>
+
+                  {/* Corner Accent */}
+                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b border-r border-white/10 group-hover:border-white/30 transition-colors" />
                 </div>
-                <p className="text-neutral-500 text-sm uppercase tracking-wider">{stat.label}</p>
               </motion.div>
             ))}
           </div>
