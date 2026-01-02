@@ -45,171 +45,72 @@ export default function LandingPage() {
         </nav>
       </motion.header>
 
-      {/* HERO: Gaming-Style Full Bleed */}
-      <section ref={heroRef} className="relative h-screen flex items-end justify-center overflow-hidden">
-        {/* Full-Bleed Background Art */}
+      {/* HERO: Gaming-Style - Background Video + Left Text + Centered Buttons */}
+      <section ref={heroRef} className="relative h-screen overflow-hidden">
+        {/* Background Video/Art - Full Bleed */}
         <div className="absolute inset-0">
-          {/* Dramatic gradient background simulating game art */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0118] via-[#1a0a2e] to-[#0d0515]" />
+          {/* Video background - using gradient as placeholder, replace with actual video */}
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            poster="/hero-poster.jpg"
+          >
+            <source src="/hero-video.mp4" type="video/mp4" />
+          </video>
 
-          {/* Atmospheric particles/stars */}
-          <div className="absolute inset-0 overflow-hidden">
-            {/* Glowing orbs */}
-            <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] bg-cyan-500/20 rounded-full blur-[200px] animate-pulse" />
-            <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-fuchsia-500/15 rounded-full blur-[180px] animate-pulse" style={{ animationDelay: '1s' }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[150px]" />
-          </div>
+          {/* Fallback gradient if no video */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0a0118] via-[#1a0a2e] to-[#0d0515]" />
 
-          {/* Floating petals/particles effect */}
-          <div className="absolute inset-0">
-            {[...Array(12)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-2 h-2 bg-gradient-to-br from-cyan-400/60 to-fuchsia-400/60 rounded-full"
-                initial={{
-                  x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
-                  y: -20,
-                  opacity: 0
-                }}
-                animate={{
-                  y: typeof window !== 'undefined' ? window.innerHeight + 20 : 800,
-                  opacity: [0, 1, 1, 0],
-                  rotate: 360
-                }}
-                transition={{
-                  duration: 8 + Math.random() * 4,
-                  delay: i * 0.8,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-                style={{ left: `${Math.random() * 100}%` }}
-              />
-            ))}
-          </div>
-
-          {/* Vignette overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/50" />
+          {/* Overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
         </div>
 
-        {/* Hero Content - Bottom Positioned like Star Rail */}
+        {/* Left Text */}
         <motion.div
-          style={{ opacity: heroOpacity }}
-          className="relative z-10 w-full pb-24 px-6 lg:px-12"
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1, delay: 0.3 }}
+          className="absolute left-8 lg:left-16 top-1/2 -translate-y-1/2 z-10"
         >
-          <div className="max-w-7xl mx-auto">
-            {/* Version Tag - Gaming style */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="mb-8"
-            >
-              <span className="inline-flex items-center gap-2 text-sm text-cyan-300/80 font-medium tracking-wider">
-                <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
-                V2.0 NOW LIVE
-              </span>
-            </motion.div>
-
-            {/* Main Title - Dramatic Typography */}
-            <motion.h1
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.2 }}
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6"
-              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
-            >
-              <span className="block text-white drop-shadow-[0_0_30px_rgba(34,211,238,0.3)]">
-                Master Any Subject
-              </span>
-              <span className="block bg-gradient-to-r from-cyan-300 via-fuchsia-300 to-amber-200 bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(244,114,182,0.4)]">
-                With AI
-              </span>
-            </motion.h1>
-
-            {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-lg sm:text-xl text-neutral-300/80 max-w-2xl mb-12"
-            >
-              Your personal AI tutor is here. Adaptive learning, instant answers,
-              unlimited potential.
-            </motion.p>
-
-            {/* CTA Buttons - Gaming Style Ornate */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="flex flex-wrap items-center gap-6"
-            >
-              {/* Primary CTA - Ornate style */}
-              <Link href="/login">
-                <button className="group relative px-10 py-4 bg-gradient-to-r from-cyan-500 via-cyan-400 to-emerald-400 text-black font-bold text-base rounded-sm overflow-hidden shadow-[0_0_30px_rgba(34,211,238,0.4)] hover:shadow-[0_0_50px_rgba(34,211,238,0.6)] transition-all">
-                  {/* Ornate corners */}
-                  <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-black/30" />
-                  <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-black/30" />
-                  <span className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-black/30" />
-                  <span className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-black/30" />
-
-                  <span className="flex items-center gap-3">
-                    <Play className="w-5 h-5" />
-                    Start Learning
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </button>
-              </Link>
-
-              {/* Secondary CTA */}
-              <button className="group relative px-8 py-4 bg-white/5 backdrop-blur-sm border border-white/20 text-white font-medium text-base rounded-sm hover:bg-white/10 hover:border-white/30 transition-all">
-                <span className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/40" />
-                <span className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-white/40" />
-                Browse Courses
-              </button>
-            </motion.div>
-
-            {/* Bottom Stats Bar */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1, delay: 1 }}
-              className="mt-16 flex items-center gap-8 text-sm text-neutral-400"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-white">10K+</span>
-                <span className="text-neutral-500">Learners</span>
-              </div>
-              <div className="w-px h-6 bg-white/10" />
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-white">95%</span>
-                <span className="text-neutral-500">Completion</span>
-              </div>
-              <div className="w-px h-6 bg-white/10" />
-              <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
-                <span className="text-2xl font-bold text-white">4.9</span>
-                <span className="text-neutral-500">Rating</span>
-              </div>
-            </motion.div>
-          </div>
+          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.1]">
+            <span className="block text-white">Master Any</span>
+            <span className="block text-white">Subject</span>
+            <span className="block bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+              With AI
+            </span>
+          </h1>
+          <p className="mt-6 text-lg text-white/60 max-w-md">
+            V2.0 is Now Open
+          </p>
         </motion.div>
 
-        {/* Scroll indicator */}
+        {/* Centered Bottom Buttons */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 2 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 flex items-center gap-6"
         >
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="w-6 h-10 rounded-full border border-white/20 flex items-start justify-center p-2"
-          >
-            <div className="w-1 h-2 bg-white/60 rounded-full" />
-          </motion.div>
+          {/* Button 1 - Secondary */}
+          <Link href="/browse">
+            <button className="relative px-8 py-3 bg-white/10 backdrop-blur-sm border border-white/30 text-white font-medium rounded hover:bg-white/20 transition-all">
+              Browse Courses
+            </button>
+          </Link>
+
+          {/* Divider */}
+          <div className="w-8 h-px bg-white/30" />
+
+          {/* Button 2 - Primary */}
+          <Link href="/login">
+            <button className="relative px-8 py-3 bg-gradient-to-r from-cyan-400 to-emerald-400 text-black font-bold rounded shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all">
+              Start Learning
+            </button>
+          </Link>
         </motion.div>
       </section>
 
