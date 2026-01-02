@@ -263,4 +263,116 @@ const Hero = () => {
   );
 };
 
+const FeatureCard = ({ title, sub, icon: Icon, color, delay }: any) => (
+  <div className={`relative group p-1 ${delay}`}>
+    {/* Hover Border Glow */}
+    <div className={`absolute inset-0 bg-gradient-to-r ${color} opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500`} />
+    
+    {/* Card Container */}
+    <div className="relative h-full bg-black/60 backdrop-blur-xl border border-white/10 p-8 clip-path-slant-left hover:bg-white/5 transition-all duration-300 group-hover:-translate-y-2">
+      
+      {/* Top Decoration */}
+      <div className="absolute top-0 right-0 p-2 opacity-50">
+        <Icon className="text-white/20" size={64} />
+      </div>
+
+      <div className="relative z-10 space-y-4">
+        {/* Icon Badge */}
+        <div className="w-12 h-12 bg-white/10 flex items-center justify-center border border-white/20 rotate-45 group-hover:rotate-90 transition-transform duration-500">
+          <Icon className="text-white -rotate-45 group-hover:-rotate-90 transition-transform duration-500" size={24} />
+        </div>
+
+        <div className="pt-4">
+          <h3 className="text-xl font-black italic uppercase tracking-wider text-white mb-2">{title}</h3>
+          <p className="text-sm text-gray-400 leading-relaxed font-mono">{sub}</p>
+        </div>
+
+        <div className="pt-4 flex items-center text-xs font-bold text-cyan-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity translate-x-[-10px] group-hover:translate-x-0">
+          Access Module <ChevronRight size={14} />
+        </div>
+      </div>
+
+      {/* Corner Accents */}
+      <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white/10 group-hover:border-cyan-400/50 transition-colors" />
+    </div>
+  </div>
+);
+
+const FeaturesSection = () => {
+  return (
+    <div className="relative py-32 border-t border-white/5 bg-black/40">
+      {/* Background Grid Accent */}
+      <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.02)_50%,transparent_75%,transparent_100%)] bg-[length:20px_20px]" />
+
+      <div className="max-w-7xl mx-auto px-6">
+        {/* Section Header */}
+        <div className="mb-20 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+             <div className="flex items-center gap-2 mb-4">
+               <div className="w-2 h-2 bg-amber-400 rotate-45" />
+               <span className="text-amber-400 font-mono text-xs tracking-widest uppercase">System Architecture</span>
+             </div>
+             <h2 className="text-4xl md:text-5xl font-black italic text-white uppercase tracking-tighter">
+               Main <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">Modules</span>
+             </h2>
+          </div>
+          <p className="max-w-md text-gray-400 text-sm md:text-right font-mono border-r-2 border-white/20 pr-4">
+            Initialize core protocols. Accessing database... <br />
+            Select a module to begin simulation.
+          </p>
+        </div>
+
+        {/* Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+           <FeatureCard 
+             title="Stellar Warp"
+             sub="High-probability quantum rendering engine. Calculate drop rates and simulate gacha probabilities with 99.9% accuracy."
+             icon={Star}
+             color="from-purple-500 to-pink-500"
+             delay="delay-0"
+           />
+           <FeatureCard 
+             title="Relic Analysis"
+             sub="AI-powered artifact scoring. Optimize your build with deep-learning algorithms trained on top-tier player data."
+             icon={Database}
+             color="from-amber-400 to-orange-500"
+             delay="delay-100"
+           />
+           <FeatureCard 
+             title="Security Matrix"
+             sub="End-to-end encryption for user data. Your UID and inventory stats are protected by quantum-key distribution."
+             icon={Shield}
+             color="from-cyan-400 to-blue-500"
+             delay="delay-200"
+           />
+        </div>
+
+        {/* Secondary Info Bar */}
+        <div className="mt-20 p-6 border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-6 clip-path-slant-right">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-cyan-500/20 rounded-full flex items-center justify-center animate-pulse">
+              <Radio className="text-cyan-400" />
+            </div>
+            <div>
+              <h4 className="font-bold text-white uppercase">Live Signal Detected</h4>
+              <p className="text-xs text-gray-400 font-mono">Incoming transmission from Astral Express...</p>
+            </div>
+          </div>
+          <div className="flex gap-8">
+             <div className="text-center">
+               <div className="text-2xl font-black text-white">88%</div>
+               <div className="text-[10px] text-gray-500 uppercase tracking-widest">Download</div>
+             </div>
+             <div className="text-center">
+               <div className="text-2xl font-black text-white">12ms</div>
+               <div className="text-[10px] text-gray-500 uppercase tracking-widest">Ping</div>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 export default Hero;

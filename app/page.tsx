@@ -275,56 +275,92 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* AI FEATURES */}
-      <section id="ai" className="py-32 px-6">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-20"
-          >
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm font-medium mb-6">
-              <Brain className="w-4 h-4" />
-              AI-First Platform
-            </span>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Your personal
-              <br />
-              <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
-                AI tutor
-              </span>
-            </h2>
-            <p className="text-xl text-neutral-400 max-w-2xl mx-auto">
-              Ask anything. Get instant, accurate answers tailored to your learning level.
-            </p>
-          </motion.div>
+      {/* AI FEATURES - HSR Style */}
+      <section id="ai" className="relative py-32 border-t border-white/5 bg-black/40">
+        {/* Background Grid Accent */}
+        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.02)_50%,transparent_75%,transparent_100%)] bg-[length:20px_20px]" />
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          {/* Section Header */}
+          <div className="mb-20 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-2 h-2 bg-amber-400 rotate-45" />
+                <span className="text-amber-400 font-mono text-xs tracking-widest uppercase">AI Architecture</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black italic text-white uppercase tracking-tighter">
+                Core <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Modules</span>
+              </h2>
+            </div>
+            <p className="max-w-md text-gray-400 text-sm md:text-right font-mono border-r-2 border-white/20 pr-4">
+              Initialize learning protocols. Accessing AI... <br />
+              Select a module to begin.
+            </p>
+          </div>
+
+          {/* Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { icon: Brain, title: "Smart Tutoring", desc: "24/7 AI tutor that explains concepts, answers questions, and guides your learning.", gradient: "from-cyan-500 to-teal-500" },
-              { icon: Target, title: "Adaptive Learning", desc: "Courses adjust to your pace. Struggle with a topic? Get more practice automatically.", gradient: "from-emerald-500 to-green-500" },
-              { icon: Zap, title: "Instant Feedback", desc: "Know what's right, what's wrong, and why—in real time.", gradient: "from-amber-500 to-yellow-500" },
-              { icon: BarChart3, title: "Progress Tracking", desc: "See exactly where you stand and what to focus on next.", gradient: "from-teal-500 to-cyan-500" },
-              { icon: BookOpen, title: "Rich Content", desc: "Video, interactive exercises, and AI-generated summaries.", gradient: "from-sky-500 to-cyan-500" },
-              { icon: Shield, title: "Quality Verified", desc: "Every course is reviewed for accuracy and pedagogical quality.", gradient: "from-slate-500 to-gray-500" },
+              { title: "Smart Tutor", sub: "24/7 AI-powered tutoring. Ask any question, get instant explanations tailored to your level.", icon: Brain, color: "from-cyan-400 to-blue-500" },
+              { title: "Adaptive Engine", sub: "Courses that adapt in real-time. Struggle with a topic? Get more practice automatically.", icon: Target, color: "from-amber-400 to-orange-500" },
+              { title: "Progress Matrix", sub: "Deep analytics on your learning patterns. See exactly where you stand and what to focus on.", icon: BarChart3, color: "from-emerald-400 to-green-500" },
             ].map((feature, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="group relative overflow-hidden rounded-3xl bg-white/[0.03] border border-white/10 p-8 hover:border-white/20 transition-all hover:bg-white/[0.05]"
-              >
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
-                  <feature.icon className="w-7 h-7 text-white" />
+              <div key={i} className="relative group p-1">
+                {/* Hover Border Glow */}
+                <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500`} />
+
+                {/* Card Container */}
+                <div className="relative h-full bg-black/60 backdrop-blur-xl border border-white/10 p-8 clip-path-slant-left hover:bg-white/5 transition-all duration-300 group-hover:-translate-y-2">
+
+                  {/* Top Decoration */}
+                  <div className="absolute top-0 right-0 p-2 opacity-50">
+                    <feature.icon className="text-white/20" size={64} />
+                  </div>
+
+                  <div className="relative z-10 space-y-4">
+                    {/* Icon Badge */}
+                    <div className="w-12 h-12 bg-white/10 flex items-center justify-center border border-white/20 rotate-45 group-hover:rotate-90 transition-transform duration-500">
+                      <feature.icon className="text-white -rotate-45 group-hover:-rotate-90 transition-transform duration-500" size={24} />
+                    </div>
+
+                    <div className="pt-4">
+                      <h3 className="text-xl font-black italic uppercase tracking-wider text-white mb-2">{feature.title}</h3>
+                      <p className="text-sm text-gray-400 leading-relaxed font-mono">{feature.sub}</p>
+                    </div>
+
+                    <div className="pt-4 flex items-center text-xs font-bold text-cyan-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity translate-x-[-10px] group-hover:translate-x-0">
+                      Access Module <ArrowRight size={14} className="ml-1" />
+                    </div>
+                  </div>
+
+                  {/* Corner Accents */}
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white/10 group-hover:border-cyan-400/50 transition-colors" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                <p className="text-neutral-400 leading-relaxed">{feature.desc}</p>
-              </motion.div>
+              </div>
             ))}
+          </div>
+
+          {/* Secondary Info Bar */}
+          <div className="mt-20 p-6 border border-white/10 bg-white/5 backdrop-blur-sm flex flex-col md:flex-row items-center justify-between gap-6 clip-path-slant-right">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-cyan-500/20 rounded-full flex items-center justify-center animate-pulse">
+                <Sparkles className="text-cyan-400" size={20} />
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase">AI Tutor Online</h4>
+                <p className="text-xs text-gray-400 font-mono">Gemini 2.0 Flash ready for your questions...</p>
+              </div>
+            </div>
+            <div className="flex gap-8">
+              <div className="text-center">
+                <div className="text-2xl font-black text-white">95%</div>
+                <div className="text-[10px] text-gray-500 uppercase tracking-widest">Completion</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-black text-white">24/7</div>
+                <div className="text-[10px] text-gray-500 uppercase tracking-widest">Available</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
