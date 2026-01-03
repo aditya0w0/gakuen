@@ -232,7 +232,7 @@ export async function requireSignedRequest(request: NextRequest): Promise<{ vali
 /**
  * Type for API route handler
  */
-type APIHandler = (request: NextRequest, context?: { params?: Record<string, string> }) => Promise<NextResponse>;
+type APIHandler = (request: NextRequest, context?: { params?: Promise<Record<string, string>> | Record<string, string> }) => Promise<NextResponse>;
 
 /**
  * Wrapper that combines authentication + analytics tracking
@@ -248,7 +248,7 @@ export function withAuthTracked(
     handler: (request: NextRequest, context: { user: User; params?: Record<string, string> }) => Promise<NextResponse>,
     options?: { requireAdmin?: boolean }
 ): APIHandler {
-    return async (request: NextRequest, routeContext?: { params?: Record<string, string> }) => {
+    return async (request: NextRequest, routeContext?: { params?: Promise<Record<string, string>> | Record<string, string> }) => {
         const startTime = Date.now();
         const { pathname } = new URL(request.url);
         const method = request.method;
@@ -270,10 +270,13 @@ export function withAuthTracked(
         }
 
         try {
+            // Await params if they are a promise (Next.js 15)
+            const params = await routeContext?.params;
+
             // Execute handler
             const response = await handler(request, {
                 user: authResult.user,
-                params: routeContext?.params
+                params: params
             });
 
             // Track successful call
