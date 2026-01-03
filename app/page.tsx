@@ -7,7 +7,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 
 // --- HSR UI Components ---
-const HsrButton = ({
+const HsrButton = React.memo(({
   children,
   variant = 'primary',
   icon: Icon,
@@ -37,9 +37,10 @@ const HsrButton = ({
   );
 
   return href ? <Link href={href}>{content}</Link> : content;
-};
+});
+HsrButton.displayName = 'HsrButton';
 
-const TechDecoration = ({ className }: { className?: string }) => (
+const TechDecoration = React.memo(({ className }: { className?: string }) => (
   <div className={`absolute pointer-events-none opacity-40 ${className}`}>
     <div className="flex gap-1">
       <div className="w-1 h-1 bg-white rounded-full animate-ping" />
@@ -47,10 +48,11 @@ const TechDecoration = ({ className }: { className?: string }) => (
       <div className="w-1 h-1 bg-white rounded-full" />
     </div>
   </div>
-);
+));
+TechDecoration.displayName = 'TechDecoration';
 
 // Typing animation component
-const TypingText = ({ text, className }: { text: string; className?: string }) => {
+const TypingText = React.memo(({ text, className }: { text: string; className?: string }) => {
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -85,10 +87,11 @@ const TypingText = ({ text, className }: { text: string; className?: string }) =
       <span className="animate-pulse">_</span>
     </span>
   );
-};
+});
+TypingText.displayName = 'TypingText';
 
 // Roster Section for AI Learning Modes
-const RosterSection = () => {
+const RosterSection = React.memo(() => {
   const [activeUnit, setActiveUnit] = useState(0);
 
   const units = [
@@ -220,7 +223,8 @@ const RosterSection = () => {
       </div>
     </div>
   );
-};
+});
+RosterSection.displayName = 'RosterSection';
 
 export default function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null);
