@@ -83,6 +83,9 @@ const Hero = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const rafRef = React.useRef<number | null>(null);
   const latestMousePos = React.useRef({ x: 0, y: 0 });
+  
+  // Mouse sensitivity for parallax effect (lower = more subtle)
+  const MOUSE_SENSITIVITY = 0.5;
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -190,14 +193,14 @@ const Hero = () => {
         <div className="w-full md:w-1/2 relative mt-12 md:mt-0 h-[600px] flex items-center justify-center perspective-1000">
           
           {/* Rotating Rings (Simulated) - GPU accelerated */}
-          <div className="absolute w-[500px] h-[500px] rounded-full border border-white/10 animate-[spin_10s_linear_infinite] will-change-transform" style={{ transform: 'translateZ(0)' }} />
-          <div className="absolute w-[400px] h-[400px] rounded-full border border-cyan-500/20 animate-[spin_15s_linear_infinite_reverse] will-change-transform" style={{ transform: 'translateZ(0)' }} />
-          <div className="absolute w-[600px] h-[600px] rounded-full border border-dashed border-white/5 animate-[spin_30s_linear_infinite] will-change-transform" style={{ transform: 'translateZ(0)' }} />
+          <div className="absolute w-[500px] h-[500px] rounded-full border border-white/10 animate-[spin_10s_linear_infinite] will-change-transform gpu-accelerate" />
+          <div className="absolute w-[400px] h-[400px] rounded-full border border-cyan-500/20 animate-[spin_15s_linear_infinite_reverse] will-change-transform gpu-accelerate" />
+          <div className="absolute w-[600px] h-[600px] rounded-full border border-dashed border-white/5 animate-[spin_30s_linear_infinite] will-change-transform gpu-accelerate" />
 
           {/* Main Card Floating - GPU accelerated */}
           <div className="relative w-[320px] h-[480px] bg-gray-900/80 backdrop-blur-xl border border-white/10 rotate-y-12 transition-transform duration-500 hover:rotate-y-0 group will-change-transform"
                style={{ 
-                 transform: `perspective(1000px) rotateY(${mousePos.x * 0.5}deg) rotateX(${mousePos.y * -0.5}deg) translateZ(0)`,
+                 transform: `perspective(1000px) rotateY(${mousePos.x * MOUSE_SENSITIVITY}deg) rotateX(${mousePos.y * -MOUSE_SENSITIVITY}deg) translateZ(0)`,
                  boxShadow: '0 0 50px rgba(0, 200, 255, 0.1)',
                  backfaceVisibility: 'hidden'
                }}>
