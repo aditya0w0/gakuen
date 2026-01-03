@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Play, ArrowRight, Star, Hexagon, Zap, Globe, Sparkles, ChevronRight } from 'lucide-react';
+import { Play, ArrowRight, Star, Hexagon, Zap, Globe, Sparkles, ChevronRight, Database } from 'lucide-react';
 
 // --- HSR UI Components ---
 
