@@ -4,7 +4,7 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAnime } from "@/components/animations/useAnime";
-import { useState, FormEvent, useEffect, useRef } from "react";
+import { useState, FormEvent, useEffect, useRef, Suspense } from "react";
 import { Loader2, Mail, Lock, AlertCircle, User as UserIcon, Eye, EyeOff, Check, X, Shield, FileText } from "lucide-react";
 import Link from "next/link";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
@@ -15,7 +15,7 @@ import { logger } from "@/lib/logger";
 
 export const dynamic = 'force-dynamic';
 
-export default function LoginPage() {
+function LoginPageContent() {
     const { error: authError, login: authLogin, signup: authSignup } = useAuth();
     const { user: sessionUser, isLoading: sessionLoading } = useSession();
     const searchParams = useSearchParams();
@@ -493,5 +493,22 @@ export default function LoginPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex min-h-screen items-center justify-center p-4 bg-neutral-50 dark:bg-neutral-950">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-white" />
+                    <p className="text-neutral-600 dark:text-neutral-400">
+                        Loading...
+                    </p>
+                </div>
+            </div>
+        }>
+            <LoginPageContent />
+        </Suspense>
     );
 }
