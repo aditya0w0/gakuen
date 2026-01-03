@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Play, ArrowRight, Star, Hexagon, Zap, Globe, Sparkles, ChevronRight } from 'lucide-react';
 
 // --- HSR UI Components ---
@@ -86,6 +86,13 @@ const Hero = () => {
   
   // Mouse sensitivity for parallax effect (lower = more subtle)
   const MOUSE_SENSITIVITY = 0.5;
+  
+  // Memoize transform style to avoid recreation on every render
+  const cardTransformStyle = useMemo(() => ({
+    transform: `perspective(1000px) rotateY(${mousePos.x * MOUSE_SENSITIVITY}deg) rotateX(${mousePos.y * -MOUSE_SENSITIVITY}deg)`,
+    boxShadow: '0 0 50px rgba(0, 200, 255, 0.1)',
+    backfaceVisibility: 'hidden' as const
+  }), [mousePos.x, mousePos.y]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -199,11 +206,7 @@ const Hero = () => {
 
           {/* Main Card Floating - GPU accelerated */}
           <div className="relative w-[320px] h-[480px] bg-gray-900/80 backdrop-blur-xl border border-white/10 rotate-y-12 transition-transform duration-500 hover:rotate-y-0 group gpu-accelerate"
-               style={{ 
-                 transform: `perspective(1000px) rotateY(${mousePos.x * MOUSE_SENSITIVITY}deg) rotateX(${mousePos.y * -MOUSE_SENSITIVITY}deg)`,
-                 boxShadow: '0 0 50px rgba(0, 200, 255, 0.1)',
-                 backfaceVisibility: 'hidden'
-               }}>
+               style={cardTransformStyle}>
             
             {/* Card Header */}
             <div className="h-1/2 bg-gradient-to-b from-indigo-900 to-black relative overflow-hidden p-6 flex flex-col justify-end">

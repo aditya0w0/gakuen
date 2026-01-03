@@ -272,6 +272,5 @@
 /* GPU acceleration utility class */
 .gpu-accelerate {
   transform: translateZ(0);
-  -webkit-transform: translateZ(0);
   will-change: transform;
 }
