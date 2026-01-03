@@ -268,3 +268,9 @@
     animation: none;
   }
 }
+
+/* GPU acceleration utility class */
+.gpu-accelerate {
+  transform: translateZ(0);
+  will-change: transform;
+}
