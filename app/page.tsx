@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Brain, Zap, Target, BarChart3, Users, Shield, Play, Star, BookOpen, Hexagon, Globe, ChevronRight } from "lucide-react";

@@ -82,17 +82,21 @@ Navbar.displayName = 'Navbar';
 const Hero = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const rafRef = React.useRef<number | null>(null);
+  const latestMousePos = React.useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      // Store latest mouse coordinates
+      latestMousePos.current = {
+        x: (e.clientX / window.innerWidth) * 20,
+        y: (e.clientY / window.innerHeight) * 20
+      };
+
       // Throttle with requestAnimationFrame for performance
       if (rafRef.current) return;
 
       rafRef.current = requestAnimationFrame(() => {
-        setMousePos({ 
-          x: (e.clientX / window.innerWidth) * 20, 
-          y: (e.clientY / window.innerHeight) * 20 
-        });
+        setMousePos(latestMousePos.current);
         rafRef.current = null;
       });
     };
