@@ -95,7 +95,7 @@ const RosterSection = () => {
     {
       id: 0,
       name: "Standard Mode",
-      role: "Gemini 1.5 / Learning",
+      role: "Gemini 3.0 / Learning",
       desc: "Perfect for everyday learning. Fast responses, clear explanations, and adaptive difficulty.",
       stats: { speed: 95, clarity: 85, depth: 70 },
       color: "from-cyan-500 to-blue-600",
@@ -104,7 +104,7 @@ const RosterSection = () => {
     {
       id: 1,
       name: "Pro Mode",
-      role: "Gemini 2.0 / Advanced",
+      role: "Gemini 3.0 Pro / Advanced",
       desc: "Deep analysis and complex problem solving. Handles multi-step reasoning and research tasks.",
       stats: { speed: 75, clarity: 90, depth: 95 },
       color: "from-amber-400 to-orange-500",
@@ -375,7 +375,7 @@ export default function LandingPage() {
                   <Hexagon className="text-white/20" size={32} />
                 </div>
                 <h3 className="text-2xl font-bold text-white italic">AI TUTOR</h3>
-                <p className="text-cyan-400 text-xs font-mono">GEMINI 2.0 // PRO</p>
+                <p className="text-cyan-400 text-xs font-mono">GEMINI 3.0 // PRO</p>
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
               </div>
 
@@ -587,7 +587,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <h4 className="font-bold text-white uppercase">AI Tutor Online</h4>
-                  <p className="text-xs text-gray-400 font-mono">Gemini 2.0 Flash ready for your questions...</p>
+                  <p className="text-xs text-gray-400 font-mono">Gemini 3.0 Flash ready for your questions...</p>
                 </div>
               </div>
               <div className="flex gap-8">

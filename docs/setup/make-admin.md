@@ -1,49 +1,58 @@
-# Make Yourself Admin
+# Administrator Role Configuration
 
-## Quick Fix - Via Firebase Console
+## Overview
 
-1. **Open Firebase Console**
-   - Go to https://console.firebase.google.com/
-   - Select your project
-   - Navigate to **Firestore Database**
+This guide explains how to grant administrative privileges to users in the Gakuen platform.
 
-2. **Find Your User**
-   - Click `users` collection
-   - Find your document (your UID)
+## Method 1: Firebase Console (Recommended)
 
-3. **Edit Role**
-   - Click on your user document
-   - Find the `role` field
-   - Change value from `"user"` to `"admin"`
-   - Save
+### Step 1: Access Firebase Console
 
-4. **Refresh App**
-   - Hard refresh browser (Ctrl+Shift+R)
-   - Sign out and sign back in
-   - You should now have admin access
+1. Navigate to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project
+3. Go to **Firestore Database**
+
+### Step 2: Locate User Document
+
+1. Click on the `users` collection
+2. Find your user document (identified by UID)
+
+### Step 3: Modify Role
+
+1. Click on your user document
+2. Locate the `role` field
+3. Change value from `"user"` to `"admin"`
+4. Save changes
+
+### Step 4: Refresh Application
+
+1. Perform a hard refresh (Ctrl+Shift+R)
+2. Sign out and sign back in
+3. Administrative access should now be available
 
 ---
 
-## Why This Happens
+## Technical Context
 
 In [`lib/firebase/auth.ts`](file:///c:/Users/Xiao%20Fan/Coding/ELearn/gakuen/lib/firebase/auth.ts#L72):
+
 ```typescript
 role: "user",  // Line 72 - All new users default to "user" role
 ```
 
-This is by design for security - we don't want anyone who signs in to automatically become an admin.
+This default behavior is intentional for security purposes. Automatic admin assignment would create a significant security vulnerability.
 
 ---
 
-## Alternative: Update Code for First User
+## Method 2: First-User Admin (Alternative)
 
-If you want the FIRST user to auto-become admin, modify `signInWithGoogle()`:
+For development environments where the first user should automatically receive admin privileges, modify the `signInWithGoogle()` function:
 
 ```typescript
 // If new user, create profile
 if (!profile) {
     // Check if this is the first user (make them admin)
-    const usersCount = await getUsersCount(); // You'd need to implement this
+    const usersCount = await getUsersCount(); // Implementation required
     
     const newUser: User = {
         id: credential.user.uid,
@@ -61,4 +70,34 @@ if (!profile) {
 }
 ```
 
-But the **Firebase Console method is faster** for now!
+> **Note:** The Firebase Console method is faster for initial setup and does not require code modifications.
+
+---
+
+## Role Assignment Flow
+
+```mermaid
+flowchart TD
+    A[User Signs In] --> B{User Exists?}
+    B -->|Yes| C[Load Existing Profile]
+    B -->|No| D[Create New Profile]
+    D --> E[Assign role: user]
+    E --> F[Save to Firestore]
+    
+    G[Admin Requirement] --> H{Method?}
+    H -->|Console| I[Edit Firestore Document]
+    H -->|Script| J[Run set-admin.ts]
+    H -->|Code| K[Modify First-User Logic]
+    
+    I --> L[Change role to admin]
+    J --> L
+    K --> L
+    
+    L --> M[User Signs Out]
+    M --> N[User Signs In]
+    N --> O[Admin Access Granted]
+    
+    style E fill:#e3f2fd
+    style L fill:#c8e6c9
+    style O fill:#c8e6c9
+```

@@ -1,43 +1,49 @@
 # Gakuen Firebase Setup Guide
 
+## Overview
+
+This guide covers the complete Firebase configuration process for the Gakuen platform, including project creation, authentication setup, Firestore configuration, and security rules deployment.
+
 ## Quick Start
 
-### 1. Create Firebase Project (2 minutes)
+### Step 1: Create Firebase Project
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Click "Add Project" or "Create a project"
-3. Enter project name: `gakuen-platform` (or your choice)
-4. Disable Google Analytics (optional for now)
-5. Click "Create Project"
+**Estimated time: 2 minutes**
 
-### 2. Enable Authentication
+1. Navigate to [Firebase Console](https://console.firebase.google.com/)
+2. Click **Add Project** or **Create a project**
+3. Enter project name: `gakuen-platform` (or your preferred name)
+4. Disable Google Analytics (optional for development)
+5. Click **Create Project**
 
-1. In Firebase Console, go to **Authentication** → **Get Started**
-2. Click **Email/Password** → Enable → Save
+### Step 2: Enable Authentication
 
-### 3. Create Firestore Database
+1. In Firebase Console, navigate to **Authentication** > **Get Started**
+2. Select **Email/Password** > Enable > Save
 
-1. Go to **Firestore Database** → **Create database**
-2. Choose **Start in test mode** → Next
-3. Select your region → Enable
+### Step 3: Create Firestore Database
 
-### 4. Get Firebase Config
+1. Navigate to **Firestore Database** > **Create database**
+2. Select **Start in test mode** > Next
+3. Choose your preferred region > Enable
+
+### Step 4: Obtain Firebase Configuration
 
 1. Go to **Project Settings** (gear icon)
-2. Scroll to "Your apps" → Click Web icon (</> )
-3. Register app: `gakuen-web`
+2. Scroll to "Your apps" section > Click Web icon (`</>`)
+3. Register app with name: `gakuen-web`
 4. Copy the `firebaseConfig` object
 
-### 5. Configure Environment
+### Step 5: Configure Environment
 
-Create `.env.local` in project root:
+Create `.env.local` in the project root:
 
 ```bash
-# Copy from .env.local.example
+# Copy from template
 cp .env.local.example .env.local
 ```
 
-Paste your Firebase config values:
+Add your Firebase configuration values:
 
 ```env
 NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...
@@ -47,13 +53,13 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=gakuen-platform.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
 NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abc123
 
-# Enable Firebase
+# Enable Firebase integration
 NEXT_PUBLIC_USE_FIREBASE=true
 ```
 
-### 6. Set Firestore Security Rules
+### Step 6: Deploy Firestore Security Rules
 
-In Firebase Console → Firestore Database → Rules:
+Navigate to **Firebase Console** > **Firestore Database** > **Rules** and deploy:
 
 ```javascript
 rules_version = '2';
@@ -73,30 +79,67 @@ service cloud.firestore {
 }
 ```
 
-Click **Publish**.
+Click **Publish** to deploy the rules.
 
-## Testing
+---
 
-### Test Without Firebase
+## Testing Configuration
+
+### Testing Without Firebase
+
+Set the following in `.env.local`:
 
 ```env
 NEXT_PUBLIC_USE_FIREBASE=false
 ```
 
-App will use local storage only (demo accounts work).
+The application will use local storage only. Demo accounts remain functional.
 
-### Test With Firebase
+### Testing With Firebase
+
+Set the following in `.env.local`:
 
 ```env
- NEXT_PUBLIC_USE_FIREBASE=true
+NEXT_PUBLIC_USE_FIREBASE=true
 ```
 
-1. Login with demo account: `student@gakuen.edu` / `student123`
-2. This will create user in Firebase (first time)
-3. Progress syncs to Firebase every 30 seconds
-4. Check Firebase Console to see data
+**Verification steps:**
 
-## Hybrid Storage Behavior
+1. Login with demo account: `student@gakuen.edu` / `student123`
+2. This creates a user record in Firebase (on first login)
+3. Progress synchronizes to Firebase every 30 seconds
+4. Verify data in Firebase Console
+
+---
+
+## Hybrid Storage Architecture
+
+```mermaid
+flowchart LR
+    subgraph Client ["Client"]
+        Action[User Action]
+        LocalStore[(Local Storage)]
+    end
+    
+    subgraph Sync ["Sync Layer"]
+        Debounce[30s Debounce]
+        Queue[Offline Queue]
+    end
+    
+    subgraph Cloud ["Firebase"]
+        Firestore[(Firestore)]
+    end
+    
+    Action -->|Immediate| LocalStore
+    LocalStore -->|Debounced| Debounce
+    Debounce --> Firestore
+    
+    LocalStore -->|Offline| Queue
+    Queue -->|Online| Firestore
+    
+    style LocalStore fill:#e3f2fd
+    style Firestore fill:#fff3e0
+```
 
 | Action | Local Storage | Firebase | Notes |
 |--------|--------------|----------|-------|
@@ -105,24 +148,39 @@ App will use local storage only (demo accounts work).
 | Logout | Clear cache | Sign out | Sync pending first |
 | Offline | Works | Queued | Syncs when online |
 
-## Development Tips
+---
 
-- Keep Firebase **disabled** during development (`USE_FIREBASE=false`)
-- Enable for production deployment
-- Monitor Firebase usage in Console → Usage tab
-- Free tier: 50K reads/day, 20K writes/day
+## Development Guidelines
+
+| Guideline | Recommendation |
+|-----------|----------------|
+| Development Mode | Keep Firebase disabled (`USE_FIREBASE=false`) |
+| Production | Enable Firebase integration |
+| Monitoring | Use Firebase Console > Usage tab |
+| Free Tier Limits | 50K reads/day, 20K writes/day |
+
+---
 
 ## Troubleshooting
 
-**Error: Firebase not initialized**
-- Check `.env.local` exists and has correct values
-- Restart dev server after adding env vars
+### Error: Firebase not initialized
 
-**Error: Permission denied**
-- Check Firestore rules are published
-- Ensure user is authenticated
+**Checklist:**
 
-**Data not syncing**
+- Verify `.env.local` exists with correct values
+- Restart development server after modifying environment variables
+
+### Error: Permission denied
+
+**Checklist:**
+
+- Confirm Firestore rules are published
+- Verify user is authenticated
+
+### Data not syncing
+
+**Checklist:**
+
 - Check browser console for errors
 - Verify `NEXT_PUBLIC_USE_FIREBASE=true`
-- Check Firebase Console for data
+- Inspect Firebase Console for data presence

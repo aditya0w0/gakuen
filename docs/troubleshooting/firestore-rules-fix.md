@@ -1,36 +1,38 @@
-# Fix Firebase Permissions - Auto-Registration
+# Firestore Permission Fix: Auto-Registration
 
-## The Problem
+## Problem Description
 
-You're seeing: `FirebaseError: Missing or insufficient permissions`
+**Error:** `FirebaseError: Missing or insufficient permissions`
 
-**Root Cause:** Your Firestore security rules are blocking user document creation.
+**Root Cause:** Firestore security rules are blocking user document creation during the auto-registration process.
 
 ---
 
-## ✅ Good News!
+## Context
 
-The auto-registration code **already exists** in [`lib/firebase/auth.ts`](file:///c:/Users/Xiao%20Fan/Coding/ELearn/gakuen/lib/firebase/auth.ts)!
+The auto-registration functionality is implemented in [`lib/firebase/auth.ts`](file:///c:/Users/Xiao%20Fan/Coding/ELearn/gakuen/lib/firebase/auth.ts):
 
-When you sign in with Google (lines 63-83), it:
-1. Checks if your user document exists
+When signing in with Google (lines 63-83), the system:
+
+1. Checks if the user document exists
 2. If not, creates it automatically
-3. Saves to Firestore with `createUserProfile()`
+3. Persists to Firestore via `createUserProfile()`
 
-**The issue:** Firestore rules are rejecting the write.
+**Issue:** Firestore security rules reject the write operation.
 
 ---
 
-## 🔧 Solution: Update Firestore Rules
+## Solution: Update Firestore Security Rules
 
-### Step 1: Open Firebase Console
-1. Go to [Firebase Console](https://console.firebase.google.com/)
+### Step 1: Access Firebase Console
+
+1. Navigate to [Firebase Console](https://console.firebase.google.com/)
 2. Select your project
-3. Navigate to **Firestore Database** → **Rules** tab
+3. Go to **Firestore Database** > **Rules** tab
 
-### Step 2: Replace Rules
+### Step 2: Deploy Updated Rules
 
-Copy this and paste into the rules editor:
+Replace existing rules with the following configuration:
 
 ```javascript
 rules_version = '2';
@@ -39,7 +41,7 @@ service cloud.firestore {
     
     // Users collection - allow users to create and manage their own document
     match /users/{userId} {
-      // Anyone authenticated can read their own user document
+      // Authenticated users can read their own document
       allow read: if request.auth != null && request.auth.uid == userId;
       
       // Users can create their own document on first sign-in
@@ -49,10 +51,10 @@ service cloud.firestore {
       allow update: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Courses collection - read for all, write for authenticated users
+    // Courses collection - public read, authenticated write
     match /courses/{courseId} {
-      allow read: if true;  // Anyone can read courses
-      allow write: if request.auth != null;  // Only authenticated users can write
+      allow read: if true;  // Public access for course browsing
+      allow write: if request.auth != null;  // Authenticated users only
       
       // Course metadata subcollection
       match /metadata/{document=**} {
@@ -70,38 +72,81 @@ service cloud.firestore {
 ```
 
 ### Step 3: Publish Rules
-1. Click **"Publish"** button
-2. Wait for confirmation
+
+1. Click the **Publish** button
+2. Wait for confirmation message
 
 ---
 
-## 🧪 Test It
+## Verification
 
-1. **Sign Out** if currently logged in
-2. Click **"Sign In with Google"**
+1. Sign out if currently authenticated
+2. Click **Sign In with Google**
 3. Select your Google account
-4. ✅ Should work without errors!
-5. Check Firestore → `users` collection → Your document should appear
+4. Verify no errors occur
+5. Navigate to **Firestore** > `users` collection > Confirm your document exists
 
 ---
 
-## What This Does
+## Rules Summary
 
-- ✅ Allows users to **create** their own document on first sign-in
-- ✅ Users can **read/update** only their own data
-- ✅ Courses are publicly readable (for browsing)
-- ✅ Only authenticated users can modify courses
-- ✅ Secure - users can't access other users' data
+```mermaid
+flowchart TD
+    subgraph Users ["Users Collection"]
+        U1[Read Own Document]
+        U2[Create Own Document]
+        U3[Update Own Document]
+    end
+    
+    subgraph Courses ["Courses Collection"]
+        C1[Public Read Access]
+        C2[Authenticated Write]
+    end
+    
+    subgraph Progress ["Progress Collection"]
+        P1[Read/Write Own Data]
+    end
+    
+    Auth{Authenticated?}
+    Own{Own Document?}
+    
+    Auth -->|Yes| Own
+    Own -->|Yes| U1
+    Own -->|Yes| U2
+    Own -->|Yes| U3
+    Own -->|Yes| P1
+    
+    Auth -->|Yes| C2
+    Auth -->|No| C1
+    
+    style U1 fill:#c8e6c9
+    style U2 fill:#c8e6c9
+    style U3 fill:#c8e6c9
+    style P1 fill:#c8e6c9
+    style C1 fill:#e1f5fe
+    style C2 fill:#c8e6c9
+```
+
+| Rule | Permission |
+|------|------------|
+| User Document Creation | Allowed for authenticated users creating their own document |
+| User Document Read/Update | Allowed only for document owner |
+| Course Read | Publicly accessible |
+| Course Write | Requires authentication |
+| Progress Tracking | Read/write limited to document owner |
 
 ---
 
-## If Still Having Issues
+## Troubleshooting
 
 ### Check Console Errors
-Open browser console (F12) and look for specific error messages.
 
-### Verify Firebase is Enabled
-Check your `.env.local` has all Firebase credentials:
+Open browser console (F12) and examine specific error messages.
+
+### Verify Firebase Configuration
+
+Confirm `.env.local` contains all required Firebase credentials:
+
 ```bash
 NEXT_PUBLIC_FIREBASE_API_KEY=...
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
@@ -109,23 +154,31 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
 # etc.
 ```
 
-### Check Auth is Working
-The error happens AFTER successful Google sign-in. If Google auth fails, that's a different issue (likely API key problem).
+### Confirm Authentication Status
+
+This error occurs **after** successful Google sign-in. If Google OAuth fails, investigate API key configuration.
 
 ### Force Refresh
-After updating rules, hard refresh the app (Ctrl+Shift+R) and try again.
+
+After updating rules, perform a hard refresh (Ctrl+Shift+R) and retry authentication.
 
 ---
 
-## Security Notes
+## Security Considerations
 
-These rules are **development-ready but production-cautious**:
-- Users can only access their own data
-- Course writes require authentication
-- No anonymous writes allowed
-- Read access is appropriately scoped
+These rules are designed for development with production-ready security principles:
 
-For production, you might want to:
-- Add admin role checks for course creation
-- Add validation rules for required fields
-- Add rate limiting for writes
+| Principle | Implementation |
+|-----------|----------------|
+| User Data Isolation | Users can only access their own data |
+| Authenticated Writes | Course modifications require authentication |
+| No Anonymous Writes | Write operations require valid credentials |
+| Appropriate Read Scope | Public data is accessible; private data is protected |
+
+### Production Recommendations
+
+For production deployment, consider implementing:
+
+- Admin role checks for course creation/modification
+- Field validation rules for required data
+- Rate limiting for write operations

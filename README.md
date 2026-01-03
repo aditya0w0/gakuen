@@ -6,14 +6,57 @@ A modern, full-stack e-learning platform built with Next.js 15, Firebase, and Ty
 
 ## Overview
 
-Gakuen is an enterprise-ready learning management system designed to deliver interactive courses with AI-powered tutoring, real-time progress tracking, and a comprehensive admin dashboard for content management.
+Gakuen is anlearning management system designed to deliver interactive courses with AI-powered tutoring, real-time progress tracking, and a comprehensive admin dashboard for content management.
+
+## System Architecture
+
+```mermaid
+flowchart TB
+    subgraph Client ["Client Layer"]
+        Browser[Web Browser / PWA]
+        LocalStore[Local Storage Cache]
+    end
+    
+    subgraph NextJS ["Next.js Application"]
+        AppRouter[App Router]
+        API[API Routes]
+        Middleware[Auth Middleware]
+        Components[React Components]
+    end
+    
+    subgraph Services ["External Services"]
+        Firebase[(Firebase)]
+        Gemini[Gemini AI]
+    end
+    
+    subgraph Firebase
+        Auth[Authentication]
+        Firestore[(Firestore DB)]
+        Storage[Cloud Storage]
+    end
+    
+    Browser --> AppRouter
+    Browser <--> LocalStore
+    AppRouter --> Components
+    AppRouter --> Middleware
+    Middleware --> API
+    API --> Auth
+    API --> Firestore
+    API --> Storage
+    API --> Gemini
+    LocalStore <-.-> Firestore
+    
+    style Browser fill:#e3f2fd
+    style Firebase fill:#fff3e0
+    style Gemini fill:#e8f5e9
+```
 
 ## Features
 
 ### For Students
 
 - Interactive course viewer with video, article, and code-based lessons
-- AI-powered tutoring assistant (Gemini 2.0)
+- AI-powered tutoring assistant (Gemini 3.0)
 - Progress tracking with completion certificates
 - Multi-language support with real-time translation
 - Mobile-responsive PWA design
@@ -45,7 +88,7 @@ Gakuen is an enterprise-ready learning management system designed to deliver int
 | Database | Firebase Firestore |
 | Authentication | Firebase Auth |
 | Styling | Tailwind CSS |
-| AI | Google Gemini 2.0 |
+| AI | Google Gemini 3.0 |
 | Testing | Vitest |
 | Deployment | Vercel / Self-hosted |
 
@@ -122,6 +165,37 @@ gakuen/
 └── public/               # Static assets
 ```
 
+## Data Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Browser
+    participant LocalCache as Local Cache
+    participant NextJS as Next.js API
+    participant Firestore
+    
+    User->>Browser: Complete lesson
+    Browser->>LocalCache: Update immediately
+    Browser-->>User: UI updates
+    
+    Note over Browser,LocalCache: Debounced sync (30s)
+    
+    LocalCache->>NextJS: Sync progress
+    NextJS->>Firestore: Persist data
+    Firestore-->>NextJS: Confirmation
+    NextJS-->>LocalCache: Sync complete
+    
+    Note over Browser,Firestore: Offline support
+    
+    User->>Browser: Work offline
+    Browser->>LocalCache: Queue changes
+    LocalCache-->>Browser: Confirm local save
+    
+    Note over LocalCache,Firestore: When online
+    LocalCache->>Firestore: Batch sync queued changes
+```
+
 ## Scripts
 
 | Command | Description |
@@ -154,6 +228,15 @@ gakuen/
    ```bash
    npm run start
    ```
+
+## Documentation
+
+For detailed setup and configuration guides, see the [docs](docs/) directory:
+
+- [Firebase Setup](docs/setup/firebase-setup.md)
+- [Firebase Token Auth](docs/setup/firebase-token-auth.md)
+- [Admin Configuration](docs/setup/make-admin.md)
+- [Security Notes](docs/security-notes.md)
 
 ## License
 
