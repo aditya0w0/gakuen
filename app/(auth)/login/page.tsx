@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = 'force-dynamic';
-
 import { useAuth } from "@/components/auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +12,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/components/providers/SessionProvider";
 import { firebaseAuth } from "@/lib/firebase/auth";
 import { logger } from "@/lib/logger";
+
+export const dynamic = 'force-dynamic';
 
 export default function LoginPage() {
     const { error: authError, login: authLogin, signup: authSignup } = useAuth();
