@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ModernBackground } from "@/components/animations/ModernBackground";
 import { AuthProvider } from "@/components/auth/AuthContext";
@@ -9,18 +8,6 @@ import { ThemeProvider } from "@/components/theme";
 import { LanguageProvider } from "@/lib/i18n";
 import { CookieConsent } from "@/components/CookieConsent";
 import { SessionProvider } from "@/components/providers/SessionProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: "swap", // Prevent FOIT
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 // SEO Metadata
 export const metadata: Metadata = {
@@ -126,12 +113,10 @@ export default function RootLayout({
           }}
         />
         {/* Preconnect to external services */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://www.youtube-nocookie.com" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300`}
+        className="font-sans antialiased bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300"
       >
         <ThemeProvider>
           <LanguageProvider>

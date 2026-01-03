@@ -283,7 +283,7 @@ export function withAuthTracked(
                 userId: authResult.user.id,
                 userEmail: authResult.user.email,
                 duration: Date.now() - startTime,
-                statusCode: response.status,
+                statusCode: response?.status ?? 204,
             });
 
             return response;
