@@ -28,12 +28,13 @@ const eslintConfig = defineConfig([
       "react/no-unstable-default-props": "off",
     },
   },
-  // Completely disable some rules for test files
+  // Completely disable some rules for test files and Node.js scripts
   {
     files: ["**/__tests__/**/*", "**/*.test.ts", "**/*.test.tsx", "**/scripts/**/*"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 ]);

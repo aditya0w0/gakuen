@@ -2,7 +2,7 @@
 
 import { Course } from "@/lib/types";
 import { CourseCard } from "@/components/course/CourseCard";
-import { Sparkles, ChevronRight, RefreshCw } from "lucide-react";
+import { Sparkles, RefreshCw } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
 import { useAuth } from "@/components/auth/AuthContext";
@@ -21,7 +21,7 @@ export function RecommendedCourses({
     const { user } = useAuth();
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [, setError] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const fetchRecommendations = async () => {
@@ -51,6 +51,7 @@ export function RecommendedCourses({
         }
     };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         fetchRecommendations();
     }, [user, limit]);

@@ -54,7 +54,7 @@ export const POST = withAuthTracked(async (request, { user }) => {
         const buffer = Buffer.from(bytes);
 
         // Process with Sharp - convert to WebP, 85% quality
-        let imageToProcess = buffer;
+        const imageToProcess = buffer;
         let wasReplaced = false;
 
         const processedBuffer = await sharp(imageToProcess)
