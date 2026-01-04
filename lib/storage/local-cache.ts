@@ -94,6 +94,7 @@ export const localCache = {
             queue.push(operation);
             localCache.set(CACHE_KEYS.SYNC_QUEUE, queue);
         },
+        set: (operations: any[]) => localCache.set(CACHE_KEYS.SYNC_QUEUE, operations),
         get: () => localCache.get<any[]>(CACHE_KEYS.SYNC_QUEUE) || [],
         clear: () => localCache.remove(CACHE_KEYS.SYNC_QUEUE),
     },

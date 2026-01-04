@@ -166,6 +166,8 @@ export const hybridStorage = {
         completeLesson(userId: string, lessonId: string, courseId: string, totalLessons: number, forceProgress?: number): void {
             const progress = this.get();
 
+            // Ensure completedLessons is an array (defensive check for corrupted Firebase data)
+            progress.completedLessons = progress.completedLessons || [];
             if (!progress.completedLessons.includes(lessonId)) {
                 progress.completedLessons.push(lessonId);
             }
@@ -173,7 +175,7 @@ export const hybridStorage = {
             if (forceProgress !== undefined) {
                 progress.courseProgress[courseId] = forceProgress;
             } else {
-                const completedInCourse = progress.completedLessons.filter((id: string) =>
+                const completedInCourse = (progress.completedLessons || []).filter((id: string) =>
                     id.toLowerCase().startsWith(courseId.toLowerCase())
                 ).length;
 
@@ -196,7 +198,7 @@ export const hybridStorage = {
 
         isLessonCompleted(lessonId: string): boolean {
             const progress = this.get();
-            return progress.completedLessons.includes(lessonId);
+            return (progress.completedLessons || []).includes(lessonId);
         },
 
         getCourseProgress(courseId: string): number {

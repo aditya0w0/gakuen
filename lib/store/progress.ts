@@ -32,12 +32,13 @@ export const progressStore = {
     completeLesson(lessonId: string, courseId: string, totalLessons: number): void {
         const progress = this.getProgress();
 
-        if (!progress.completedLessons.includes(lessonId)) {
+        if (!(progress.completedLessons || []).includes(lessonId)) {
+            progress.completedLessons = progress.completedLessons || [];
             progress.completedLessons.push(lessonId);
         }
 
         // Calculate course progress
-        const completedInCourse = progress.completedLessons.filter(id =>
+        const completedInCourse = (progress.completedLessons || []).filter(id =>
             id.startsWith(courseId)
         ).length;
 
@@ -50,7 +51,7 @@ export const progressStore = {
     // Check if lesson is completed
     isLessonCompleted(lessonId: string): boolean {
         const progress = this.getProgress();
-        return progress.completedLessons.includes(lessonId);
+        return (progress.completedLessons || []).includes(lessonId);
     },
 
     // Get course progress percentage
