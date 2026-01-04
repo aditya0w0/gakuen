@@ -111,11 +111,18 @@ export default function UserDashboard() {
         fetch('/api/courses', { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
-                setAllCourses(data);
+                // DEFENSIVE: Ensure data is an array before setting state
+                if (Array.isArray(data)) {
+                    setAllCourses(data);
+                } else {
+                    console.error('Courses API returned non-array:', data);
+                    setAllCourses([]); // Use empty array to prevent crash
+                }
                 setIsLoadingCourses(false);
             })
             .catch(err => {
                 console.error('Failed to load courses:', err);
+                setAllCourses([]); // Ensure state is always an array
                 setIsLoadingCourses(false);
             });
     }, []);

@@ -51,11 +51,13 @@ export default function BrowsePage() {
         fetch('/api/courses', { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
-                setCourses(data);
+                // DEFENSIVE: Ensure data is an array
+                setCourses(Array.isArray(data) ? data : []);
                 setIsLoading(false);
             })
             .catch(err => {
                 console.error("Failed to load courses", err);
+                setCourses([]);
                 setIsLoading(false);
             });
     }, []);
@@ -77,6 +79,13 @@ export default function BrowsePage() {
                 });
                 const results = await res.json();
 
+                // DEFENSIVE: Ensure results is an array
+                if (!Array.isArray(results)) {
+                    console.warn('Search API returned non-array:', results);
+                    setSearchResults(null);
+                    return;
+                }
+
                 const mergedResults = results.map((r: any) => {
                     const original = courses.find(c => c.id === r.id);
                     return original ? { ...original, ...r } : r;
@@ -85,6 +94,7 @@ export default function BrowsePage() {
                 setSearchResults(mergedResults);
             } catch (error) {
                 console.error("Search failed", error);
+                setSearchResults(null);
             } finally {
                 setIsLoading(false);
             }
