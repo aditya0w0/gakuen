@@ -135,7 +135,8 @@ export async function handleCallback(code: string): Promise<{ refreshToken: stri
 
 /**
  * Upload image to Google Drive in organized folder
- * Returns the public URL of the uploaded file
+ * Files are kept PRIVATE - accessed only through our backend API
+ * Returns fileId to be stored in database
  */
 export async function uploadToDrive(
     buffer: Buffer,
@@ -153,7 +154,7 @@ export async function uploadToDrive(
     stream.push(buffer);
     stream.push(null);
 
-    // Upload file to folder
+    // Upload file to folder (PRIVATE - no public permissions)
     const response = await drive.files.create({
         requestBody: {
             name: filename,
@@ -164,25 +165,48 @@ export async function uploadToDrive(
             mimeType,
             body: stream,
         },
-        fields: 'id, webContentLink, webViewLink',
+        fields: 'id',
     });
 
     const fileId = response.data.id!;
 
-    // Make file publicly accessible
-    await drive.permissions.create({
-        fileId,
-        requestBody: {
-            role: 'reader',
-            type: 'anyone',
-        },
-    });
+    // Generate URL that points to our image serving API (not direct Drive URL)
+    // This allows us to control access, add caching headers, and serve binary data
+    const url = `/api/images/${fileId}`;
 
-    // Get direct view link
-    const url = `https://drive.google.com/uc?export=view&id=${fileId}`;
-
-    console.log(`📤 Uploaded to Drive: ${folder}/${filename}`);
+    console.log(`📤 Uploaded to Drive: ${folder}/${filename} (fileId: ${fileId})`);
     return { fileId, url };
+}
+
+/**
+ * Fetch file binary data from Google Drive by fileId
+ * Returns the file buffer and metadata
+ */
+export async function getFileFromDrive(fileId: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+    try {
+        const drive = getDriveClient();
+
+        // Get file metadata first
+        const metadata = await drive.files.get({
+            fileId,
+            fields: 'mimeType, name'
+        });
+
+        const mimeType = metadata.data.mimeType || 'image/webp';
+
+        // Download file content
+        const response = await drive.files.get(
+            { fileId, alt: 'media' },
+            { responseType: 'arraybuffer' }
+        );
+
+        const buffer = Buffer.from(response.data as ArrayBuffer);
+
+        return { buffer, mimeType };
+    } catch (error) {
+        console.error(`Error fetching file ${fileId} from Drive:`, error);
+        return null;
+    }
 }
 
 /**

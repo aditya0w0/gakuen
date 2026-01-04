@@ -86,8 +86,18 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // API routes - short cache with revalidation
-        source: '/api/:path*',
+        // Image serving API - enable caching (30 days)
+        source: '/api/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=2592000, stale-while-revalidate=2592000',
+          },
+        ],
+      },
+      {
+        // API routes - short cache with revalidation (except images)
+        source: '/api/((?!images).*)',
         headers: [
           {
             key: 'Cache-Control',

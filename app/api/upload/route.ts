@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
+import { existsSync } from 'fs';
 import { withAuthTracked, safeErrorResponse } from '@/lib/api/auth-guard';
 import { validateFileType } from '@/lib/api/validators';
 
@@ -114,22 +117,42 @@ export const POST = withAuthTracked(async (request, { user }) => {
                     replaced: wasReplaced  // True if NSFW was replaced with meme
                 });
             } catch (driveError) {
-                console.error('Drive upload failed, falling back to base64:', driveError);
-                // Fall through to base64
+                console.error('Drive upload failed, falling back to local storage:', driveError);
+                // Fall through to local storage
             }
         }
 
-        // Fallback: Convert to base64 data URL
-        const base64 = processedBuffer.toString('base64');
-        const dataUrl = `data:image/webp;base64,${base64}`;
+        // Fallback: Save to local file storage (binary file, not base64)
+        // Determine the upload directory based on type
+        const uploadSubdir = DRIVE_FOLDERS[type] || 'uploads';
+        const uploadsDir = join(process.cwd(), 'public', 'uploads', uploadSubdir);
+        
+        // Create directory if it doesn't exist
+        if (!existsSync(uploadsDir)) {
+            await mkdir(uploadsDir, { recursive: true });
+        }
+
+        // Generate filename with user ID for organization
+        const localFilename = `${user.id}-${uuidv4().slice(0, 8)}.webp`;
+        const filepath = join(uploadsDir, localFilename);
+        
+        // Write binary file (NOT base64)
+        await writeFile(filepath, processedBuffer);
+        
+        // Generate a local file ID that points to our image serving API
+        // Format: local-{type}-{filename}
+        const localFileId = `local-${uploadSubdir}-${localFilename}`;
+        const publicUrl = `/api/images/${localFileId}`;
+        console.log(`✅ Image saved locally: ${publicUrl}`);
 
         return NextResponse.json({
-            url: dataUrl,
+            url: publicUrl,
+            fileId: localFileId,
             width: metadata.width,
             height: metadata.height,
             size: processedBuffer.length,
-            filename,
-            storage: 'base64',
+            filename: localFilename,
+            storage: 'local',
             replaced: wasReplaced
         });
 
