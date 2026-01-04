@@ -245,7 +245,7 @@ type APIHandler = (request: NextRequest, context?: { params?: Promise<Record<str
  * });
  */
 export function withAuthTracked(
-    handler: (request: NextRequest, context: { user: User; params?: Promise<Record<string, string>> }) => Promise<NextResponse | void>,
+    handler: (request: NextRequest, context: { user: User; params?: Record<string, string> }) => Promise<NextResponse | void>,
     options?: { requireAdmin?: boolean }
 ): APIHandler {
     return async (request: NextRequest, routeContext?: { params?: Promise<Record<string, string>> }) => {
@@ -270,10 +270,12 @@ export function withAuthTracked(
         }
 
         try {
-            // Await params if they are a promise (Next.js 15)
-            const params = await routeContext?.params;
+            // Await params if they are a promise (Next.js 15/16)
+            // Explicitly handle potentially undefined routeContext or params
+            const paramsPromise = routeContext?.params;
+            const params = paramsPromise ? await paramsPromise : undefined;
 
-            // Execute handler
+            // Execute handler with resolved params
             const response = await handler(request, {
                 user: authResult.user,
                 params: params
