@@ -4,7 +4,7 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { Course } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, BookOpen, TrendingUp, DollarSign, Eye, Edit, Trash2, Settings, Zap, CreditCard } from "lucide-react";
+import { Users, BookOpen, TrendingUp, DollarSign, Eye, Edit, Trash2, Settings, Zap, CreditCard, Cloud } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
@@ -245,6 +245,17 @@ export default function AdminDashboard() {
                                 <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-indigo-500 text-white">PRO FOR ALL</span>
                             )}
                         </button>
+
+                        {/* Google Drive Storage */}
+                        <Link href="/api/admin/authorize-drive">
+                            <button
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-all bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-300 hover:opacity-80"
+                            >
+                                <Cloud className="w-3.5 h-3.5" />
+                                <span className="font-medium">Google Drive</span>
+                                <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-blue-500 text-white">Setup</span>
+                            </button>
+                        </Link>
                     </div>
 
                     {features.updatedBy && (
