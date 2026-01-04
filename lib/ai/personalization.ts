@@ -244,7 +244,7 @@ export async function getPersonalization(input: PersonalizationInput): Promise<P
             model: MODEL_NAME,
             generationConfig: {
                 temperature: 0.1,
-                maxOutputTokens: 80,
+                maxOutputTokens: 256,
             },
         });
 
@@ -264,15 +264,18 @@ export async function getPersonalization(input: PersonalizationInput): Promise<P
 const personalizationCache = new Map<string, { result: PersonalizationResult; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
-// Cleanup old entries periodically
-setInterval(() => {
+/**
+ * Cleanup expired cache entries (lazy cleanup during access)
+ * This approach is better suited for serverless environments
+ */
+function cleanupExpiredEntries(): void {
     const now = Date.now();
     for (const [key, entry] of personalizationCache.entries()) {
         if (now - entry.timestamp > CACHE_TTL) {
             personalizationCache.delete(key);
         }
     }
-}, 60000); // Cleanup every minute
+}
 
 /**
  * Get cached personalization or generate new one
@@ -281,6 +284,9 @@ export async function getCachedPersonalization(
     userId: string,
     input: PersonalizationInput
 ): Promise<PersonalizationResult> {
+    // Lazy cleanup of expired entries (serverless-friendly)
+    cleanupExpiredEntries();
+
     const cached = personalizationCache.get(userId);
 
     // Return cached if fresh (within 5 minutes)

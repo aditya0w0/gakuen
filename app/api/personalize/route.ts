@@ -12,6 +12,11 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// Validation constants
+const MAX_AVAILABLE_COURSES = 50;
+const MAX_COURSE_ID_LENGTH = 100;
+const MAX_TAGS_PER_COURSE = 10;
+
 /**
  * Validate frontend state input
  */
@@ -66,14 +71,14 @@ function validateAvailableCourses(data: unknown): AvailableCourse[] {
 
     return data
         .filter((c): c is Record<string, unknown> => c && typeof c === "object")
-        .slice(0, 50) // Limit to 50 courses
+        .slice(0, MAX_AVAILABLE_COURSES)
         .map((c) => ({
-            id: typeof c.id === "string" ? c.id.slice(0, 100) : "",
+            id: typeof c.id === "string" ? c.id.slice(0, MAX_COURSE_ID_LENGTH) : "",
             difficulty: validLevels.includes(c.difficulty as string)
                 ? (c.difficulty as "beginner" | "intermediate" | "advanced")
                 : "beginner",
             tags: Array.isArray(c.tags)
-                ? c.tags.filter((t): t is string => typeof t === "string").slice(0, 10)
+                ? c.tags.filter((t): t is string => typeof t === "string").slice(0, MAX_TAGS_PER_COURSE)
                 : [],
         }))
         .filter((c) => c.id); // Remove courses without ID
