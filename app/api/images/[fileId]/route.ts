@@ -2,18 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { createHash } from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-// Cache duration: 30 days for images
-const CACHE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
+// Cache duration: 30 days for images (matches next.config.ts)
+const CACHE_MAX_AGE = 2592000; // 30 * 24 * 60 * 60 = 2592000 seconds
+
+/**
+ * Generate ETag from file content for proper cache invalidation
+ */
+function generateETag(buffer: Buffer, fileId: string): string {
+    const hash = createHash('md5').update(buffer).digest('hex').slice(0, 16);
+    return `"${fileId}-${hash}"`;
+}
 
 /**
  * Serve images by fileId
  * 
  * Supports two storage types:
  * 1. Google Drive: fileId is a Drive file ID, fetches from Drive API
- * 2. Local: fileId starts with 'local:', fetches from public/uploads/
+ * 2. Local: fileId starts with 'local-', fetches from public/uploads/
  * 
  * Returns binary image data with proper caching headers
  */
@@ -73,6 +82,9 @@ export async function GET(
 
         // Convert Buffer to Uint8Array for NextResponse compatibility
         const uint8Array = new Uint8Array(buffer);
+        
+        // Generate content-based ETag for proper cache invalidation
+        const etag = generateETag(buffer, fileId);
 
         // Return binary image with caching headers
         return new NextResponse(uint8Array, {
@@ -82,9 +94,9 @@ export async function GET(
                 'Content-Length': buffer.length.toString(),
                 // Cache for 30 days, allow revalidation
                 'Cache-Control': `public, max-age=${CACHE_MAX_AGE}, stale-while-revalidate=${CACHE_MAX_AGE}`,
-                // ETag for cache validation
-                'ETag': `"${fileId}"`,
-                // Prevent hotlinking from other domains (optional security)
+                // Content-based ETag for proper cache invalidation
+                'ETag': etag,
+                // Prevent MIME type sniffing
                 'X-Content-Type-Options': 'nosniff',
             },
         });

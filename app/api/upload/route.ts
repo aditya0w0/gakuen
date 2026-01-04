@@ -123,8 +123,8 @@ export const POST = withAuthTracked(async (request, { user }) => {
         }
 
         // Fallback: Save to local file storage (binary file, not base64)
-        // Determine the upload directory based on type
-        const uploadSubdir = DRIVE_FOLDERS[type] || 'uploads';
+        // Determine the upload directory based on type (uses same folder names as Drive)
+        const uploadSubdir = DRIVE_FOLDERS[type]; // Will always be valid: avatars, courses, lessons, or cms
         const uploadsDir = join(process.cwd(), 'public', 'uploads', uploadSubdir);
         
         // Create directory if it doesn't exist
