@@ -15,10 +15,10 @@ const genAI = new GoogleGenerativeAI(apiKey);
 
 // Model mapping for tiers
 const TIER_MODELS = {
-    free: 'gemini-2.0-flash-lite',
-    basic: 'gemini-2.0-flash',
-    mid: 'gemini-2.0-flash', // Pro on request
-    pro: 'gemini-2.0-flash', // Pro on request
+    free: 'gemini-3-flash-preview',
+    basic: 'gemini-3-flash-preview',
+    mid: 'gemini-3-pro-preview', // Pro on request
+    pro: 'gemini-3-pro-preview', // Pro on request
 } as const;
 
 export async function POST(request: NextRequest) {
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         if (mode === 'deep' && (userTier === 'mid' || userTier === 'pro')) {
             const proLimit = checkAILimit(userTier, aiUsage, 'pro');
             if (proLimit.allowed) {
-                modelToUse = 'gemini-2.0-flash'; // Use best available
+                modelToUse = 'gemini-3-pro-preview'; // Use best available
                 usingProModel = true;
             } else {
                 return NextResponse.json({
