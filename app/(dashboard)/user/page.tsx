@@ -153,8 +153,15 @@ export default function UserDashboard() {
                         body: JSON.stringify({ courseId: lastCourseId, allCourses }),
                     });
                     const data = await res.json();
-                    const newRecommendations = data.filter((c: any) => !currentUser?.enrolledCourses?.includes(c.id));
-                    setRecommendedCourses(newRecommendations);
+                    // DEFENSIVE: Ensure data is an array before calling .filter()
+                    if (Array.isArray(data)) {
+                        const newRecommendations = data.filter((c: any) => !currentUser?.enrolledCourses?.includes(c.id));
+                        setRecommendedCourses(newRecommendations);
+                    } else {
+                        // API returned error object or non-array, use fallback
+                        console.warn('ML recommendations API returned non-array:', data);
+                        setRecommendedCourses(allCourses.filter(c => !currentUser?.enrolledCourses?.includes(c.id)).slice(0, 3));
+                    }
                 } catch (error) {
                     console.error("Failed to fetch ML recommendations", error);
                     setRecommendedCourses(allCourses.filter(c => !currentUser?.enrolledCourses?.includes(c.id)).slice(0, 3));
