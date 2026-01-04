@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Play, ArrowRight, Star, Hexagon, Zap, Globe, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Play, ArrowRight, Star, Hexagon, Zap, Globe, Sparkles, ChevronRight, Database, Shield, Radio, Crosshair, Activity, Ticket } from 'lucide-react';
 
 // --- HSR UI Components ---
 
-const HsrButton = ({ 
+const HsrButton = React.memo(({ 
   children, 
   variant = 'primary', 
   icon: Icon 
@@ -30,9 +30,10 @@ const HsrButton = ({
       <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 skew-x-12" />
     </button>
   );
-};
+});
+HsrButton.displayName = 'HsrButton';
 
-const TechDecoration = ({ className }: { className?: string }) => (
+const TechDecoration = React.memo(({ className }: { className?: string }) => (
   <div className={`absolute pointer-events-none opacity-40 ${className}`}>
     <div className="flex gap-1">
       <div className="w-1 h-1 bg-white rounded-full animate-ping" />
@@ -40,9 +41,10 @@ const TechDecoration = ({ className }: { className?: string }) => (
       <div className="w-1 h-1 bg-white rounded-full" />
     </div>
   </div>
-);
+));
+TechDecoration.displayName = 'TechDecoration';
 
-const Navbar = () => (
+const Navbar = React.memo(() => (
   <nav className="fixed top-0 w-full z-50 h-20 flex items-center border-b border-white/5 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-sm">
     <div className="max-w-7xl mx-auto w-full px-6 flex justify-between items-center">
       {/* Brand */}
@@ -74,20 +76,45 @@ const Navbar = () => (
       </div>
     </div>
   </nav>
-);
+));
+Navbar.displayName = 'Navbar';
 
 const Hero = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const rafRef = React.useRef<number | null>(null);
+  const latestMousePos = React.useRef({ x: 0, y: 0 });
+  
+  // Mouse sensitivity for parallax effect (lower = more subtle)
+  const MOUSE_SENSITIVITY = 0.5;
+  
+  // Memoize transform style to avoid recreation on every render
+  const cardTransformStyle = useMemo(() => ({
+    transform: `perspective(1000px) rotateY(${mousePos.x * MOUSE_SENSITIVITY}deg) rotateX(${mousePos.y * -MOUSE_SENSITIVITY}deg)`,
+    boxShadow: '0 0 50px rgba(0, 200, 255, 0.1)',
+    backfaceVisibility: 'hidden' as const
+  }), [mousePos.x, mousePos.y]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ 
-        x: (e.clientX / window.innerWidth) * 20, 
-        y: (e.clientY / window.innerHeight) * 20 
+      // Store latest mouse coordinates
+      latestMousePos.current = {
+        x: (e.clientX / window.innerWidth) * 20,
+        y: (e.clientY / window.innerHeight) * 20
+      };
+
+      // Throttle with requestAnimationFrame for performance
+      if (rafRef.current) return;
+
+      rafRef.current = requestAnimationFrame(() => {
+        setMousePos(latestMousePos.current);
+        rafRef.current = null;
       });
     };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
   return (
@@ -172,17 +199,14 @@ const Hero = () => {
         {/* Right: Character/Feature Graphic */}
         <div className="w-full md:w-1/2 relative mt-12 md:mt-0 h-[600px] flex items-center justify-center perspective-1000">
           
-          {/* Rotating Rings (Simulated) */}
-          <div className="absolute w-[500px] h-[500px] rounded-full border border-white/10 animate-[spin_10s_linear_infinite]" />
-          <div className="absolute w-[400px] h-[400px] rounded-full border border-cyan-500/20 animate-[spin_15s_linear_infinite_reverse]" />
-          <div className="absolute w-[600px] h-[600px] rounded-full border border-dashed border-white/5 animate-[spin_30s_linear_infinite]" />
+          {/* Rotating Rings (Simulated) - GPU accelerated */}
+          <div className="absolute w-[500px] h-[500px] rounded-full border border-white/10 animate-[spin_10s_linear_infinite] gpu-accelerate" />
+          <div className="absolute w-[400px] h-[400px] rounded-full border border-cyan-500/20 animate-[spin_15s_linear_infinite_reverse] gpu-accelerate" />
+          <div className="absolute w-[600px] h-[600px] rounded-full border border-dashed border-white/5 animate-[spin_30s_linear_infinite] gpu-accelerate" />
 
-          {/* Main Card Floating */}
-          <div className="relative w-[320px] h-[480px] bg-gray-900/80 backdrop-blur-xl border border-white/10 rotate-y-12 transition-transform duration-500 hover:rotate-y-0 group"
-               style={{ 
-                 transform: `perspective(1000px) rotateY(${mousePos.x * 2}deg) rotateX(${mousePos.y * -2}deg)`,
-                 boxShadow: '0 0 50px rgba(0, 200, 255, 0.1)' 
-               }}>
+          {/* Main Card Floating - GPU accelerated */}
+          <div className="relative w-[320px] h-[480px] bg-gray-900/80 backdrop-blur-xl border border-white/10 rotate-y-12 transition-transform duration-500 hover:rotate-y-0 group gpu-accelerate"
+               style={cardTransformStyle}>
             
             {/* Card Header */}
             <div className="h-1/2 bg-gradient-to-b from-indigo-900 to-black relative overflow-hidden p-6 flex flex-col justify-end">

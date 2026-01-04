@@ -232,7 +232,7 @@ export async function requireSignedRequest(request: NextRequest): Promise<{ vali
 /**
  * Type for API route handler
  */
-type APIHandler = (request: NextRequest, context?: { params?: Promise<Record<string, string>> | Record<string, string> }) => Promise<NextResponse>;
+type APIHandler = (request: NextRequest, context?: { params?: Promise<Record<string, string>> }) => Promise<NextResponse | void>;
 
 /**
  * Wrapper that combines authentication + analytics tracking
@@ -245,10 +245,10 @@ type APIHandler = (request: NextRequest, context?: { params?: Promise<Record<str
  * });
  */
 export function withAuthTracked(
-    handler: (request: NextRequest, context: { user: User; params?: Record<string, string> }) => Promise<NextResponse>,
+    handler: (request: NextRequest, context: { user: User; params?: Promise<Record<string, string>> }) => Promise<NextResponse | void>,
     options?: { requireAdmin?: boolean }
 ): APIHandler {
-    return async (request: NextRequest, routeContext?: { params?: Promise<Record<string, string>> | Record<string, string> }) => {
+    return async (request: NextRequest, routeContext?: { params?: Promise<Record<string, string>> }) => {
         const startTime = Date.now();
         const { pathname } = new URL(request.url);
         const method = request.method;
@@ -286,7 +286,7 @@ export function withAuthTracked(
                 userId: authResult.user.id,
                 userEmail: authResult.user.email,
                 duration: Date.now() - startTime,
-                statusCode: response.status,
+                statusCode: response?.status ?? 204,
             });
 
             return response;
