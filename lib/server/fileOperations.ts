@@ -1,28 +1,39 @@
-import fs from 'fs';
-import path from 'path';
+// Course storage operations using Firebase Firestore
+// MIGRATED FROM LOCAL FILESYSTEM (fs) FOR VERCEL COMPATIBILITY
+
+import { initAdmin } from '@/lib/auth/firebase-admin';
 import { Course } from '@/lib/types';
 
-const DATA_DIR = path.join(process.cwd(), 'data', 'courses');
-
-// Ensure data directory exists
-export function ensureDataDir() {
-    if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
+/**
+ * Get Firestore instance from Admin SDK
+ */
+function getAdminFirestore() {
+    try {
+        const admin = initAdmin();
+        return admin.firestore();
+    } catch (error) {
+        console.error('Failed to initialize Firebase Admin:', error);
+        return null;
     }
 }
 
 // Get course by ID
 export async function getCourse(id: string): Promise<Course | null> {
-    ensureDataDir();
-    const filePath = path.join(DATA_DIR, `${id}.json`);
-
-    if (!fs.existsSync(filePath)) {
+    const db = getAdminFirestore();
+    if (!db) {
+        console.error('Firestore not available');
         return null;
     }
 
     try {
-        const data = fs.readFileSync(filePath, 'utf-8');
-        return JSON.parse(data) as Course;
+        const docRef = db.collection('courses').doc(id);
+        const docSnap = await docRef.get();
+
+        if (!docSnap.exists) {
+            return null;
+        }
+
+        return { id, ...docSnap.data() } as Course;
     } catch (error) {
         console.error(`Error reading course ${id}:`, error);
         return null;
@@ -31,11 +42,18 @@ export async function getCourse(id: string): Promise<Course | null> {
 
 // Save course
 export async function saveCourse(id: string, course: Course): Promise<boolean> {
-    ensureDataDir();
-    const filePath = path.join(DATA_DIR, `${id}.json`);
+    const db = getAdminFirestore();
+    if (!db) {
+        console.error('Firestore not available');
+        return false;
+    }
 
     try {
-        fs.writeFileSync(filePath, JSON.stringify(course, null, 2), 'utf-8');
+        const { id: courseId, ...courseData } = course;
+        await db.collection('courses').doc(id).set({
+            ...courseData,
+            updatedAt: new Date().toISOString(),
+        }, { merge: true });
         return true;
     } catch (error) {
         console.error(`Error saving course ${id}:`, error);
@@ -45,21 +63,19 @@ export async function saveCourse(id: string, course: Course): Promise<boolean> {
 
 // List all courses
 export async function listCourses(): Promise<Course[]> {
-    ensureDataDir();
+    const db = getAdminFirestore();
+    if (!db) {
+        console.error('Firestore not available');
+        return [];
+    }
 
     try {
-        const files = fs.readdirSync(DATA_DIR);
+        const snapshot = await db.collection('courses').get();
         const courses: Course[] = [];
 
-        for (const file of files) {
-            if (file.endsWith('.json')) {
-                const id = file.replace('.json', '');
-                const course = await getCourse(id);
-                if (course) {
-                    courses.push(course);
-                }
-            }
-        }
+        snapshot.forEach(doc => {
+            courses.push({ id: doc.id, ...doc.data() } as Course);
+        });
 
         return courses;
     } catch (error) {
@@ -70,17 +86,22 @@ export async function listCourses(): Promise<Course[]> {
 
 // Delete course
 export async function deleteCourse(id: string): Promise<boolean> {
-    ensureDataDir();
-    const filePath = path.join(DATA_DIR, `${id}.json`);
+    const db = getAdminFirestore();
+    if (!db) {
+        console.error('Firestore not available');
+        return false;
+    }
 
     try {
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            return true;
-        }
-        return false;
+        await db.collection('courses').doc(id).delete();
+        return true;
     } catch (error) {
         console.error(`Error deleting course ${id}:`, error);
         return false;
     }
+}
+
+// Legacy function - no longer needed but kept for compatibility
+export function ensureDataDir() {
+    // No-op: Firestore doesn't need directory initialization
 }
