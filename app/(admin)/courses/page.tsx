@@ -42,11 +42,13 @@ export default function CoursesManagementPage() {
         fetch('/api/courses', { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
-                setCourses(data);
+                // DEFENSIVE: Ensure data is an array
+                setCourses(Array.isArray(data) ? data : []);
                 setIsLoading(false);
             })
             .catch(err => {
                 console.error('Failed to load courses:', err);
+                setCourses([]); // Ensure state is always an array
                 setIsLoading(false);
             });
     }, [isAdmin]);
