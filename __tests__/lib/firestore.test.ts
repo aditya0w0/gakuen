@@ -62,7 +62,7 @@ describe('Firestore Operations', () => {
                 id: 'new-user-id',
                 email: 'new@example.com',
                 name: 'New User',
-                role: 'user' as const,
+                role: 'student' as const,
                 enrolledCourses: [],
                 completedLessons: [],
                 createdAt: new Date().toISOString(),

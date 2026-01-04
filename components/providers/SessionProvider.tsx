@@ -145,7 +145,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                                 id: firebaseUser.uid,
                                 email: firebaseUser.email || '',
                                 name: firebaseUser.displayName || 'User',
-                                role: 'user', // Default role, will be overridden by custom claims if admin
+                                role: 'student', // Default role, will be overridden by custom claims if admin
                             });
 
                             setUser(newProfile);

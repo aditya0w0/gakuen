@@ -16,7 +16,7 @@ export interface User {
     username?: string; // Unique username for profile URL (@username)
     name: string; // Display name
     email: string;
-    role: "admin" | "user";
+    role: "admin" | "student";  // 'user' is legacy, use 'student'
     avatar?: string;
 
     // Course progress

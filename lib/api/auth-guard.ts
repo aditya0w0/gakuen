@@ -6,7 +6,7 @@ export interface User {
     id: string;
     email: string;
     name: string;
-    role: "admin" | "user";
+    role: "admin" | "student";  // 'user' is legacy
     avatar?: string;
     username?: string;
     enrolledCourses?: string[];
@@ -70,11 +70,13 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
 
         if (profile) {
             // Use real profile data from Firestore (most common case)
+            // Normalize role: 'user' is legacy, map it to 'student'
+            const normalizedRole: "admin" | "student" = profile.role === 'admin' ? 'admin' : 'student';
             user = {
                 id: profile.id,
                 name: profile.name || 'User',
                 email: profile.email || decodedUser.email || '',
-                role: profile.role || 'user',
+                role: normalizedRole,
                 avatar: profile.avatar,
                 username: profile.username,
                 enrolledCourses: profile.enrolledCourses || [],
@@ -88,7 +90,7 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
                 id: decodedUser.uid,
                 name: decodedUser.name || 'User',
                 email: decodedUser.email || '',
-                role: (decodedUser.role as "admin" | "user") || 'user',
+                role: (decodedUser.role as "admin" | "student") || 'student',
                 enrolledCourses: [],
                 completedLessons: [],
             };

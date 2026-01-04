@@ -22,7 +22,7 @@ describe('LocalCache', () => {
                 id: 'test-123',
                 email: 'test@example.com',
                 name: 'Test User',
-                role: 'user',
+                role: 'student',
             };
 
             (window.localStorage.getItem as any).mockReturnValue(JSON.stringify(mockUser));
@@ -32,7 +32,7 @@ describe('LocalCache', () => {
 
             expect(parsed.id).toBe('test-123');
             expect(parsed.email).toBe('test@example.com');
-            expect(parsed.role).toBe('user');
+            expect(parsed.role).toBe('student');
         });
 
         it('should save user to localStorage', () => {

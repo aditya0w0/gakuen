@@ -16,7 +16,7 @@ export interface User {
     id: string;
     email: string;
     name: string;
-    role: "admin" | "user";
+    role: "admin" | "student";
     avatar?: string;
     username?: string;
     [key: string]: any;
@@ -56,7 +56,7 @@ export const firebaseAuth = {
                 id: credential.user.uid,
                 email: credential.user.email || email,
                 name: credential.user.displayName || email.split('@')[0],
-                role: "user",
+                role: "student",
                 enrolledCourses: [],
                 completedLessons: [],
                 createdAt: new Date().toISOString(),
@@ -99,7 +99,7 @@ export const firebaseAuth = {
             id: credential.user.uid,
             email,
             name,
-            role: "user",
+            role: "student",
             enrolledCourses: [],
             completedLessons: [],
             createdAt: new Date().toISOString(),
@@ -145,7 +145,7 @@ export const firebaseAuth = {
                 id: credential.user.uid,
                 email: credential.user.email || "",
                 name: credential.user.displayName || "User",
-                role: "user",
+                role: "student",
                 avatar: googleAvatar,
                 enrolledCourses: [],
                 completedLessons: [],

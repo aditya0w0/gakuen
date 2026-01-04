@@ -10,7 +10,6 @@ export async function GET() {
     try {
         let courses = await listCourses();
 
-        // Try to add enrollment and rating data from Firebase
         // Try to add enrollment and rating data from Firebase (using Admin SDK)
         try {
             const { getCourseStats } = await import('@/lib/firebase/firestore-admin');

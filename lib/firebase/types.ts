@@ -5,7 +5,7 @@ export interface FirebaseUser {
     uid: string;
     email: string;
     name: string;
-    role: "admin" | "user";
+    role: "admin" | "student" | "user";  // 'user' is legacy, will be normalized to 'student'
     enrolledCourses: string[];
     avatar?: string;
     // Profile fields

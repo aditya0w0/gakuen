@@ -6,7 +6,7 @@ import { Timestamp } from "firebase-admin/firestore";
 interface FirebaseUser {
     uniqueId: string;
     email: string;
-    role?: "admin" | "user" | "instructor";
+    role?: "admin" | "student" | "user" | "instructor";  // 'user' is legacy, will be normalized to 'student'
     name?: string;
     avatar?: string;
     firstName?: string;
@@ -38,7 +38,7 @@ export async function getAdminUserProfile(userId: string): Promise<User | null> 
             id: userId,
             email: data.email,
             name: data.name || 'User',
-            role: (data.role === "admin" ? "admin" : "user"),
+            role: (data.role === "admin" ? "admin" : "student"),
             avatar: data.avatar,
 
             // Profile fields

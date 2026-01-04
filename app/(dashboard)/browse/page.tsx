@@ -5,6 +5,7 @@ import { Course } from "@/lib/types";
 import { CourseCard } from "@/components/course/CourseCard";
 import { Search, Compass, Sparkles } from "lucide-react";
 import { AICourseSelector } from "@/components/ai/AICourseSelector";
+import { RecommendedCourses } from "@/components/course/RecommendedCourses";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "@/lib/i18n";
 
@@ -215,6 +216,9 @@ export default function BrowsePage() {
                     </motion.button>
                 ))}
             </motion.div>
+
+            {/* AI Recommendations Section */}
+            <RecommendedCourses limit={4} className="mb-8" />
 
             {/* Content Grid */}
             <div className="pb-20">

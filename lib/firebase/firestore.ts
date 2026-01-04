@@ -26,11 +26,13 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
         if (!docSnap.exists()) return null;
 
         const data = docSnap.data() as FirebaseUser;
+        // Normalize role: 'user' is legacy, map it to 'student'
+        const normalizedRole: "admin" | "student" = data.role === 'admin' ? 'admin' : 'student';
         return {
             id: userId,
             email: data.email,
             name: data.name,
-            role: data.role,
+            role: normalizedRole,
             avatar: data.avatar,
             // Profile fields
             firstName: data.firstName,
