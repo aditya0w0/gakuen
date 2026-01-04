@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         // Redirect to success page with instructions
         return NextResponse.redirect(
             new URL(
-                `/settings?google_drive=success&token=${encodeURIComponent(refreshToken.slice(0, 20))}...`,
+                `/settings?google_drive=success&token=${encodeURIComponent(refreshToken)}`,
                 request.url
             )
         );

@@ -62,9 +62,9 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
             };
         }
 
-        // Fetch user profile from Firestore (preferred) or fall back to JWT claims
-        const { getUserProfile } = await import('@/lib/firebase/firestore');
-        const profile = await getUserProfile(decodedUser.uid);
+        // Fetch user profile from Firestore using Admin SDK (secure server-side)
+        const { getAdminUserProfile } = await import('@/lib/firebase/firestore-admin');
+        const profile = await getAdminUserProfile(decodedUser.uid);
 
         let user: User;
 
@@ -98,22 +98,23 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
                 profileCreationPending.add(decodedUser.uid);
                 console.log(`📝 Creating Firestore profile for legacy user: ${decodedUser.uid} (${decodedUser.email})`);
 
-                // Create profile in background (don't await - non-blocking for fast API response)
-                const { createUserProfile } = await import('@/lib/firebase/firestore');
-                createUserProfile({
-                    id: user.id,
-                    email: user.email,
-                    name: user.name,
-                    role: user.role,
-                    enrolledCourses: [],
-                    completedLessons: [],
-                    createdAt: new Date().toISOString(),
-                }).then(() => {
-                    console.log(`✅ Created Firestore profile for legacy user: ${user.id}`);
-                }).catch((err) => {
-                    console.error(`❌ Failed to create Firestore profile for legacy user: ${user.id}`, err);
-                    // Remove from pending so it can be retried on next request
-                    profileCreationPending.delete(user.id);
+                // Create profile in background using Admin SDK (secure server-side)
+                import('@/lib/firebase/firestore-admin').then(({ createAdminUserProfile }) => {
+                    createAdminUserProfile({
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        role: user.role,
+                        enrolledCourses: [],
+                        completedLessons: [],
+                        createdAt: new Date().toISOString(),
+                    }).then(() => {
+                        console.log(`✅ Created Firestore profile for legacy user: ${user.id}`);
+                    }).catch((err) => {
+                        console.error(`❌ Failed to create Firestore profile for legacy user: ${user.id}`, err);
+                        // Remove from pending so it can be retried on next request
+                        profileCreationPending.delete(user.id);
+                    });
                 });
             }
         }

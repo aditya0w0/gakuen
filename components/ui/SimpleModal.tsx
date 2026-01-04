@@ -1,7 +1,7 @@
 "use client";
 
-import { X, AlertTriangle, Trash2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { X, AlertTriangle, Trash2, Info, Check } from "lucide-react";
+import { useEffect, useRef, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 interface SimpleModalProps {
@@ -9,9 +9,13 @@ interface SimpleModalProps {
     onClose: () => void;
     onConfirm: () => void;
     title: string;
-    description: string;
+    description?: string;
+    children?: ReactNode;
     isDestructive?: boolean;
     isLoading?: boolean;
+    confirmText?: string;
+    cancelText?: string;
+    icon?: ReactNode;
 }
 
 export function SimpleModal({
@@ -20,8 +24,12 @@ export function SimpleModal({
     onConfirm,
     title,
     description,
+    children,
     isDestructive = false,
-    isLoading = false
+    isLoading = false,
+    confirmText = "Delete",
+    cancelText = "Cancel",
+    icon
 }: SimpleModalProps) {
     const modalRef = useRef<HTMLDivElement>(null);
 
@@ -35,6 +43,11 @@ export function SimpleModal({
     }, [isOpen, onClose]);
 
     if (!isOpen) return null;
+
+    // Default icon based on destructive state
+    const defaultIcon = isDestructive
+        ? <AlertTriangle size={20} />
+        : <Info size={20} />;
 
     // Use portal to render at body level
     return createPortal(
@@ -52,8 +65,11 @@ export function SimpleModal({
             >
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full ${isDestructive ? 'bg-red-500/20 text-red-500' : 'bg-blue-500/20 text-blue-500'}`}>
-                            {isDestructive ? <AlertTriangle size={20} /> : <Trash2 size={20} />}
+                        <div className={`p-2 rounded-full ${isDestructive
+                                ? 'bg-red-500/20 text-red-500'
+                                : 'bg-blue-500/20 text-blue-500'
+                            }`}>
+                            {icon || defaultIcon}
                         </div>
                         <h3 className="text-lg font-bold text-white">{title}</h3>
                     </div>
@@ -66,9 +82,17 @@ export function SimpleModal({
                     </button>
                 </div>
 
-                <p className="text-zinc-400 mb-8 leading-relaxed">
-                    {description}
-                </p>
+                {description && (
+                    <p className="text-zinc-400 mb-6 leading-relaxed">
+                        {description}
+                    </p>
+                )}
+
+                {children && (
+                    <div className="mb-6">
+                        {children}
+                    </div>
+                )}
 
                 <div className="flex justify-end gap-3">
                     <button
@@ -76,7 +100,7 @@ export function SimpleModal({
                         disabled={isLoading}
                         className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
                     >
-                        Cancel
+                        {cancelText}
                     </button>
                     <button
                         onClick={onConfirm}
@@ -91,10 +115,10 @@ export function SimpleModal({
                         {isLoading ? (
                             <>
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Deleting...
+                                Processing...
                             </>
                         ) : (
-                            'Delete'
+                            confirmText
                         )}
                     </button>
                 </div>

@@ -5,10 +5,12 @@ import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
 import { useAuth } from "@/components/auth/AuthContext";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { syncManager } from "@/lib/storage/sync-manager";
-import { ChevronRight, Trash2, Camera } from "lucide-react";
+import { ChevronRight, Trash2, Camera, Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
+import { SimpleModal } from "@/components/ui/SimpleModal";
 
 export default function SettingsPage() {
     const { user, refreshUser } = useAuth();
@@ -17,6 +19,33 @@ export default function SettingsPage() {
     const [tempName, setTempName] = useState("");
     const [isUploading, setIsUploading] = useState(false);
     const { t } = useTranslation();
+
+    // Google Drive Token Handling
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const [driveToken, setDriveToken] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        const token = searchParams.get('token');
+        const status = searchParams.get('google_drive');
+        if (status === 'success' && token) {
+            setDriveToken(token);
+        }
+    }, [searchParams]);
+
+    const copyToClipboard = () => {
+        if (driveToken) {
+            navigator.clipboard.writeText(driveToken);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
+    const closeDriveModal = () => {
+        setDriveToken(null);
+        router.replace('/settings');
+    };
 
     useEffect(() => {
         if (user) {
@@ -97,6 +126,40 @@ export default function SettingsPage() {
 
     return (
         <div className="flex justify-center">
+            {/* Google Drive Token Modal */}
+            <SimpleModal
+                isOpen={!!driveToken}
+                onClose={closeDriveModal}
+                title="Google Drive Authorization Successful!"
+                onConfirm={closeDriveModal}
+                confirmText="Close"
+                cancelText="Done"
+                icon={<Check size={20} />}
+                isDestructive={false}
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                        Copy this <strong>Refresh Token</strong> and add it to your <code>.env</code> file (locally) and Vercel Environment Variables (production) as <code>GOOGLE_REFRESH_TOKEN</code>.
+                    </p>
+                    <div className="relative">
+                        <pre className="bg-neutral-100 dark:bg-black/30 p-4 rounded-lg text-xs font-mono text-neutral-800 dark:text-neutral-300 break-all whitespace-pre-wrap border border-neutral-200 dark:border-white/10 max-h-32 overflow-y-auto">
+                            {driveToken}
+                        </pre>
+                        <button
+                            onClick={copyToClipboard}
+                            className="absolute top-2 right-2 p-2 bg-white dark:bg-neutral-800 rounded-md shadow-sm border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                        >
+                            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-neutral-500" />}
+                        </button>
+                    </div>
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/30 rounded-lg">
+                        <p className="text-xs text-yellow-800 dark:text-yellow-500 font-medium">
+                            ⚠️ Keep this token secret! It gives access to your Google Drive.
+                        </p>
+                    </div>
+                </div>
+            </SimpleModal>
+
             <div className="w-full max-w-2xl space-y-8">
                 {/* Header */}
                 <div>
