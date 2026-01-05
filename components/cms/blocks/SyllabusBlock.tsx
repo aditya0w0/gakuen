@@ -73,7 +73,7 @@ export function SyllabusBlock({ component, isEditing, isSelected, onSelect }: Sy
                             </div>
                         </button>
                         {isExpanded && item.description && (
-                            <div className="px-4 pb-4 pt-0 text-zinc-400 text-sm border-t border-zinc-800 mt-0 pt-4">
+                            <div className="px-4 pb-4 pt-4 text-zinc-400 text-sm border-t border-zinc-800">
                                 {item.description}
                             </div>
                         )}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useLanguage } from "@/lib/i18n";
-import { Component } from "@/lib/cms/types";
+import { Component, SyllabusComponent } from "@/lib/cms/types";
 import type { Language } from "@/lib/i18n/translations";
 
 interface TranslatedComponents {
@@ -13,7 +13,7 @@ interface TranslatedComponents {
 
 /**
  * Hook to translate CMS component content
- * Translates all text/header components in a lesson
+ * Translates all text/header/syllabus components in a lesson
  */
 export function useTranslatedComponents(
     lessonId: string,
@@ -34,13 +34,30 @@ export function useTranslatedComponents(
     // Extract all translatable text from components
     const textsToTranslate = useMemo(() => {
         if (!originalComponents) return [];
-        return originalComponents
-            .filter(c => c.type === "header" || c.type === "text")
-            .map(c => ({
-                id: c.id,
-                type: c.type,
-                text: c.type === "header" ? (c as any).text : (c as any).content
-            }));
+        const texts: { id: string; type: string; text: string; itemIndex?: number }[] = [];
+        
+        originalComponents.forEach(c => {
+            if (c.type === "header") {
+                texts.push({ id: c.id, type: c.type, text: (c as any).text });
+            } else if (c.type === "text") {
+                texts.push({ id: c.id, type: c.type, text: (c as any).content });
+            } else if (c.type === "syllabus") {
+                const syllabus = c as SyllabusComponent;
+                // Add syllabus title
+                if (syllabus.title) {
+                    texts.push({ id: c.id, type: "syllabus-title", text: syllabus.title });
+                }
+                // Add each item's title and description
+                syllabus.items.forEach((item, index) => {
+                    texts.push({ id: c.id, type: "syllabus-item-title", text: item.title, itemIndex: index });
+                    if (item.description) {
+                        texts.push({ id: c.id, type: "syllabus-item-desc", text: item.description, itemIndex: index });
+                    }
+                });
+            }
+        });
+        
+        return texts;
     }, [originalComponents]);
 
     useEffect(() => {
@@ -77,13 +94,43 @@ export function useTranslatedComponents(
 
                 // Map translations back to components
                 const translated = originalComponents.map(comp => {
-                    const matchIdx = textsToTranslate.findIndex(t => t.id === comp.id);
-                    if (matchIdx === -1) return comp;
-
                     if (comp.type === "header") {
-                        return { ...comp, text: translatedTexts[matchIdx] || (comp as any).text };
+                        const matchIdx = textsToTranslate.findIndex(t => t.id === comp.id && t.type === "header");
+                        if (matchIdx !== -1) {
+                            return { ...comp, text: translatedTexts[matchIdx] || (comp as any).text };
+                        }
                     } else if (comp.type === "text") {
-                        return { ...comp, content: translatedTexts[matchIdx] || (comp as any).content };
+                        const matchIdx = textsToTranslate.findIndex(t => t.id === comp.id && t.type === "text");
+                        if (matchIdx !== -1) {
+                            return { ...comp, content: translatedTexts[matchIdx] || (comp as any).content };
+                        }
+                    } else if (comp.type === "syllabus") {
+                        const syllabus = comp as SyllabusComponent;
+                        let translatedTitle = syllabus.title;
+                        
+                        // Find translated title
+                        const titleIdx = textsToTranslate.findIndex(t => t.id === comp.id && t.type === "syllabus-title");
+                        if (titleIdx !== -1) {
+                            translatedTitle = translatedTexts[titleIdx] || syllabus.title;
+                        }
+                        
+                        // Translate items
+                        const translatedItems = syllabus.items.map((item, index) => {
+                            const titleMatchIdx = textsToTranslate.findIndex(
+                                t => t.id === comp.id && t.type === "syllabus-item-title" && t.itemIndex === index
+                            );
+                            const descMatchIdx = textsToTranslate.findIndex(
+                                t => t.id === comp.id && t.type === "syllabus-item-desc" && t.itemIndex === index
+                            );
+                            
+                            return {
+                                ...item,
+                                title: titleMatchIdx !== -1 ? (translatedTexts[titleMatchIdx] || item.title) : item.title,
+                                description: descMatchIdx !== -1 ? (translatedTexts[descMatchIdx] || item.description) : item.description,
+                            };
+                        });
+                        
+                        return { ...syllabus, title: translatedTitle, items: translatedItems };
                     }
                     return comp;
                 });
