@@ -3,10 +3,7 @@
 import { Course } from "@/lib/types";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { enrollmentManager } from "@/lib/storage/enrollment";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { PlayCircle, Clock, BarChart, Check, Plus, ChevronRight, ShoppingCart } from "lucide-react";
+import { Clock, BarChart, Check, Plus, ChevronRight, ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useRef, useEffect, useState } from "react";

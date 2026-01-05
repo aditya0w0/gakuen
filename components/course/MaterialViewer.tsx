@@ -1,7 +1,6 @@
 "use client";
 
 import { Lesson } from "@/lib/types";
-import { CheckCircle, FileText, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { animate } from "@/components/animations/useAnime";
@@ -9,7 +8,6 @@ import { ComponentRenderer } from "@/components/cms/ComponentRenderer";
 import { useTimeTracker } from "@/lib/hooks/useTimeTracker";
 import { useTranslatedLesson } from "@/lib/hooks/useTranslatedCourse";
 import { useTranslatedComponents } from "@/lib/hooks/useTranslatedComponents";
-import { useLanguage } from "@/lib/i18n";
 import DOMPurify from "dompurify";
 
 interface MaterialViewerProps {
@@ -19,9 +17,7 @@ interface MaterialViewerProps {
 }
 
 export function MaterialViewer({ lesson, onComplete, isCompleted }: MaterialViewerProps) {
-    // Track time spent on this lesson
     useTimeTracker();
-    const { language } = useLanguage();
 
     // Auto-translate lesson content based on selected language
     const translated = useTranslatedLesson(

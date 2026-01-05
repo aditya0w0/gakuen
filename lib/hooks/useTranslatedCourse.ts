@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/i18n";
-import type { Language } from "@/lib/i18n/translations";
 
 interface TranslatedCourse {
     title: string;

@@ -1,4 +1,4 @@
-import { translateWithGemini, batchTranslate } from "./gemini-flash";
+import { batchTranslate } from "./gemini-flash";
 import type { Language } from "@/lib/i18n/translations";
 import { initAdmin } from "@/lib/auth/firebase-admin";
 

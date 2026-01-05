@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkRateLimit, getClientIP, RateLimits } from './rate-limit';
+import { getClientIP } from './rate-limit';
 
 // Minimal User interface to replace dependency on demo-data
 export interface User {

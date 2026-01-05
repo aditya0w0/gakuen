@@ -51,7 +51,7 @@ export function RecommendedCourses({
         }
     };
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     useEffect(() => {
         fetchRecommendations();
     }, [user, limit]);
