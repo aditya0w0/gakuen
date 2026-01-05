@@ -13,7 +13,7 @@ import { NotificationCenter } from "./NotificationCenter";
 import { useTranslation } from "@/lib/i18n";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-    const { user } = useAuth();
+    const { user, isLoading: isAuthLoading } = useAuth();
     const pathname = usePathname();
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [mounted, setMounted] = useState(false);
@@ -24,8 +24,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         setMounted(true);
     }, []);
 
-    // Use user nav during SSR to prevent hydration mismatch, then switch after mount
-    const isAdmin = mounted && user?.role === "admin";
+    // Determine admin status - only after mounted AND auth is loaded
+    const isAdmin = mounted && !isAuthLoading && user?.role === "admin";
+    
+    // Show loading state during SSR or while auth is loading to prevent flash of wrong navigation
+    const showNavigation = mounted && !isAuthLoading;
 
     const navItems = isAdmin
         ? [
@@ -108,22 +111,35 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <nav className="flex-1 px-3 space-y-1">
-                    {navItems.map((item) => (
-                        <Link key={item.href} href={item.href}>
-                            <Button
-                                variant="ghost"
+                    {!showNavigation ? (
+                        // Show skeleton nav items while loading (4 = minimum nav items count for user role)
+                        Array.from({ length: 4 }).map((_, i) => (
+                            <div
+                                key={i}
                                 className={cn(
-                                    "w-full text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 flex items-center transition-all duration-200",
-                                    pathname === item.href && "bg-neutral-100 dark:bg-white/10 text-neutral-900 dark:text-white",
-                                    isCollapsed ? "justify-center px-0 py-3 h-12" : "justify-start px-4 py-2"
+                                    "w-full h-10 bg-neutral-200 dark:bg-neutral-800 rounded-md animate-pulse",
+                                    isCollapsed ? "mx-auto w-10" : ""
                                 )}
-                                title={isCollapsed ? item.label : undefined}
-                            >
-                                <item.icon className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
-                                {!isCollapsed && <span>{item.label}</span>}
-                            </Button>
-                        </Link>
-                    ))}
+                            />
+                        ))
+                    ) : (
+                        navItems.map((item) => (
+                            <Link key={item.href} href={item.href}>
+                                <Button
+                                    variant="ghost"
+                                    className={cn(
+                                        "w-full text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5 flex items-center transition-all duration-200",
+                                        pathname === item.href && "bg-neutral-100 dark:bg-white/10 text-neutral-900 dark:text-white",
+                                        isCollapsed ? "justify-center px-0 py-3 h-12" : "justify-start px-4 py-2"
+                                    )}
+                                    title={isCollapsed ? item.label : undefined}
+                                >
+                                    <item.icon className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
+                                    {!isCollapsed && <span>{item.label}</span>}
+                                </Button>
+                            </Link>
+                        ))
+                    )}
                 </nav>
 
                 {/* User Menu at Bottom */}
@@ -200,25 +216,35 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
             {/* Mobile Bottom Navigation - PWA Style */}
             <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-t border-neutral-200 dark:border-white/10 flex items-center justify-around md:hidden z-40 safe-area-pb">
-                {navItems.map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                            "flex flex-col items-center justify-center flex-1 h-full transition-colors py-2",
-                            pathname === item.href ? "text-blue-600 dark:text-white" : "text-neutral-400 dark:text-neutral-500"
-                        )}
-                    >
-                        <item.icon className={cn(
-                            "w-5 h-5 transition-transform",
-                            pathname === item.href && "scale-110"
-                        )} />
-                        <span className="text-[10px] mt-1 font-medium">{item.label}</span>
-                        {pathname === item.href && (
-                            <div className="absolute bottom-1 w-1 h-1 bg-blue-600 dark:bg-white rounded-full" />
-                        )}
-                    </Link>
-                ))}
+                {!showNavigation ? (
+                    // Show skeleton nav items while loading (4 = minimum nav items count for user role)
+                    Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="flex flex-col items-center justify-center flex-1 h-full py-2">
+                            <div className="w-5 h-5 bg-neutral-300 dark:bg-neutral-700 rounded animate-pulse" />
+                            <div className="w-8 h-2 bg-neutral-300 dark:bg-neutral-700 rounded mt-1 animate-pulse" />
+                        </div>
+                    ))
+                ) : (
+                    navItems.map((item) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                                "flex flex-col items-center justify-center flex-1 h-full transition-colors py-2",
+                                pathname === item.href ? "text-blue-600 dark:text-white" : "text-neutral-400 dark:text-neutral-500"
+                            )}
+                        >
+                            <item.icon className={cn(
+                                "w-5 h-5 transition-transform",
+                                pathname === item.href && "scale-110"
+                            )} />
+                            <span className="text-[10px] mt-1 font-medium">{item.label}</span>
+                            {pathname === item.href && (
+                                <div className="absolute bottom-1 w-1 h-1 bg-blue-600 dark:bg-white rounded-full" />
+                            )}
+                        </Link>
+                    ))
+                )}
             </nav>
         </div>
     );
