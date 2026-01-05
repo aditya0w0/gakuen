@@ -4,6 +4,7 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { requireAuth, safeErrorResponse } from '@/lib/api/auth-guard';
+import { isDriveEnabled, uploadToDrive, type UploadFolder } from '@/lib/storage/google-drive';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,12 +17,13 @@ const ALLOWED_PREFIXES = [
 ];
 
 // Upload type for AI-generated images (used for CMS/course thumbnails)
+// Maps to Google Drive folder names
 type UploadType = 'cms' | 'course';
 
-// Map type to folder name
-const FOLDER_MAP: Record<UploadType, 'cms' | 'courses'> = {
+// Map request type to Drive folder name
+const FOLDER_MAP: Record<UploadType, UploadFolder> = {
     cms: 'cms',
-    course: 'courses',
+    course: 'courses',  // Course thumbnails go to 'courses' folder
 };
 
 export async function POST(request: NextRequest) {
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
             imageBuffer = Buffer.from(image, 'base64');
         }
 
-        // Generate unique filename
+        // Generate unique filename (UUID-based for security - prevents path traversal)
         const generatedFilename = `${uuidv4().slice(0, 8)}-${Date.now()}.${ext}`;
 
         // Determine folder based on type
@@ -90,8 +92,6 @@ export async function POST(request: NextRequest) {
         const folderName = FOLDER_MAP[uploadType];
 
         // Try Google Drive first, fallback to local storage
-        const { isDriveEnabled, uploadToDrive } = await import('@/lib/storage/google-drive');
-
         if (isDriveEnabled()) {
             try {
                 const { url, fileId } = await uploadToDrive(
