@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, HeaderComponent, TextComponent, ImageComponent, VideoComponent, CodeComponent, CTAComponent, DividerComponent, SpacerComponent, Spacing } from "@/lib/cms/types";
+import { Component, HeaderComponent, TextComponent, ImageComponent, VideoComponent, CodeComponent, CTAComponent, DividerComponent, SpacerComponent, SyllabusComponent, Spacing, SyllabusItem } from "@/lib/cms/types";
 import {
     InputLabel,
     SectionHeader,
@@ -23,7 +23,9 @@ import {
     MousePointerClick,
     Minus,
     MoveVertical,
-    Plus
+    Plus,
+    List,
+    X
 } from "lucide-react";
 import { useState } from "react";
 import { COMPONENT_REGISTRY, createComponent } from "@/lib/cms/registry";
@@ -44,6 +46,7 @@ const iconMap: Record<string, any> = {
     MousePointerClick,
     Minus,
     MoveVertical,
+    List,
 };
 
 export function DesignControls({ component, onUpdate, onDelete, onAddComponent }: DesignControlsProps) {
@@ -130,6 +133,7 @@ export function DesignControls({ component, onUpdate, onDelete, onAddComponent }
                         {component.type === "cta" && <CTAControls component={component} onUpdate={onUpdate} />}
                         {component.type === "divider" && <DividerControls component={component} onUpdate={onUpdate} />}
                         {component.type === "spacer" && <SpacerControls component={component} onUpdate={onUpdate} />}
+                        {component.type === "syllabus" && <SyllabusControls component={component} onUpdate={onUpdate} />}
 
                         {component.type !== "spacer" && (
                             <MarginControls
@@ -336,6 +340,136 @@ function SpacerControls({ component, onUpdate }: { component: SpacerComponent; o
             <TextInput label="Height" unit="px" type="number" value={component.height} onChange={(e) => onUpdate({ ...component, height: Number(e.target.value) })} />
         </div>
     )
+}
+
+function SyllabusControls({ component, onUpdate }: { component: SyllabusComponent; onUpdate: (c: Component) => void }) {
+    const addItem = () => {
+        const newItem: SyllabusItem = {
+            id: `item-${Date.now()}`,
+            title: `Module ${component.items.length + 1}`,
+            description: "",
+            duration: "30 min",
+        };
+        onUpdate({ ...component, items: [...component.items, newItem] });
+    };
+
+    const updateItem = (index: number, updates: Partial<SyllabusItem>) => {
+        const newItems = [...component.items];
+        newItems[index] = { ...newItems[index], ...updates };
+        onUpdate({ ...component, items: newItems });
+    };
+
+    const deleteItem = (index: number) => {
+        const newItems = component.items.filter((_, i) => i !== index);
+        onUpdate({ ...component, items: newItems });
+    };
+
+    const moveItem = (fromIndex: number, direction: 'up' | 'down') => {
+        const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+        if (toIndex < 0 || toIndex >= component.items.length) return;
+        
+        const newItems = [...component.items];
+        [newItems[fromIndex], newItems[toIndex]] = [newItems[toIndex], newItems[fromIndex]];
+        onUpdate({ ...component, items: newItems });
+    };
+
+    return (
+        <div className="space-y-5">
+            <SectionHeader title="Syllabus Settings" />
+            
+            <TextInput 
+                label="Title" 
+                value={component.title || ""} 
+                onChange={(e) => onUpdate({ ...component, title: e.target.value })} 
+            />
+
+            <Select
+                label="Style"
+                value={component.style || "accordion"}
+                onChange={(e) => onUpdate({ ...component, style: e.target.value as "numbered" | "accordion" | "cards" })}
+                options={[
+                    { label: "Accordion", value: "accordion" },
+                    { label: "Numbered List", value: "numbered" },
+                    { label: "Cards", value: "cards" },
+                ]}
+            />
+
+            <Select
+                label="Show Duration"
+                value={component.showDuration ? "yes" : "no"}
+                onChange={(e) => onUpdate({ ...component, showDuration: e.target.value === "yes" })}
+                options={[{ label: "Show", value: "yes" }, { label: "Hide", value: "no" }]}
+            />
+
+            <ColorInput 
+                label="Accent Color" 
+                value={component.accentColor || "#6366f1"} 
+                onChange={(val) => onUpdate({ ...component, accentColor: val })} 
+            />
+
+            <SectionHeader title="Modules" />
+            
+            <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                {component.items.map((item, index) => (
+                    <div key={item.id} className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg space-y-2">
+                        <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-0.5">
+                                <button 
+                                    onClick={() => moveItem(index, 'up')}
+                                    disabled={index === 0}
+                                    className="p-0.5 hover:bg-zinc-700 rounded text-zinc-500 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+                                >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6"/></svg>
+                                </button>
+                                <button 
+                                    onClick={() => moveItem(index, 'down')}
+                                    disabled={index === component.items.length - 1}
+                                    className="p-0.5 hover:bg-zinc-700 rounded text-zinc-500 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+                                >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+                                </button>
+                            </div>
+                            <input
+                                type="text"
+                                value={item.title}
+                                onChange={(e) => updateItem(index, { title: e.target.value })}
+                                className="flex-1 px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-sm text-white focus:outline-none focus:border-indigo-500"
+                                placeholder="Module title"
+                            />
+                            <button 
+                                onClick={() => deleteItem(index)}
+                                className="p-1 hover:bg-red-500/10 rounded text-zinc-500 hover:text-red-400"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                        <input
+                            type="text"
+                            value={item.description || ""}
+                            onChange={(e) => updateItem(index, { description: e.target.value })}
+                            className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-400 focus:outline-none focus:border-indigo-500"
+                            placeholder="Description (optional)"
+                        />
+                        <input
+                            type="text"
+                            value={item.duration || ""}
+                            onChange={(e) => updateItem(index, { duration: e.target.value })}
+                            className="w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-400 focus:outline-none focus:border-indigo-500"
+                            placeholder="Duration (e.g., 30 min)"
+                        />
+                    </div>
+                ))}
+            </div>
+
+            <button
+                onClick={addItem}
+                className="w-full py-2 border border-dashed border-zinc-700 rounded-lg text-zinc-500 hover:text-white hover:border-zinc-500 transition-colors flex items-center justify-center gap-2"
+            >
+                <Plus size={14} />
+                Add Module
+            </button>
+        </div>
+    );
 }
 
 

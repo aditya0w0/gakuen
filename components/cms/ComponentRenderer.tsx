@@ -7,6 +7,7 @@ import { CodeBlock } from "./blocks/CodeBlock";
 import { CTABlock } from "./blocks/CTABlock";
 import { DividerBlock } from "./blocks/DividerBlock";
 import { SpacerBlock } from "./blocks/SpacerBlock";
+import { SyllabusBlock } from "./blocks/SyllabusBlock";
 
 interface ComponentRendererProps {
     component: Component;
@@ -48,6 +49,8 @@ export function ComponentRenderer({
             return <DividerBlock {...props} component={component} />;
         case "spacer":
             return <SpacerBlock {...props} component={component} />;
+        case "syllabus":
+            return <SyllabusBlock {...props} component={component} />;
         default:
             return <div className="text-red-400">Unknown component type</div>;
     }

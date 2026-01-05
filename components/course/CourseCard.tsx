@@ -70,16 +70,17 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
         if (!user) return;
 
         setIsEnrolling(true);
-        try {
-            await enrollmentManager.enrollInCourse(user.id, course.id);
+        const result = await enrollmentManager.enrollInCourse(user.id, course.id);
+        
+        if (result.success) {
             setIsEnrolled(true);
             refreshUser();
             onEnrollChange?.();
-        } catch (error) {
-            console.error("Enrollment failed:", error);
-        } finally {
-            setIsEnrolling(false);
+        } else {
+            console.error("Enrollment failed:", result.error);
         }
+        
+        setIsEnrolling(false);
     };
 
     // Determine if we should show the fallback

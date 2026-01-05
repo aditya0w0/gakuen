@@ -7,6 +7,14 @@ export interface Spacing {
     left?: number;
 }
 
+// Syllabus item for the syllabus component
+export interface SyllabusItem {
+    id: string;
+    title: string;
+    description?: string;
+    duration?: string;
+}
+
 // All valid component types
 export type ComponentType =
     | "header"
@@ -16,7 +24,8 @@ export type ComponentType =
     | "code"
     | "cta"
     | "divider"
-    | "spacer";
+    | "spacer"
+    | "syllabus";
 
 export interface BaseComponent {
     id: string;
@@ -109,6 +118,17 @@ export interface SpacerComponent extends BaseComponent {
     height: number; // in pixels
 }
 
+// Syllabus Component
+export interface SyllabusComponent extends BaseComponent {
+    type: "syllabus";
+    title?: string;
+    items: SyllabusItem[];
+    style?: "numbered" | "accordion" | "cards";
+    showDuration?: boolean;
+    accentColor?: string;
+    margin?: Spacing;
+}
+
 // Union type of all components
 export type Component =
     | HeaderComponent
@@ -118,7 +138,8 @@ export type Component =
     | CodeComponent
     | CTAComponent
     | DividerComponent
-    | SpacerComponent;
+    | SpacerComponent
+    | SyllabusComponent;
 
 // Component metadata for registry
 export interface ComponentMeta {
