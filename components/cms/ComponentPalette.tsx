@@ -2,7 +2,7 @@
 
 import { COMPONENT_REGISTRY, createComponent } from "@/lib/cms/registry";
 import { Component } from "@/lib/cms/types";
-import { LucideIcon, Type, AlignLeft, Image, Video, Code, MousePointerClick, Minus, MoveVertical, Plus } from "lucide-react";
+import { LucideIcon, Type, AlignLeft, Image, Video, Code, MousePointerClick, Minus, MoveVertical, Plus, List } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 interface ComponentPaletteProps {
@@ -18,6 +18,7 @@ const iconMap: Record<string, LucideIcon> = {
     MousePointerClick,
     Minus,
     MoveVertical,
+    List,
 };
 
 export function ComponentPalette({ onAddComponent }: ComponentPaletteProps) {

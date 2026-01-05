@@ -118,6 +118,25 @@ export const COMPONENT_REGISTRY: ComponentMeta[] = [
             height: 40,
         },
     },
+    {
+        type: "syllabus",
+        name: "Syllabus",
+        icon: "List",
+        description: "Course syllabus with modules",
+        category: "content",
+        defaultProps: {
+            type: "syllabus",
+            title: "Course Syllabus",
+            items: [
+                { id: "1", title: "Module 1: Introduction", description: "Getting started with the basics", duration: "30 min" },
+                { id: "2", title: "Module 2: Core Concepts", description: "Understanding the fundamentals", duration: "45 min" },
+                { id: "3", title: "Module 3: Advanced Topics", description: "Deep dive into advanced features", duration: "1 hr" },
+            ],
+            style: "accordion",
+            showDuration: true,
+            accentColor: "#6366f1",
+        },
+    },
 ];
 
 // Helper to create a new component with defaults

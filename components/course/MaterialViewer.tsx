@@ -8,6 +8,7 @@ import { ComponentRenderer } from "@/components/cms/ComponentRenderer";
 import { useTimeTracker } from "@/lib/hooks/useTimeTracker";
 import { useTranslatedLesson } from "@/lib/hooks/useTranslatedCourse";
 import { useTranslatedComponents } from "@/lib/hooks/useTranslatedComponents";
+import { useTranslation } from "@/lib/i18n";
 import DOMPurify from "dompurify";
 
 interface MaterialViewerProps {
@@ -18,6 +19,7 @@ interface MaterialViewerProps {
 
 export function MaterialViewer({ lesson, onComplete, isCompleted }: MaterialViewerProps) {
     useTimeTracker();
+    const { t } = useTranslation();
 
     // Auto-translate lesson content based on selected language
     const translated = useTranslatedLesson(
@@ -212,8 +214,8 @@ export function MaterialViewer({ lesson, onComplete, isCompleted }: MaterialView
     return (
         <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center text-neutral-500">
-                <p className="text-lg">This lesson is being prepared.</p>
-                <p className="text-sm mt-2">Check back soon for content!</p>
+                <p className="text-lg">{t.courseViewer.lessonPreparing}</p>
+                <p className="text-sm mt-2">{t.courseViewer.lessonPreparingHint}</p>
             </div>
         </div>
     );

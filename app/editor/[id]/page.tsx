@@ -111,6 +111,8 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     const [courseDescription, setCourseDescription] = useState('');
     const [courseThumbnail, setCourseThumbnail] = useState('');
     const [courseAuthor, setCourseAuthor] = useState('');
+    const [courseCategory, setCourseCategory] = useState('Uncategorized');
+    const [courseLevel, setCourseLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
     const [isPublished, setIsPublished] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [draggedComponentId, setDraggedComponentId] = useState<string | null>(null);
@@ -128,6 +130,8 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                 setCourseDescription(serverCourse.description);
                 setCourseThumbnail(serverCourse.thumbnail || '');
                 setCourseAuthor(serverCourse.instructor || '');
+                setCourseCategory(serverCourse.category || 'Uncategorized');
+                setCourseLevel(serverCourse.level || 'beginner');
                 setIsPublished(serverCourse.isPublished || false);
 
                 if (serverCourse.lessons && serverCourse.lessons.length > 0) {
@@ -157,6 +161,8 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
             description: courseDescription,
             thumbnail: courseThumbnail,
             instructor: courseAuthor,
+            category: courseCategory,
+            level: courseLevel,
             lessons,
             isPublished: true,
             publishedAt: new Date().toISOString(),
@@ -518,10 +524,14 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                             courseDescription={courseDescription}
                             courseThumbnail={courseThumbnail}
                             courseAuthor={courseAuthor}
+                            courseCategory={courseCategory}
+                            courseLevel={courseLevel}
                             onTitleChange={setCourseTitle}
                             onDescriptionChange={setCourseDescription}
                             onThumbnailChange={setCourseThumbnail}
                             onAuthorChange={setCourseAuthor}
+                            onCategoryChange={setCourseCategory}
+                            onLevelChange={setCourseLevel}
                             createdAt={course.createdAt}
                             lastModified={new Date().toISOString()}
                             isPublished={isPublished}

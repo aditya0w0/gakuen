@@ -9,10 +9,12 @@ import { cn } from "@/lib/utils";
 import { SUBSCRIPTION_TIERS, SubscriptionTier } from "@/lib/constants/subscription";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useTranslation } from "@/lib/i18n";
 
 export default function PricingPage() {
     const router = useRouter();
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const { t } = useTranslation();
 
     const tiers = Object.values(SUBSCRIPTION_TIERS).filter(t => t.id !== 'free');
 
@@ -48,7 +50,7 @@ export default function PricingPage() {
                     </Link>
                     <Link href={user ? (user.role === "admin" ? "/dashboard" : "/user") : "/"}>
                         <Button variant="outline">
-                            {user ? "Back to Dashboard" : "Back to Home"}
+                            {user ? t.back : t.back}
                         </Button>
                     </Link>
                 </div>
@@ -62,10 +64,10 @@ export default function PricingPage() {
                     className="max-w-3xl mx-auto"
                 >
                     <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-neutral-900 dark:text-white mb-4">
-                        Choose Your Learning Path
+                        {t.pricing.title}
                     </h1>
                     <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-8">
-                        Unlock unlimited potential with our flexible subscription plans
+                        {t.pricing.subtitle}
                     </p>
 
                     {/* Billing Toggle */}
@@ -79,7 +81,7 @@ export default function PricingPage() {
                                     : "text-neutral-600 dark:text-neutral-400"
                             )}
                         >
-                            Monthly
+                            {t.pricing.monthly}
                         </button>
                         <button
                             onClick={() => setBillingCycle('yearly')}
@@ -90,9 +92,9 @@ export default function PricingPage() {
                                     : "text-neutral-600 dark:text-neutral-400"
                             )}
                         >
-                            Yearly
+                            {t.pricing.yearly}
                             <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full">
-                                Save 17%
+                                {t.pricing.savePercent}
                             </span>
                         </button>
                     </div>
@@ -195,7 +197,7 @@ export default function PricingPage() {
                                                 : "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100"
                                         )}
                                     >
-                                        Get Started
+                                        {t.pricing.getStarted}
                                         <ArrowRight className="ml-2 w-4 h-4" />
                                     </Button>
                                 </div>
@@ -211,15 +213,15 @@ export default function PricingPage() {
                     <div className="bg-neutral-100 dark:bg-neutral-800/50 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
                         <div>
                             <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
-                                Just Starting Out?
+                                {t.pricing.justStarting}
                             </h3>
                             <p className="text-neutral-600 dark:text-neutral-400">
-                                Try our free tier with limited AI access and course previews
+                                {t.pricing.justStartingDesc}
                             </p>
                         </div>
                         <Link href="/browse">
                             <Button variant="outline" size="lg">
-                                Browse Free Content
+                                {t.pricing.browseFree}
                             </Button>
                         </Link>
                     </div>
@@ -230,58 +232,58 @@ export default function PricingPage() {
             <section className="px-6 pb-20">
                 <div className="max-w-6xl mx-auto">
                     <h2 className="text-2xl font-bold text-center text-neutral-900 dark:text-white mb-8">
-                        Compare Plans
+                        {t.pricing.comparePlans}
                     </h2>
 
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-200 dark:border-neutral-800">
-                                    <th className="text-left py-4 px-4 font-medium text-neutral-500">Features</th>
-                                    <th className="text-center py-4 px-4 font-medium text-neutral-500">Free</th>
-                                    <th className="text-center py-4 px-4 font-medium text-neutral-500">Basic</th>
-                                    <th className="text-center py-4 px-4 font-medium text-indigo-600">Standard</th>
-                                    <th className="text-center py-4 px-4 font-medium text-neutral-500">Pro</th>
+                                    <th className="text-left py-4 px-4 font-medium text-neutral-500">{t.pricing.features}</th>
+                                    <th className="text-center py-4 px-4 font-medium text-neutral-500">{t.pricing.free}</th>
+                                    <th className="text-center py-4 px-4 font-medium text-neutral-500">{t.pricing.basic}</th>
+                                    <th className="text-center py-4 px-4 font-medium text-indigo-600">{t.pricing.standard}</th>
+                                    <th className="text-center py-4 px-4 font-medium text-neutral-500">{t.pricing.pro}</th>
                                 </tr>
                             </thead>
                             <tbody className="text-sm">
                                 <tr className="border-b border-neutral-100 dark:border-neutral-800/50">
-                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">Course Access</td>
-                                    <td className="py-4 px-4 text-center">Preview only</td>
+                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">{t.pricing.courseAccess}</td>
+                                    <td className="py-4 px-4 text-center">{t.pricing.previewOnly}</td>
                                     <td className="py-4 px-4 text-center">30%</td>
                                     <td className="py-4 px-4 text-center font-medium text-indigo-600">50%</td>
                                     <td className="py-4 px-4 text-center font-medium">100%</td>
                                 </tr>
                                 <tr className="border-b border-neutral-100 dark:border-neutral-800/50">
-                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">AI Model</td>
+                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">{t.pricing.aiModel}</td>
                                     <td className="py-4 px-4 text-center">Flash Lite</td>
                                     <td className="py-4 px-4 text-center">Flash</td>
                                     <td className="py-4 px-4 text-center font-medium text-indigo-600">Pro + Flash</td>
                                     <td className="py-4 px-4 text-center font-medium">Pro + Flash</td>
                                 </tr>
                                 <tr className="border-b border-neutral-100 dark:border-neutral-800/50">
-                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">AI Requests/Day</td>
+                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">{t.pricing.aiRequestsDay}</td>
                                     <td className="py-4 px-4 text-center">20</td>
                                     <td className="py-4 px-4 text-center">60</td>
                                     <td className="py-4 px-4 text-center font-medium text-indigo-600">30 Pro + ∞ Flash</td>
                                     <td className="py-4 px-4 text-center font-medium">120 Pro + ∞ Flash</td>
                                 </tr>
                                 <tr className="border-b border-neutral-100 dark:border-neutral-800/50">
-                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">Certificates</td>
+                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">{t.pricing.certificates}</td>
                                     <td className="py-4 px-4 text-center"><X className="w-5 h-5 mx-auto text-neutral-300" /></td>
                                     <td className="py-4 px-4 text-center"><Check className="w-5 h-5 mx-auto text-green-500" /></td>
                                     <td className="py-4 px-4 text-center"><Check className="w-5 h-5 mx-auto text-green-500" /></td>
                                     <td className="py-4 px-4 text-center"><Check className="w-5 h-5 mx-auto text-green-500" /></td>
                                 </tr>
                                 <tr className="border-b border-neutral-100 dark:border-neutral-800/50">
-                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">Priority Support</td>
+                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">{t.pricing.prioritySupport}</td>
                                     <td className="py-4 px-4 text-center"><X className="w-5 h-5 mx-auto text-neutral-300" /></td>
                                     <td className="py-4 px-4 text-center"><X className="w-5 h-5 mx-auto text-neutral-300" /></td>
                                     <td className="py-4 px-4 text-center"><Check className="w-5 h-5 mx-auto text-green-500" /></td>
                                     <td className="py-4 px-4 text-center"><Check className="w-5 h-5 mx-auto text-green-500" /></td>
                                 </tr>
                                 <tr className="border-b border-neutral-100 dark:border-neutral-800/50">
-                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">1-on-1 Mentoring</td>
+                                    <td className="py-4 px-4 text-neutral-600 dark:text-neutral-400">{t.pricing.mentoring}</td>
                                     <td className="py-4 px-4 text-center"><X className="w-5 h-5 mx-auto text-neutral-300" /></td>
                                     <td className="py-4 px-4 text-center"><X className="w-5 h-5 mx-auto text-neutral-300" /></td>
                                     <td className="py-4 px-4 text-center"><X className="w-5 h-5 mx-auto text-neutral-300" /></td>
@@ -296,7 +298,7 @@ export default function PricingPage() {
             {/* FAQ or Footer */}
             <footer className="border-t border-neutral-200 dark:border-neutral-800 py-8 px-6">
                 <div className="max-w-6xl mx-auto text-center text-sm text-neutral-500">
-                    <p>Questions? Contact us at support@gakuen.edu</p>
+                    <p>{t.pricing.questionsContact}</p>
                 </div>
             </footer>
         </div>

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { SUBSCRIPTION_TIERS } from "@/lib/constants/subscription";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * A seamless, non-intrusive subscription widget for the dashboard
@@ -15,6 +16,7 @@ import { SUBSCRIPTION_TIERS } from "@/lib/constants/subscription";
 export function SubscriptionWidget() {
     const { user } = useAuth();
     const [isDismissed, setIsDismissed] = useState(false);
+    const { t } = useTranslation();
 
     // All hooks MUST be called before any returns
     const tier = user?.subscription?.tier || 'free';
@@ -44,10 +46,10 @@ export function SubscriptionWidget() {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                     <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
-                        Unlock Premium Learning
+                        {t.subscription.unlockPremium}
                     </h3>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-0.5">
-                        Get unlimited AI help, all courses, and priority support
+                        {t.subscription.unlockDesc}
                     </p>
                 </div>
 
@@ -57,7 +59,7 @@ export function SubscriptionWidget() {
                         size="sm"
                         className="bg-gradient-to-r from-indigo-600 to-indigo-600 hover:from-indigo-700 hover:to-indigo-700 text-white shadow-lg shadow-indigo-500/20"
                     >
-                        View Plans
+                        {t.subscription.viewPlans}
                         <ArrowRight className="ml-1.5 w-4 h-4" />
                     </Button>
                 </Link>

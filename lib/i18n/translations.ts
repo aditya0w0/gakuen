@@ -240,6 +240,54 @@ export interface Translations {
         materials: string;
         notes: string;
         discussion: string;
+        lessonPreparing: string;
+        lessonPreparingHint: string;
+    };
+    // Subscription Widget
+    subscription: {
+        unlockPremium: string;
+        unlockDesc: string;
+        viewPlans: string;
+    };
+    // Pricing Page
+    pricing: {
+        title: string;
+        subtitle: string;
+        monthly: string;
+        yearly: string;
+        savePercent: string;
+        popular: string;
+        currentPlan: string;
+        getStarted: string;
+        features: string;
+        faq: string;
+        // Free tier section
+        justStarting: string;
+        justStartingDesc: string;
+        browseFree: string;
+        // Compare plans
+        comparePlans: string;
+        free: string;
+        basic: string;
+        standard: string;
+        pro: string;
+        // Table rows
+        courseAccess: string;
+        previewOnly: string;
+        aiModel: string;
+        aiRequestsDay: string;
+        certificates: string;
+        prioritySupport: string;
+        mentoring: string;
+        // Footer
+        questionsContact: string;
+    };
+    // Footer
+    footer: {
+        aiDisclaimer: string;
+        cookiePolicy: string;
+        privacyPolicy: string;
+        termsOfService: string;
     };
 }
 
@@ -500,6 +548,53 @@ export const translations: Record<Language, Translations> = {
             materials: "Materials",
             notes: "Notes",
             discussion: "Discussion",
+            lessonPreparing: "This lesson is being prepared.",
+            lessonPreparingHint: "Check back soon for content!",
+        },
+
+        // Subscription Widget
+        subscription: {
+            unlockPremium: "Unlock Premium Learning",
+            unlockDesc: "Get unlimited AI help, all courses, and priority support",
+            viewPlans: "View Plans",
+        },
+
+        // Pricing Page
+        pricing: {
+            title: "Choose Your Plan",
+            subtitle: "Start learning today with the plan that fits your needs",
+            monthly: "Monthly",
+            yearly: "Yearly",
+            savePercent: "Save 20%",
+            popular: "Most Popular",
+            currentPlan: "Current Plan",
+            getStarted: "Get Started",
+            features: "Features",
+            faq: "Frequently Asked Questions",
+            justStarting: "Just Starting Out?",
+            justStartingDesc: "Try our free tier with limited AI access and course previews",
+            browseFree: "Browse Free Content",
+            comparePlans: "Compare Plans",
+            free: "Free",
+            basic: "Basic",
+            standard: "Standard",
+            pro: "Pro",
+            courseAccess: "Course Access",
+            previewOnly: "Preview only",
+            aiModel: "AI Model",
+            aiRequestsDay: "AI Requests/Day",
+            certificates: "Certificates",
+            prioritySupport: "Priority Support",
+            mentoring: "1-on-1 Mentoring",
+            questionsContact: "Questions? Contact us at support@gakuen.edu",
+        },
+
+        // Footer
+        footer: {
+            aiDisclaimer: "Gakuen uses AI for translation and course generation. Content may vary.",
+            cookiePolicy: "Cookie Policy",
+            privacyPolicy: "Privacy Policy",
+            termsOfService: "Terms of Service",
         },
     },
 
@@ -759,6 +854,53 @@ export const translations: Record<Language, Translations> = {
             materials: "資料",
             notes: "ノート",
             discussion: "ディスカッション",
+            lessonPreparing: "このレッスンは準備中です。",
+            lessonPreparingHint: "コンテンツをお待ちください！",
+        },
+
+        // Subscription Widget
+        subscription: {
+            unlockPremium: "プレミアム学習を解除",
+            unlockDesc: "無制限のAI支援、全コース、優先サポートを取得",
+            viewPlans: "プランを見る",
+        },
+
+        // Pricing Page
+        pricing: {
+            title: "プランを選択",
+            subtitle: "あなたに合ったプランで今日から学習を始めましょう",
+            monthly: "月額",
+            yearly: "年額",
+            savePercent: "20%お得",
+            popular: "人気",
+            currentPlan: "現在のプラン",
+            getStarted: "始める",
+            features: "機能",
+            faq: "よくある質問",
+            justStarting: "初めての方ですか？",
+            justStartingDesc: "無料プランでAI機能とコースプレビューをお試しください",
+            browseFree: "無料コンテンツを見る",
+            comparePlans: "プラン比較",
+            free: "無料",
+            basic: "ベーシック",
+            standard: "スタンダード",
+            pro: "プロ",
+            courseAccess: "コースアクセス",
+            previewOnly: "プレビューのみ",
+            aiModel: "AIモデル",
+            aiRequestsDay: "AI リクエスト/日",
+            certificates: "修了証",
+            prioritySupport: "優先サポート",
+            mentoring: "1対1メンタリング",
+            questionsContact: "ご質問は support@gakuen.edu まで",
+        },
+
+        // Footer
+        footer: {
+            aiDisclaimer: "学園はAIを翻訳とコース生成に使用しています。内容は異なる場合があります。",
+            cookiePolicy: "クッキーポリシー",
+            privacyPolicy: "プライバシーポリシー",
+            termsOfService: "利用規約",
         },
     },
 
@@ -1018,6 +1160,53 @@ export const translations: Record<Language, Translations> = {
             materials: "자료",
             notes: "노트",
             discussion: "토론",
+            lessonPreparing: "이 레슨은 준비 중입니다.",
+            lessonPreparingHint: "공 콘텐츠를 기다려 주세요!",
+        },
+
+        // Subscription Widget
+        subscription: {
+            unlockPremium: "프리미엄 학습 잠금 해제",
+            unlockDesc: "무제한 AI 도움, 모든 강좌, 우선 지원 받기",
+            viewPlans: "플랜 보기",
+        },
+
+        // Pricing Page
+        pricing: {
+            title: "플랜 선택",
+            subtitle: "오늘부터 나에게 맞는 플랜으로 학습을 시작하세요",
+            monthly: "월간",
+            yearly: "연간",
+            savePercent: "20% 절약",
+            popular: "인기",
+            currentPlan: "현재 플랜",
+            getStarted: "시작하기",
+            features: "기능",
+            faq: "자주 묻는 질문",
+            justStarting: "처음이신가요?",
+            justStartingDesc: "무료 플랜으로 AI 기능과 강좌 미리보기를 체험해 보세요",
+            browseFree: "무료 콘텐츠 보기",
+            comparePlans: "플랜 비교",
+            free: "무료",
+            basic: "베이직",
+            standard: "스탠다드",
+            pro: "프로",
+            courseAccess: "강좌 접근",
+            previewOnly: "미리보기만",
+            aiModel: "AI 모델",
+            aiRequestsDay: "AI 요청/일",
+            certificates: "수료증",
+            prioritySupport: "우선 지원",
+            mentoring: "1:1 멘토링",
+            questionsContact: "질문은 support@gakuen.edu로 연락주세요",
+        },
+
+        // Footer
+        footer: {
+            aiDisclaimer: "가쿠엔은 번역 및 강좌 생성에 AI를 사용합니다. 내용이 다를 수 있습니다.",
+            cookiePolicy: "쿠키 정책",
+            privacyPolicy: "개인정보 처리방침",
+            termsOfService: "서비스 약관",
         },
     },
 
@@ -1277,6 +1466,53 @@ export const translations: Record<Language, Translations> = {
             materials: "Materi",
             notes: "Catatan",
             discussion: "Diskusi",
+            lessonPreparing: "Pelajaran ini sedang disiapkan.",
+            lessonPreparingHint: "Cek kembali untuk konten!",
+        },
+
+        // Subscription Widget
+        subscription: {
+            unlockPremium: "Buka Akses Premium",
+            unlockDesc: "Dapatkan bantuan AI tak terbatas, semua kursus, dan dukungan prioritas",
+            viewPlans: "Lihat Paket",
+        },
+
+        // Pricing Page
+        pricing: {
+            title: "Pilih Paket Anda",
+            subtitle: "Mulai belajar hari ini dengan paket yang sesuai kebutuhan Anda",
+            monthly: "Bulanan",
+            yearly: "Tahunan",
+            savePercent: "Hemat 20%",
+            popular: "Populer",
+            currentPlan: "Paket Saat Ini",
+            getStarted: "Mulai",
+            features: "Fitur",
+            faq: "Pertanyaan Umum",
+            justStarting: "Baru Mulai?",
+            justStartingDesc: "Coba paket gratis dengan akses AI terbatas dan pratinjau kursus",
+            browseFree: "Jelajahi Konten Gratis",
+            comparePlans: "Bandingkan Paket",
+            free: "Gratis",
+            basic: "Basic",
+            standard: "Standar",
+            pro: "Pro",
+            courseAccess: "Akses Kursus",
+            previewOnly: "Pratinjau saja",
+            aiModel: "Model AI",
+            aiRequestsDay: "Permintaan AI/Hari",
+            certificates: "Sertifikat",
+            prioritySupport: "Dukungan Prioritas",
+            mentoring: "Mentoring 1-1",
+            questionsContact: "Pertanyaan? Hubungi kami di support@gakuen.edu",
+        },
+
+        // Footer
+        footer: {
+            aiDisclaimer: "Gakuen menggunakan AI untuk terjemahan dan pembuatan kursus. Konten mungkin bervariasi.",
+            cookiePolicy: "Kebijakan Cookie",
+            privacyPolicy: "Kebijakan Privasi",
+            termsOfService: "Syarat Layanan",
         },
     },
 };
