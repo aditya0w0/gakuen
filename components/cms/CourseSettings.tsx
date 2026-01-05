@@ -2,17 +2,39 @@
 
 import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
 import { useState } from "react";
-import { Upload, Wand2, Loader2, X } from "lucide-react";
+import { Upload, Wand2, Loader2, X, Plus } from "lucide-react";
+
+// Available course categories
+const COURSE_CATEGORIES = [
+    "Computer Science",
+    "Web Development",
+    "Data Science",
+    "Machine Learning",
+    "Mobile Development",
+    "DevOps",
+    "Cybersecurity",
+    "Game Development",
+    "UI/UX Design",
+    "Cloud Computing",
+];
+
+// Available course levels
+const COURSE_LEVELS = ["beginner", "intermediate", "advanced"] as const;
+type CourseLevel = typeof COURSE_LEVELS[number];
 
 interface CourseSettingsProps {
     courseTitle: string;
     courseDescription: string;
     courseThumbnail?: string;
     courseAuthor?: string;
+    courseCategory?: string;
+    courseLevel?: CourseLevel;
     onTitleChange: (title: string) => void;
     onDescriptionChange: (description: string) => void;
     onThumbnailChange?: (url: string) => void;
     onAuthorChange?: (author: string) => void;
+    onCategoryChange?: (category: string) => void;
+    onLevelChange?: (level: CourseLevel) => void;
     createdAt?: string;
     lastModified?: string;
     isPublished?: boolean;
@@ -23,16 +45,22 @@ export function CourseSettings({
     courseDescription,
     courseThumbnail,
     courseAuthor,
+    courseCategory,
+    courseLevel,
     onTitleChange,
     onDescriptionChange,
     onThumbnailChange,
     onAuthorChange,
+    onCategoryChange,
+    onLevelChange,
     createdAt,
     lastModified,
     isPublished,
 }: CourseSettingsProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [showPrompt, setShowPrompt] = useState(false);
+    const [customCategory, setCustomCategory] = useState("");
+    const [showCustomCategory, setShowCustomCategory] = useState(false);
     const [prompt, setPrompt] = useState("");
 
     const formatDate = (dateString?: string) => {
@@ -218,6 +246,93 @@ export function CourseSettings({
                     className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-indigo-500"
                     placeholder="Enter instructor name"
                 />
+            </div>
+
+            {/* Category and Level */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Category */}
+                <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">
+                        Category
+                    </label>
+                    {showCustomCategory ? (
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={customCategory}
+                                onChange={(e) => setCustomCategory(e.target.value)}
+                                className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-indigo-500"
+                                placeholder="Enter custom category"
+                                autoFocus
+                            />
+                            <button
+                                onClick={() => {
+                                    if (customCategory.trim()) {
+                                        onCategoryChange?.(customCategory.trim());
+                                        setCustomCategory("");
+                                    }
+                                    setShowCustomCategory(false);
+                                }}
+                                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                                Add
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setCustomCategory("");
+                                    setShowCustomCategory(false);
+                                }}
+                                className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm transition-colors"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex gap-2">
+                            <select
+                                value={courseCategory || 'Uncategorized'}
+                                onChange={(e) => onCategoryChange?.(e.target.value)}
+                                className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer"
+                            >
+                                <option value="Uncategorized">Uncategorized</option>
+                                {COURSE_CATEGORIES.map((cat) => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                                {/* Show current category if it's custom and not in the list */}
+                                {courseCategory && 
+                                 !COURSE_CATEGORIES.includes(courseCategory) && 
+                                 courseCategory !== 'Uncategorized' && (
+                                    <option value={courseCategory}>{courseCategory}</option>
+                                )}
+                            </select>
+                            <button
+                                onClick={() => setShowCustomCategory(true)}
+                                className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors flex items-center gap-1"
+                                title="Add custom category"
+                            >
+                                <Plus size={16} />
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Level */}
+                <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">
+                        Level
+                    </label>
+                    <select
+                        value={courseLevel || 'beginner'}
+                        onChange={(e) => onLevelChange?.(e.target.value as CourseLevel)}
+                        className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer capitalize"
+                    >
+                        {COURSE_LEVELS.map((level) => (
+                            <option key={level} value={level} className="capitalize">
+                                {level.charAt(0).toUpperCase() + level.slice(1)}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Description */}

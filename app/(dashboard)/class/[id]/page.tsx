@@ -32,12 +32,17 @@ export default function ClassPage() {
             import("@/lib/storage/enrollment").then(({ enrollmentManager }) => {
                 if (!enrollmentManager.isEnrolled(courseId)) {
                     enrollmentManager.enrollInCourse(user.id, courseId)
-                        .then(() => refreshUser())
-                        .catch(err => console.error("Auto-enroll failed:", err));
+                        .then((result) => {
+                            if (result.success) {
+                                refreshUser();
+                            } else if (result.error) {
+                                console.error("Auto-enroll failed:", result.error);
+                            }
+                        });
                 }
             });
         }
-    }, [user, courseId]);
+    }, [user, courseId, refreshUser]);
 
     useEffect(() => {
         const progress = hybridStorage.progress.get();
