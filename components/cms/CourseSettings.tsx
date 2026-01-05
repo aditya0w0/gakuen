@@ -60,11 +60,11 @@ export function CourseSettings({
 
             const data = await response.json();
 
-            // Upload to get permanent URL
+            // Upload to get permanent URL (type: 'course' for course thumbnails)
             const uploadResponse = await authenticatedFetch('/api/upload-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: data.imageUrl }),
+                body: JSON.stringify({ image: data.imageUrl, type: 'course' }),
             });
 
             if (uploadResponse.ok) {
