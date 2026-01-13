@@ -124,6 +124,8 @@ export function useTranslatedCourse(
                     return;
                 }
                 console.error("Translation error:", error);
+                // Clear fetch key to allow retry on next render
+                fetchKeyRef.current = '';
                 if (!abortController.signal.aborted) {
                     setState({
                         title: titleRef.current,
@@ -261,6 +263,8 @@ export function useTranslatedLesson(
                     return;
                 }
                 console.error("Translation error:", error);
+                // Clear fetch key to allow retry on next render
+                fetchKeyRef.current = '';
                 if (!abortController.signal.aborted) {
                     setState({
                         title: titleRef.current,
