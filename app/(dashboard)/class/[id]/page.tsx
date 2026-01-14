@@ -3,6 +3,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Lesson } from "@/lib/types";
 import { MaterialViewer } from "@/components/course/MaterialViewer";
+import { CourseSyllabus } from "@/components/course/CourseSyllabus";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { useAuth } from "@/components/auth/AuthContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -173,31 +174,13 @@ export default function ClassPage() {
                 </div>
 
                 <ScrollArea className="flex-1 overflow-y-auto">
-                    <div className="p-4 space-y-2">
-                        {course.lessons.map((lesson, index) => {
-                            const completed = isCompleted(lesson.id);
-                            const isActive = activeLesson?.id === lesson.id;
-
-                            return (
-                                <button
-                                    key={lesson.id}
-                                    onClick={() => handleSelectLesson(lesson.id)}
-                                    className={cn(
-                                        "w-full flex items-center p-3 rounded-lg text-sm transition-all text-left",
-                                        isActive ? "bg-white/10 text-white" : "text-neutral-400 hover:bg-white/5"
-                                    )}
-                                >
-                                    {completed ? (
-                                        <CheckCircle className="w-4 h-4 mr-2 text-green-500 flex-shrink-0" />
-                                    ) : (
-                                        <span className="w-4 h-4 mr-2 flex items-center justify-center text-neutral-500 text-xs">
-                                            {index + 1}
-                                        </span>
-                                    )}
-                                    <span className="line-clamp-1">{lesson.title}</span>
-                                </button>
-                            );
-                        })}
+                    <div className="p-4">
+                        <CourseSyllabus
+                            course={course}
+                            activeLesson={activeLesson}
+                            completedLessons={completedLessons}
+                            onSelectLesson={handleSelectLesson}
+                        />
                     </div>
                 </ScrollArea>
             </div>

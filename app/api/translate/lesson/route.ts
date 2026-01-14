@@ -17,12 +17,12 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { lessonId, title, content, targetLanguage, sourceLanguage = "en" } = body;
+        const { lessonId, title, content = "", targetLanguage, sourceLanguage = "en" } = body;
 
-        // Validate required fields
-        if (!lessonId || !title || !content || !targetLanguage) {
+        // Validate required fields (content can be empty for CMS-based lessons)
+        if (!lessonId || !title || !targetLanguage) {
             return NextResponse.json(
-                { error: "Missing required fields: lessonId, title, content, targetLanguage" },
+                { error: "Missing required fields: lessonId, title, targetLanguage" },
                 { status: 400 }
             );
         }

@@ -84,8 +84,12 @@ RESPONSE (JSON array only):`;
 const recommendationCache = new Map<string, { recommendations: string[]; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 30; // 30 minutes
 
+// In-flight request tracking to prevent duplicate API calls
+const inFlightRecommendations = new Map<string, Promise<string[]>>();
+
 /**
  * Get cached recommendations or generate new ones
+ * Includes request deduplication to prevent concurrent duplicate API calls
  */
 export async function getCachedRecommendations(
     userId: string,
@@ -101,16 +105,35 @@ export async function getCachedRecommendations(
         return cached.recommendations;
     }
 
+    // Check for in-flight request (deduplication)
+    const existingRequest = inFlightRecommendations.get(userId);
+    if (existingRequest) {
+        console.log(`🔄 Reusing in-flight recommendation request for ${userId}`);
+        return existingRequest;
+    }
+
     // Generate new recommendations
-    const recommendations = await getRecommendations(userContext, availableCourses, limit);
+    const recommendationPromise = getRecommendations(userContext, availableCourses, limit);
 
-    // Cache result
-    recommendationCache.set(userId, {
-        recommendations,
-        timestamp: Date.now()
-    });
+    // Store for deduplication
+    inFlightRecommendations.set(userId, recommendationPromise);
 
-    return recommendations;
+    try {
+        const recommendations = await recommendationPromise;
+
+        // Cache result
+        recommendationCache.set(userId, {
+            recommendations,
+            timestamp: Date.now()
+        });
+
+        return recommendations;
+    } finally {
+        // Clean up after a short delay
+        setTimeout(() => {
+            inFlightRecommendations.delete(userId);
+        }, 1000);
+    }
 }
 
 /**

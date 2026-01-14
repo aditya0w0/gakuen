@@ -1,8 +1,8 @@
 "use client";
 
-import { Course, Lesson } from "@/lib/types";
+import { Course, Lesson, Section } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { X, Plus, Trash2, GripVertical, Edit2 } from "lucide-react";
+import { X, Plus, Trash2, GripVertical, Edit2, FolderOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface CourseEditorProps {
@@ -13,14 +13,18 @@ interface CourseEditorProps {
 
 export function CourseEditor({ course, onClose, onSave }: CourseEditorProps) {
     const [formData, setFormData] = useState<Partial<Course>>({});
-    const [currentTab, setCurrentTab] = useState<"details" | "content">("details");
+    const [currentTab, setCurrentTab] = useState<"details" | "content" | "sections">("details");
     const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
     const [lessons, setLessons] = useState<Lesson[]>([]);
+    const [sections, setSections] = useState<Section[]>([]);
+    const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (course) {
             setFormData(course);
             setLessons(course.lessons || []);
+            setSections(course.sections || []);
+            setExpandedSections(new Set((course.sections || []).map(s => s.id)));
         }
     }, [course]);
 
@@ -28,7 +32,7 @@ export function CourseEditor({ course, onClose, onSave }: CourseEditorProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const updatedCourse = { ...formData, lessons } as Course;
+        const updatedCourse = { ...formData, lessons, sections } as Course;
         onSave(updatedCourse);
     };
 
@@ -57,7 +61,64 @@ export function CourseEditor({ course, onClose, onSave }: CourseEditorProps) {
     const handleDeleteLesson = (lessonId: string) => {
         if (confirm("Delete this lesson?")) {
             setLessons(lessons.filter(l => l.id !== lessonId));
+            // Also remove from any sections
+            setSections(sections.map(s => ({
+                ...s,
+                lessonIds: s.lessonIds.filter(id => id !== lessonId)
+            })));
         }
+    };
+
+    // Section handlers
+    const handleAddSection = () => {
+        const newSection: Section = {
+            id: `section-${Date.now()}`,
+            title: "New Section",
+            lessonIds: [],
+        };
+        setSections([...sections, newSection]);
+        setExpandedSections(prev => new Set([...prev, newSection.id]));
+    };
+
+    const handleUpdateSectionTitle = (sectionId: string, title: string) => {
+        setSections(sections.map(s => s.id === sectionId ? { ...s, title } : s));
+    };
+
+    const handleDeleteSection = (sectionId: string) => {
+        if (confirm("Delete this section? Lessons will remain but be unorganized.")) {
+            setSections(sections.filter(s => s.id !== sectionId));
+        }
+    };
+
+    const handleAddLessonToSection = (sectionId: string, lessonId: string) => {
+        setSections(sections.map(s => {
+            if (s.id === sectionId && !s.lessonIds.includes(lessonId)) {
+                return { ...s, lessonIds: [...s.lessonIds, lessonId] };
+            }
+            return s;
+        }));
+    };
+
+    const handleRemoveLessonFromSection = (sectionId: string, lessonId: string) => {
+        setSections(sections.map(s =>
+            s.id === sectionId
+                ? { ...s, lessonIds: s.lessonIds.filter(id => id !== lessonId) }
+                : s
+        ));
+    };
+
+    const toggleSectionExpanded = (sectionId: string) => {
+        setExpandedSections(prev => {
+            const next = new Set(prev);
+            if (next.has(sectionId)) next.delete(sectionId);
+            else next.add(sectionId);
+            return next;
+        });
+    };
+
+    const getUnassignedLessons = () => {
+        const assignedIds = new Set(sections.flatMap(s => s.lessonIds));
+        return lessons.filter(l => !assignedIds.has(l.id));
     };
 
     return (
@@ -95,7 +156,16 @@ export function CourseEditor({ course, onClose, onSave }: CourseEditorProps) {
                             : "text-neutral-400 hover:text-white"
                             }`}
                     >
-                        Lessons & Content ({lessons.length})
+                        Lessons ({lessons.length})
+                    </button>
+                    <button
+                        onClick={() => setCurrentTab("sections")}
+                        className={`pb-3 px-1 text-sm font-medium transition-all ${currentTab === "sections"
+                            ? "text-white border-b-2 border-blue-500"
+                            : "text-neutral-400 hover:text-white"
+                            }`}
+                    >
+                        Sections ({sections.length})
                     </button>
                 </div>
 
@@ -194,7 +264,7 @@ export function CourseEditor({ course, onClose, onSave }: CourseEditorProps) {
                                 </div>
                             </div>
                         </form>
-                    ) : (
+                    ) : currentTab === "content" ? (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <p className="text-sm text-neutral-400">Manage course lessons and content</p>
@@ -247,6 +317,131 @@ export function CourseEditor({ course, onClose, onSave }: CourseEditorProps) {
                                         <Plus className="w-4 h-4 mr-2" />
                                         Add First Lesson
                                     </Button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        /* Sections Tab */
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm text-neutral-400">Organize lessons into collapsible sections</p>
+                                <Button
+                                    onClick={handleAddSection}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Section
+                                </Button>
+                            </div>
+
+                            {sections.length > 0 ? (
+                                <div className="space-y-3">
+                                    {sections.map((section) => {
+                                        const isExpanded = expandedSections.has(section.id);
+                                        const sectionLessons = section.lessonIds
+                                            .map(id => lessons.find(l => l.id === id))
+                                            .filter(Boolean) as Lesson[];
+
+                                        return (
+                                            <div key={section.id} className="border border-white/10 rounded-lg overflow-hidden">
+                                                {/* Section Header */}
+                                                <div className="flex items-center gap-2 p-3 bg-white/5">
+                                                    <button
+                                                        onClick={() => toggleSectionExpanded(section.id)}
+                                                        className="p-1 hover:bg-white/10 rounded"
+                                                    >
+                                                        {isExpanded ? (
+                                                            <ChevronUp className="w-4 h-4 text-neutral-400" />
+                                                        ) : (
+                                                            <ChevronDown className="w-4 h-4 text-neutral-400" />
+                                                        )}
+                                                    </button>
+                                                    <FolderOpen className="w-4 h-4 text-blue-400" />
+                                                    <input
+                                                        type="text"
+                                                        value={section.title}
+                                                        onChange={(e) => handleUpdateSectionTitle(section.id, e.target.value)}
+                                                        className="flex-1 bg-transparent text-white font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2 py-1"
+                                                    />
+                                                    <span className="text-xs text-neutral-500">
+                                                        {sectionLessons.length} lessons
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handleDeleteSection(section.id)}
+                                                        className="p-1.5 rounded hover:bg-white/10 text-red-400 hover:text-red-300"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+
+                                                {/* Section Content */}
+                                                {isExpanded && (
+                                                    <div className="border-t border-white/10 bg-black/20">
+                                                        {sectionLessons.length > 0 ? (
+                                                            <div className="divide-y divide-white/5">
+                                                                {sectionLessons.map((lesson) => (
+                                                                    <div
+                                                                        key={lesson.id}
+                                                                        className="flex items-center gap-3 p-3 hover:bg-white/5"
+                                                                    >
+                                                                        <span className="text-sm text-white flex-1">{lesson.title}</span>
+                                                                        <button
+                                                                            onClick={() => handleRemoveLessonFromSection(section.id, lesson.id)}
+                                                                            className="text-xs text-red-400 hover:text-red-300"
+                                                                        >
+                                                                            Remove
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <p className="p-3 text-sm text-neutral-500">No lessons in this section</p>
+                                                        )}
+
+                                                        {/* Add lesson dropdown */}
+                                                        {getUnassignedLessons().length > 0 && (
+                                                            <div className="p-3 border-t border-white/5">
+                                                                <select
+                                                                    onChange={(e) => {
+                                                                        if (e.target.value) {
+                                                                            handleAddLessonToSection(section.id, e.target.value);
+                                                                            e.target.value = '';
+                                                                        }
+                                                                    }}
+                                                                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                                    defaultValue=""
+                                                                >
+                                                                    <option value="" disabled>Add lesson to section...</option>
+                                                                    {getUnassignedLessons().map(l => (
+                                                                        <option key={l.id} value={l.id}>{l.title}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="py-16 text-center">
+                                    <FolderOpen className="w-12 h-12 text-neutral-600 mx-auto mb-4" />
+                                    <p className="text-neutral-400 mb-4">No sections yet</p>
+                                    <p className="text-sm text-neutral-500 mb-4">Create sections to organize your lessons into collapsible groups</p>
+                                    <Button onClick={handleAddSection} variant="outline">
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Add First Section
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Unassigned lessons warning */}
+                            {sections.length > 0 && getUnassignedLessons().length > 0 && (
+                                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                                    <p className="text-sm text-yellow-400">
+                                        {getUnassignedLessons().length} lesson(s) not assigned to any section
+                                    </p>
                                 </div>
                             )}
                         </div>

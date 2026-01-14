@@ -3,11 +3,24 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { createHash } from 'crypto';
+import { checkRateLimit, getClientIP, RateLimits } from '@/lib/api/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 // Cache duration: 30 days for images (matches next.config.ts)
 const CACHE_MAX_AGE = 2592000; // 30 * 24 * 60 * 60 = 2592000 seconds
+
+// Validate fileId to prevent path traversal and injection
+function isValidFileId(fileId: string): boolean {
+    // Google Drive IDs are alphanumeric with possible dashes/underscores
+    // Local IDs start with 'local-'
+    if (fileId.startsWith('local-')) {
+        // Local: only allow alphanumeric, dashes, underscores, dots
+        return /^local-[a-zA-Z0-9_-]+(-[a-zA-Z0-9._-]+)*$/.test(fileId) && !fileId.includes('..');
+    }
+    // Google Drive ID: alphanumeric with dashes/underscores, typically 20-40 chars
+    return /^[a-zA-Z0-9_-]{10,50}$/.test(fileId);
+}
 
 /**
  * Generate ETag from file content for proper cache invalidation
@@ -30,11 +43,23 @@ export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ fileId: string }> }
 ) {
+    // Rate limiting using centralized utility
+    const ip = getClientIP(request);
+    const rateLimit = checkRateLimit(`images:${ip}`, RateLimits.IMAGES);
+    if (!rateLimit.allowed) {
+        return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
+
     try {
         const { fileId } = await params;
 
         if (!fileId) {
             return NextResponse.json({ error: 'File ID required' }, { status: 400 });
+        }
+
+        // Validate fileId format to prevent injection attacks
+        if (!isValidFileId(fileId)) {
+            return NextResponse.json({ error: 'Invalid file ID format' }, { status: 400 });
         }
 
         let buffer: Buffer;
@@ -82,7 +107,7 @@ export async function GET(
 
         // Convert Buffer to Uint8Array for NextResponse compatibility
         const uint8Array = new Uint8Array(buffer);
-        
+
         // Generate content-based ETag for proper cache invalidation
         const etag = generateETag(buffer, fileId);
 

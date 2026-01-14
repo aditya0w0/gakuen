@@ -67,17 +67,24 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
         if (!user) return;
 
         setIsEnrolling(true);
-        const result = await enrollmentManager.enrollInCourse(user.id, course.id);
-        
-        if (result.success) {
-            setIsEnrolled(true);
-            refreshUser();
-            onEnrollChange?.();
-        } else {
-            console.error("Enrollment failed:", result.error);
+        try {
+            const result = await enrollmentManager.enrollInCourse(user.id, course.id);
+
+            if (result.success) {
+                setIsEnrolled(true);
+                // Wait a moment for API to complete before refreshing
+                await refreshUser();
+                onEnrollChange?.();
+            } else {
+                console.error("Enrollment failed:", result.error);
+                alert(result.error || "Failed to enroll. Please try again.");
+            }
+        } catch (error) {
+            console.error("Enrollment error:", error);
+            alert("Failed to enroll. Please try again.");
+        } finally {
+            setIsEnrolling(false);
         }
-        
-        setIsEnrolling(false);
     };
 
     // Determine if we should show the fallback

@@ -10,6 +10,18 @@ export const dynamic = "force-dynamic";
 
 const CACHE_TTL_DAYS = 7;
 
+// ========================================
+// SERVER-SIDE REQUEST DEDUPLICATION
+// Prevents concurrent duplicate translations
+// ========================================
+const inFlightServerRequests = new Map<string, Promise<NextResponse>>();
+
+// Clean up stale entries every 5 minutes
+setInterval(() => {
+    inFlightServerRequests.clear();
+    console.log("🧹 Cleared in-flight translation request cache");
+}, 5 * 60 * 1000);
+
 /**
  * POST /api/translate/batch
  * Batch translate multiple texts for a lesson with SHARED CACHING
@@ -32,7 +44,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate language
+        // Validate languages
         const validLanguages: Language[] = ["en", "ja", "ko", "id"];
         if (!validLanguages.includes(targetLanguage)) {
             return NextResponse.json(
@@ -40,6 +52,10 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             );
         }
+
+        // Cast to Language type after validation
+        const typedTargetLanguage = targetLanguage as Language;
+        const typedSourceLanguage = (validLanguages.includes(sourceLanguage) ? sourceLanguage : "en") as Language;
 
         // If same language, return originals
         if (targetLanguage === sourceLanguage) {
@@ -63,52 +79,31 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        console.log(`🔄 Cache MISS for lesson ${lessonId} (${targetLanguage}) - calling Gemini`);
+        console.log(`🔄 Cache MISS for lesson ${lessonId} (${targetLanguage}) - checking in-flight`);
 
-        // Filter out empty texts
-        const textsToTranslate = texts.filter((t: string) => t && t.trim());
-
-        if (textsToTranslate.length === 0) {
-            return NextResponse.json({
-                success: true,
-                translations: texts,
-                cached: false,
-            });
+        // SERVER-SIDE DEDUPLICATION: Check if this exact request is already being processed
+        const requestKey = `${lessonId}_${targetLanguage}`;
+        const existingRequest = inFlightServerRequests.get(requestKey);
+        if (existingRequest) {
+            console.log(`🔄 Server-side deduplication: Reusing in-flight request for ${requestKey}`);
+            return existingRequest;
         }
 
-        // Batch translate with Gemini
-        const translations = await batchTranslate(
-            textsToTranslate,
-            targetLanguage,
-            sourceLanguage,
-            "Educational lesson content"
-        );
+        // Create the actual translation request as a promise
+        const translationPromise = executeTranslation(lessonId, texts, typedTargetLanguage, typedSourceLanguage, cacheKey);
 
-        // Map back to original indices (preserve empty positions)
-        let translationIdx = 0;
-        const result = texts.map((t: string) => {
-            if (!t || !t.trim()) return t;
-            return translations[translationIdx++] || t;
-        });
+        // Store for deduplication
+        inFlightServerRequests.set(requestKey, translationPromise);
 
-        // Save to SHARED cache for all future users
-        await saveToCache(cacheKey, result);
-
-        // Track API usage for analytics
-        await trackAPICall({
-            endpoint: "/api/translate/batch",
-            method: "POST",
-            duration: 0, // We could time this
-            statusCode: 200,
-            model: "gemini-2.5-flash-lite",
-            cost: textsToTranslate.length * 0.00001, // Estimate
-        });
-
-        return NextResponse.json({
-            success: true,
-            translations: result,
-            cached: false,
-        });
+        try {
+            const result = await translationPromise;
+            return result;
+        } finally {
+            // Clean up after a short delay to handle rapid re-requests
+            setTimeout(() => {
+                inFlightServerRequests.delete(requestKey);
+            }, 2000);
+        }
     } catch (error) {
         console.error("Batch translation API error:", error);
         return NextResponse.json(
@@ -116,6 +111,64 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         );
     }
+}
+
+/**
+ * Execute the actual translation (extracted for deduplication)
+ */
+async function executeTranslation(
+    lessonId: string,
+    texts: string[],
+    targetLanguage: Language,
+    sourceLanguage: Language,
+    cacheKey: string
+): Promise<NextResponse> {
+    console.log(`🚀 Executing translation for lesson ${lessonId} (${targetLanguage})`);
+
+    // Filter out empty texts
+    const textsToTranslate = texts.filter((t: string) => t && t.trim());
+
+    if (textsToTranslate.length === 0) {
+        return NextResponse.json({
+            success: true,
+            translations: texts,
+            cached: false,
+        });
+    }
+
+    // Batch translate with Gemini
+    const translations = await batchTranslate(
+        textsToTranslate,
+        targetLanguage,
+        sourceLanguage,
+        "Educational lesson content"
+    );
+
+    // Map back to original indices (preserve empty positions)
+    let translationIdx = 0;
+    const result = texts.map((t: string) => {
+        if (!t || !t.trim()) return t;
+        return translations[translationIdx++] || t;
+    });
+
+    // Save to SHARED cache for all future users
+    await saveToCache(cacheKey, result);
+
+    // Track API usage for analytics
+    await trackAPICall({
+        endpoint: "/api/translate/batch",
+        method: "POST",
+        duration: 0, // We could time this
+        statusCode: 200,
+        model: "gemini-2.5-flash-lite",
+        cost: textsToTranslate.length * 0.00001, // Estimate
+    });
+
+    return NextResponse.json({
+        success: true,
+        translations: result,
+        cached: false,
+    });
 }
 
 /**

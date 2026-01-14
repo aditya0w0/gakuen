@@ -1,15 +1,17 @@
 "use client";
 
-import { Lesson, Course } from "@/lib/types";
+import { Lesson, Course, Section } from "@/lib/types";
 import { Component } from "@/lib/cms/types";
 import {
     ChevronDown,
+    ChevronUp,
     Eye,
     Save,
     ChevronLeft,
     Plus,
     GripVertical,
-    Trash2
+    Trash2,
+    FolderOpen
 } from "lucide-react";
 import { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
@@ -37,8 +39,8 @@ const TopBar = ({
     isSaving: boolean;
     onPreview: () => void;
     isPreview: boolean;
-    activeView: 'content' | 'settings';
-    onViewChange: (view: 'content' | 'settings') => void;
+    activeView: 'content' | 'settings' | 'sections';
+    onViewChange: (view: 'content' | 'settings' | 'sections') => void;
     isPublished: boolean;
 }) => (
     <header className="h-14 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between px-4 shrink-0">
@@ -58,6 +60,12 @@ const TopBar = ({
                     className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${activeView === 'settings' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}
                 >
                     Settings
+                </button>
+                <button
+                    onClick={() => onViewChange('sections')}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${activeView === 'sections' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                    Sections
                 </button>
             </div>
         </div>
@@ -106,7 +114,9 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     const [previewMode, setPreviewMode] = useState(false);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; componentId: string } | null>(null);
     const [copiedComponent, setCopiedComponent] = useState<Component | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
-    const [activeView, setActiveView] = useState<'content' | 'settings'>('content');
+    const [activeView, setActiveView] = useState<'content' | 'settings' | 'sections'>('content');
+    const [sections, setSections] = useState<Section[]>([]);
+    const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const [courseTitle, setCourseTitle] = useState('');
     const [courseDescription, setCourseDescription] = useState('');
     const [courseThumbnail, setCourseThumbnail] = useState('');
@@ -116,8 +126,14 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     const [isPublished, setIsPublished] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [draggedComponentId, setDraggedComponentId] = useState<string | null>(null);
+    const [addMenuOpen, setAddMenuOpen] = useState(false);
+    const [lessonDropdownOpen, setLessonDropdownOpen] = useState(false);
+    const [inlineTyping, setInlineTyping] = useState(false);
+    const inlineInputRef = useRef<HTMLTextAreaElement>(null);
     const _saveTimeoutRef = useRef<NodeJS.Timeout | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
     const idCounterRef = useRef(0);
+    const addMenuRef = useRef<HTMLDivElement>(null);
+    const lessonDropdownRef = useRef<HTMLDivElement>(null);
 
 
     // Load course from API
@@ -137,10 +153,80 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                 if (serverCourse.lessons && serverCourse.lessons.length > 0) {
                     setEditingIndex(0);
                 }
+                setSections(serverCourse.sections || []);
+                setExpandedSections(new Set((serverCourse.sections || []).map(s => s.id)));
             }
             setIsLoading(false);
         }).catch(() => setIsLoading(false));
     }, [courseId]);
+
+    // Close add menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (addMenuRef.current && !addMenuRef.current.contains(event.target as Node)) {
+                setAddMenuOpen(false);
+            }
+        };
+
+        if (addMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [addMenuOpen]);
+
+    // Close lesson dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (lessonDropdownRef.current && !lessonDropdownRef.current.contains(event.target as Node)) {
+                setLessonDropdownOpen(false);
+            }
+        };
+
+        if (lessonDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [lessonDropdownOpen]);
+
+    // Handle lesson reorder
+    const handleLessonReorder = (fromIndex: number, toIndex: number) => {
+        const newLessons = [...lessons];
+        const [removed] = newLessons.splice(fromIndex, 1);
+        newLessons.splice(toIndex, 0, removed);
+
+        // Update order property for all lessons
+        newLessons.forEach((lesson, idx) => {
+            lesson.order = idx + 1;
+        });
+
+        setLessons(newLessons);
+
+        // Adjust editing index if needed
+        if (editingIndex === fromIndex) {
+            setEditingIndex(toIndex);
+        } else if (editingIndex !== null) {
+            if (fromIndex < editingIndex && toIndex >= editingIndex) {
+                setEditingIndex(editingIndex - 1);
+            } else if (fromIndex > editingIndex && toIndex <= editingIndex) {
+                setEditingIndex(editingIndex + 1);
+            }
+        }
+
+        // Save to server
+        if (course) {
+            const updatedCourse = {
+                ...course,
+                lessons: newLessons,
+            };
+            updateCourse(courseId, updatedCourse);
+        }
+    };
 
     if (isLoading) {
         return <div className="flex items-center justify-center h-screen bg-zinc-950 text-zinc-500">Loading...</div>;
@@ -164,6 +250,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
             category: courseCategory,
             level: courseLevel,
             lessons,
+            sections,
             isPublished: true,
             publishedAt: new Date().toISOString(),
         };
@@ -197,7 +284,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
 
     const handleAddLesson = () => {
         const newLesson: Lesson = {
-            id: `${courseId}-lesson-${lessons.length + 1}`,
+            id: `${courseId}-lesson-${Date.now()}`,
             title: `Lesson ${lessons.length + 1}`,
             type: "cms",
             duration: "10 min",
@@ -381,20 +468,114 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                         />
                                     </div>
                                     <div className="flex items-center gap-2 ml-4">
-                                        <select
-                                            className="bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                            value={editingIndex ?? ""}
-                                            onChange={(e) => {
-                                                setEditingIndex(Number(e.target.value));
-                                                setSelectedComponentId(null);
-                                            }}
+                                        {/* Lesson Selector with Drag Reorder */}
+                                        <div className="relative" ref={lessonDropdownRef}>
+                                            <button
+                                                onClick={() => setLessonDropdownOpen(!lessonDropdownOpen)}
+                                                className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs rounded-md px-2 py-1.5 hover:border-zinc-700 transition-colors min-w-[140px]"
+                                            >
+                                                <span className="truncate flex-1 text-left">
+                                                    {currentLesson?.title || 'Select Lesson'}
+                                                </span>
+                                                <ChevronDown size={12} className={`transition-transform ${lessonDropdownOpen ? 'rotate-180' : ''}`} />
+                                            </button>
+
+                                            {lessonDropdownOpen && (
+                                                <div className="absolute left-0 mt-1 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                                                    <div className="px-3 py-2 border-b border-zinc-800 text-xs text-zinc-500 flex items-center gap-2">
+                                                        <GripVertical size={12} />
+                                                        <span>Drag to reorder lessons</span>
+                                                    </div>
+                                                    <div className="max-h-64 overflow-y-auto">
+                                                        {lessons.map((lesson, idx) => (
+                                                            <div
+                                                                key={lesson.id}
+                                                                draggable
+                                                                onDragStart={(e) => {
+                                                                    e.dataTransfer.setData('lessonIndex', idx.toString());
+                                                                    e.currentTarget.classList.add('opacity-50');
+                                                                }}
+                                                                onDragEnd={(e) => {
+                                                                    e.currentTarget.classList.remove('opacity-50');
+                                                                }}
+                                                                onDragOver={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.currentTarget.classList.add('bg-indigo-600/20', 'border-t-2', 'border-indigo-500');
+                                                                }}
+                                                                onDragLeave={(e) => {
+                                                                    e.currentTarget.classList.remove('bg-indigo-600/20', 'border-t-2', 'border-indigo-500');
+                                                                }}
+                                                                onDrop={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.currentTarget.classList.remove('bg-indigo-600/20', 'border-t-2', 'border-indigo-500');
+                                                                    const fromIndex = parseInt(e.dataTransfer.getData('lessonIndex'));
+                                                                    if (fromIndex !== idx) {
+                                                                        handleLessonReorder(fromIndex, idx);
+                                                                    }
+                                                                }}
+                                                                onClick={() => {
+                                                                    setEditingIndex(idx);
+                                                                    setSelectedComponentId(null);
+                                                                    setLessonDropdownOpen(false);
+                                                                }}
+                                                                className={`flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors ${idx === editingIndex
+                                                                    ? 'bg-indigo-600/30 text-indigo-300'
+                                                                    : 'text-white hover:bg-zinc-800'
+                                                                    }`}
+                                                            >
+                                                                <GripVertical size={14} className="text-zinc-500 cursor-grab active:cursor-grabbing shrink-0" />
+                                                                <span className="text-xs text-zinc-500 shrink-0">{idx + 1}.</span>
+                                                                <span className="text-sm truncate flex-1">{lesson.title}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Add Menu */}
+                                        <div className="relative" ref={addMenuRef}>
+                                            <button
+                                                onClick={() => setAddMenuOpen(!addMenuOpen)}
+                                                className="p-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-md text-white transition-colors"
+                                            >
+                                                <Plus size={14} />
+                                            </button>
+                                            {addMenuOpen && (
+                                                <div className="absolute right-0 mt-1 w-40 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50">
+                                                    <button
+                                                        onClick={() => {
+                                                            handleAddLesson();
+                                                            setAddMenuOpen(false);
+                                                        }}
+                                                        className="w-full px-3 py-2 text-left text-sm text-white hover:bg-zinc-800 rounded-t-lg"
+                                                    >
+                                                        + Add Lesson
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setActiveView('sections');
+                                                            setAddMenuOpen(false);
+                                                        }}
+                                                        className="w-full px-3 py-2 text-left text-sm text-white hover:bg-zinc-800 rounded-b-lg border-t border-zinc-700"
+                                                    >
+                                                        + Add Section
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* DELETE BUTTON */}
+                                        <button
+                                            onClick={() => handleDeleteLesson(editingIndex!)}
+                                            disabled={lessons.length <= 1}
+                                            className={`p-1.5 rounded-md transition-colors ${lessons.length <= 1
+                                                ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
+                                                : 'bg-red-600 hover:bg-red-500 text-white'
+                                                }`}
+                                            title={lessons.length <= 1 ? "Can't delete last lesson" : "Delete Lesson"}
                                         >
-                                            {lessons.map((l, idx) => (
-                                                <option key={l.id} value={idx}>{l.title}</option>
-                                            ))}
-                                        </select>
-                                        <button onClick={handleAddLesson} className="p-1 bg-zinc-800 hover:bg-zinc-700 rounded-md text-zinc-400 hover:text-white transition-colors">
-                                            <Plus size={14} />
+                                            <Trash2 size={14} />
                                         </button>
                                     </div>
                                 </div>
@@ -403,18 +584,54 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                             {/* Components Canvas */}
                             <div className="space-y-4">
                                 {components.length === 0 ? (
-                                    <div
-                                        className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-zinc-800 rounded-lg bg-zinc-900/20 cursor-context-menu"
-                                        onContextMenu={(e) => {
-                                            if (!previewMode) {
-                                                e.preventDefault();
-                                                document.querySelector<HTMLButtonElement>('[data-add-block-btn]')?.click();
-                                            }
-                                        }}
-                                    >
-                                        <p className="text-zinc-500 mb-3 text-sm">Start building your lesson</p>
-                                        <p className="text-zinc-600 text-xs mb-3">Right-click or use button below to add components</p>
-                                        <ComponentPalette onAddComponent={handleAddComponent} />
+                                    <div className="min-h-[200px] p-4 border border-zinc-800/50 rounded-lg bg-zinc-900/10 transition-colors">
+                                        {inlineTyping ? (
+                                            <textarea
+                                                ref={inlineInputRef}
+                                                autoFocus
+                                                placeholder="Type something... (press Escape to cancel)"
+                                                className="w-full min-h-[120px] bg-transparent text-white text-base resize-none focus:outline-none placeholder:text-zinc-600"
+                                                onBlur={(e) => {
+                                                    const text = e.target.value.trim();
+                                                    if (text) {
+                                                        const textBlock = createComponent("text");
+                                                        (textBlock as any).content = `<p>${text}</p>`;
+                                                        handleAddComponent(textBlock);
+                                                    }
+                                                    setInlineTyping(false);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Escape') {
+                                                        setInlineTyping(false);
+                                                    }
+                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        const text = (e.target as HTMLTextAreaElement).value.trim();
+                                                        if (text) {
+                                                            const textBlock = createComponent("text");
+                                                            (textBlock as any).content = `<p>${text}</p>`;
+                                                            handleAddComponent(textBlock);
+                                                        }
+                                                        setInlineTyping(false);
+                                                    }
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="cursor-text"
+                                                onClick={() => !previewMode && setInlineTyping(true)}
+                                            >
+                                                <div className="text-zinc-600 text-base">
+                                                    Click here to start typing...
+                                                </div>
+                                                <div className="flex items-center gap-3 mt-4 text-zinc-700 text-sm">
+                                                    <span>Type <kbd className="px-1.5 py-0.5 bg-zinc-800/50 rounded text-xs">/</kbd> for commands</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="mt-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                            <ComponentPalette onAddComponent={handleAddComponent} />
+                                        </div>
                                     </div>
                                 ) : (
                                     <DragDropContext
@@ -512,13 +729,61 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                 )}
 
                                 {!previewMode && components.length > 0 && (
-                                    <div className="mt-4 pt-4 border-t border-zinc-800/50 flex justify-center">
-                                        <ComponentPalette onAddComponent={handleAddComponent} />
+                                    <div className="mt-2 space-y-2">
+                                        {/* Inline typing area */}
+                                        {inlineTyping ? (
+                                            <div className="p-3 border border-zinc-700 rounded-lg bg-zinc-900/50">
+                                                <textarea
+                                                    ref={inlineInputRef}
+                                                    autoFocus
+                                                    placeholder="Continue typing... (Enter to save, Escape to cancel)"
+                                                    className="w-full min-h-[80px] bg-transparent text-white text-base resize-none focus:outline-none placeholder:text-zinc-600"
+                                                    onBlur={(e) => {
+                                                        const text = e.target.value.trim();
+                                                        if (text) {
+                                                            const textBlock = createComponent("text");
+                                                            (textBlock as any).content = `<p>${text}</p>`;
+                                                            handleAddComponent(textBlock);
+                                                        }
+                                                        setInlineTyping(false);
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Escape') {
+                                                            setInlineTyping(false);
+                                                        }
+                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                            e.preventDefault();
+                                                            const text = (e.target as HTMLTextAreaElement).value.trim();
+                                                            if (text) {
+                                                                const textBlock = createComponent("text");
+                                                                (textBlock as any).content = `<p>${text}</p>`;
+                                                                handleAddComponent(textBlock);
+                                                            }
+                                                            setInlineTyping(false);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div
+                                                onClick={() => setInlineTyping(true)}
+                                                className="py-3 px-4 text-zinc-600 text-sm cursor-text hover:bg-zinc-900/30 rounded-lg transition-colors"
+                                            >
+                                                Click to continue writing, or use{' '}
+                                                <kbd className="px-1.5 py-0.5 bg-zinc-800/50 rounded text-xs mx-1">/</kbd>{' '}
+                                                for commands
+                                            </div>
+                                        )}
+
+                                        {/* Add block button */}
+                                        <div className="flex justify-center pt-2">
+                                            <ComponentPalette onAddComponent={handleAddComponent} />
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         </div>
-                    ) : (
+                    ) : activeView === 'settings' ? (
                         <CourseSettings
                             courseTitle={courseTitle}
                             courseDescription={courseDescription}
@@ -536,6 +801,129 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                             lastModified={new Date().toISOString()}
                             isPublished={isPublished}
                         />
+                    ) : (
+                        /* Sections Tab */
+                        <div className="max-w-3xl mx-auto p-4 space-y-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">Manage Sections</h2>
+                                    <p className="text-sm text-zinc-500">Organize lessons into collapsible sections</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        const newSection: Section = {
+                                            id: `section-${Date.now()}`,
+                                            title: 'New Section',
+                                            lessonIds: [],
+                                        };
+                                        setSections([...sections, newSection]);
+                                        setExpandedSections(prev => new Set([...prev, newSection.id]));
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+                                >
+                                    <Plus size={16} />
+                                    Add Section
+                                </button>
+                            </div>
+
+                            {sections.length === 0 ? (
+                                <div className="text-center py-12 border-2 border-dashed border-zinc-800 rounded-lg">
+                                    <FolderOpen className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+                                    <p className="text-zinc-500">No sections yet</p>
+                                    <p className="text-zinc-600 text-sm">Create sections to organize your lessons</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {sections.map((section) => {
+                                        const isExpanded = expandedSections.has(section.id);
+                                        const sectionLessons = section.lessonIds
+                                            .map(id => lessons.find(l => l.id === id))
+                                            .filter(Boolean) as Lesson[];
+                                        const unassignedLessons = lessons.filter(
+                                            l => !sections.some(s => s.lessonIds.includes(l.id))
+                                        );
+
+                                        return (
+                                            <div key={section.id} className="border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/50">
+                                                <div className="flex items-center gap-2 p-3 bg-zinc-900">
+                                                    <button
+                                                        onClick={() => {
+                                                            setExpandedSections(prev => {
+                                                                const next = new Set(prev);
+                                                                if (next.has(section.id)) next.delete(section.id);
+                                                                else next.add(section.id);
+                                                                return next;
+                                                            });
+                                                        }}
+                                                        className="p-1 hover:bg-zinc-800 rounded"
+                                                    >
+                                                        {isExpanded ? <ChevronUp className="w-4 h-4 text-zinc-400" /> : <ChevronDown className="w-4 h-4 text-zinc-400" />}
+                                                    </button>
+                                                    <FolderOpen className="w-4 h-4 text-blue-400" />
+                                                    <input
+                                                        type="text"
+                                                        value={section.title}
+                                                        onChange={(e) => setSections(sections.map(s => s.id === section.id ? { ...s, title: e.target.value } : s))}
+                                                        className="flex-1 bg-transparent text-white font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-2 py-1"
+                                                    />
+                                                    <span className="text-xs text-zinc-500">{sectionLessons.length} lessons</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (confirm('Delete this section?')) {
+                                                                setSections(sections.filter(s => s.id !== section.id));
+                                                            }
+                                                        }}
+                                                        className="p-1 hover:bg-red-900/50 rounded text-zinc-500 hover:text-red-400"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+
+                                                {isExpanded && (
+                                                    <div className="p-3 space-y-2 border-t border-zinc-800">
+                                                        {sectionLessons.map((lesson, idx) => (
+                                                            <div key={`${section.id}-${lesson.id}-${idx}`} className="flex items-center gap-2 p-2 bg-zinc-800/50 rounded-lg">
+                                                                <GripVertical className="w-4 h-4 text-zinc-600" />
+                                                                <span className="flex-1 text-sm text-white">{lesson.title}</span>
+                                                                <button
+                                                                    onClick={() => setSections(sections.map(s => s.id === section.id ? { ...s, lessonIds: s.lessonIds.filter(id => id !== lesson.id) } : s))}
+                                                                    className="text-xs text-zinc-500 hover:text-red-400"
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            </div>
+                                                        ))}
+
+                                                        {unassignedLessons.length > 0 && (
+                                                            <select
+                                                                onChange={(e) => {
+                                                                    if (e.target.value) {
+                                                                        setSections(sections.map(s => s.id === section.id ? { ...s, lessonIds: [...s.lessonIds, e.target.value] } : s));
+                                                                        e.target.value = '';
+                                                                    }
+                                                                }}
+                                                                className="w-full mt-2 p-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-400"
+                                                            >
+                                                                <option value="">+ Add lesson to section...</option>
+                                                                {unassignedLessons.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+                                                            </select>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {lessons.filter(l => !sections.some(s => s.lessonIds.includes(l.id))).length > 0 && sections.length > 0 && (
+                                <div className="p-3 bg-amber-900/20 border border-amber-800/50 rounded-lg">
+                                    <p className="text-amber-400 text-sm font-medium">
+                                        ⚠️ {lessons.filter(l => !sections.some(s => s.lessonIds.includes(l.id))).length} lesson(s) not in any section
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </main>
 
@@ -548,27 +936,29 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                         onAddComponent={handleAddComponent}
                     />
                 </aside>
-            </div>
+            </div >
 
             {/* Context Menu */}
-            {contextMenu && (() => {
-                const component = components.find(c => c.id === contextMenu.componentId) || null;
-                return (
-                    <ContextMenu
-                        x={contextMenu.x}
-                        y={contextMenu.y}
-                        component={component}
-                        onClose={() => setContextMenu(null)}
-                        onDuplicate={() => component && handleDuplicateComponent(component)}
-                        onDelete={() => component && handleDeleteFromContextMenu(component)}
-                        onMoveUp={() => component && handleMoveComponentUp(component)}
-                        onMoveDown={() => component && handleMoveComponentDown(component)}
-                        onCopy={() => component && handleCopyComponent(component)}
-                        canMoveUp={components.findIndex(c => c.id === contextMenu.componentId) > 0}
-                        canMoveDown={components.findIndex(c => c.id === contextMenu.componentId) < components.length - 1}
-                    />
-                );
-            })()}
-        </div>
+            {
+                contextMenu && (() => {
+                    const component = components.find(c => c.id === contextMenu.componentId) || null;
+                    return (
+                        <ContextMenu
+                            x={contextMenu.x}
+                            y={contextMenu.y}
+                            component={component}
+                            onClose={() => setContextMenu(null)}
+                            onDuplicate={() => component && handleDuplicateComponent(component)}
+                            onDelete={() => component && handleDeleteFromContextMenu(component)}
+                            onMoveUp={() => component && handleMoveComponentUp(component)}
+                            onMoveDown={() => component && handleMoveComponentDown(component)}
+                            onCopy={() => component && handleCopyComponent(component)}
+                            canMoveUp={components.findIndex(c => c.id === contextMenu.componentId) > 0}
+                            canMoveDown={components.findIndex(c => c.id === contextMenu.componentId) < components.length - 1}
+                        />
+                    );
+                })()
+            }
+        </div >
     );
 }

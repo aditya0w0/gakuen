@@ -1,40 +1,60 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
 
+/**
+ * Hook to ensure admin access. Waits for auth to fully load before checking.
+ * Fixed race condition: now waits for role to be definitively set.
+ */
 export function useRequireAdmin() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
-    const hasCheckedRef = useRef(false);
+    const [isResolved, setIsResolved] = useState(false);
+    const redirectedRef = useRef(false);
 
     useEffect(() => {
-        // Don't check until loading is complete
+        // Still loading - don't do anything yet
         if (isLoading) {
-            console.log('⏳ useRequireAdmin: Still loading auth state...');
+            console.log('⏳ useRequireAdmin: Still loading...');
             return;
         }
 
-        // Only check once after loading completes
-        if (hasCheckedRef.current) return;
-        hasCheckedRef.current = true;
+        // Already redirected - don't check again
+        if (redirectedRef.current) return;
 
-        console.log('🔍 useRequireAdmin: Checking auth -', { user: user?.email, role: user?.role });
-
+        // No user at all - redirect to login
         if (!user) {
             console.warn('❌ No user, redirecting to login');
-            router.push("/login");
+            redirectedRef.current = true;
+            router.replace("/login");
             return;
         }
 
+        // User exists but role might still be loading from server
+        // If role is undefined/null, wait for it (Firebase will update)
+        if (!user.role) {
+            console.log('⏳ useRequireAdmin: User exists but role not set yet, waiting...');
+            return;
+        }
+
+        // Role is now definitively known
+        console.log(`🔍 useRequireAdmin: Role verified as "${user.role}" for ${user.email}`);
+
         if (user.role !== "admin") {
-            console.warn(`❌ Access denied: User ${user.email} is not admin (role: ${user.role})`);
-            router.push("/user");
+            console.warn(`❌ Access denied: ${user.email} is ${user.role}, not admin`);
+            redirectedRef.current = true;
+            router.replace("/user");
         } else {
             console.log(`✅ Admin access granted for ${user.email}`);
+            setIsResolved(true);
         }
-    }, [user, isLoading, router]);
+    }, [user, user?.role, isLoading, router]);
 
-    return { isAdmin: user?.role === "admin", isLoading };
+    // Only return isAdmin=true when we've definitively verified admin role
+    return {
+        isAdmin: isResolved && user?.role === "admin",
+        isLoading: isLoading || (!isResolved && !redirectedRef.current)
+    };
 }

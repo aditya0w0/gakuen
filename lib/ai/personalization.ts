@@ -264,6 +264,9 @@ export async function getPersonalization(input: PersonalizationInput): Promise<P
 const personalizationCache = new Map<string, { result: PersonalizationResult; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
+// In-flight request tracking to prevent duplicate API calls
+const inFlightPersonalization = new Map<string, Promise<PersonalizationResult>>();
+
 /**
  * Cleanup expired cache entries (lazy cleanup during access)
  * This approach is better suited for serverless environments
@@ -279,6 +282,7 @@ function cleanupExpiredEntries(): void {
 
 /**
  * Get cached personalization or generate new one
+ * Includes request deduplication to prevent concurrent duplicate API calls
  */
 export async function getCachedPersonalization(
     userId: string,
@@ -295,17 +299,36 @@ export async function getCachedPersonalization(
         return cached.result;
     }
 
+    // Check for in-flight request (deduplication)
+    const existingRequest = inFlightPersonalization.get(userId);
+    if (existingRequest) {
+        console.log(`🔄 Reusing in-flight personalization request for ${userId}`);
+        return existingRequest;
+    }
+
     // Generate new personalization
-    const result = await getPersonalization(input);
+    const personalizationPromise = getPersonalization(input);
 
-    // Cache result
-    personalizationCache.set(userId, {
-        result,
-        timestamp: Date.now(),
-    });
+    // Store for deduplication
+    inFlightPersonalization.set(userId, personalizationPromise);
 
-    console.log(`✨ Generated new personalization for ${userId}`);
-    return result;
+    try {
+        const result = await personalizationPromise;
+
+        // Cache result
+        personalizationCache.set(userId, {
+            result,
+            timestamp: Date.now(),
+        });
+
+        console.log(`✨ Generated new personalization for ${userId}`);
+        return result;
+    } finally {
+        // Clean up after a short delay
+        setTimeout(() => {
+            inFlightPersonalization.delete(userId);
+        }, 1000);
+    }
 }
 
 /**

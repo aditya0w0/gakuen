@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sanitizeLogMessage } from '@/lib/api/validators';
+import { checkRateLimit, getClientIP, RateLimits } from '@/lib/api/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,13 @@ const levelConfig: Record<string, { emoji: string; color: string; label: string 
 };
 
 export async function POST(request: NextRequest) {
+    // Rate limiting using centralized utility
+    const ip = getClientIP(request);
+    const rateLimit = checkRateLimit(`log:${ip}`, RateLimits.LOG);
+    if (!rateLimit.allowed) {
+        return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
+
     try {
         const payload = await request.json();
 

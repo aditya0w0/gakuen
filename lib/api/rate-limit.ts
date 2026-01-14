@@ -92,15 +92,25 @@ export function getClientIP(request: Request): string {
 }
 
 /**
- * Rate limit presets
+ * Rate limit presets for different endpoint types
  */
 export const RateLimits = {
     /** AI endpoints: 30 requests per minute */
     AI: { maxRequests: 30, windowMs: 60000 },
+    /** Gemini API calls: 60 per minute (global) */
+    GEMINI: { maxRequests: 60, windowMs: 60000 },
     /** Upload endpoints: 10 uploads per minute */
     UPLOAD: { maxRequests: 10, windowMs: 60000 },
     /** Auth endpoints: 5 attempts per minute */
     AUTH: { maxRequests: 5, windowMs: 60000 },
     /** General API: 100 requests per minute */
     GENERAL: { maxRequests: 100, windowMs: 60000 },
+    /** Logging: 100 logs per minute */
+    LOG: { maxRequests: 100, windowMs: 60000 },
+    /** Images: 200 requests per minute */
+    IMAGES: { maxRequests: 200, windowMs: 60000 },
+    /** Analytics tracking: 60 events per minute */
+    ANALYTICS: { maxRequests: 60, windowMs: 60000 },
+    /** Coupon validation: 20 attempts per minute (anti-brute-force) */
+    COUPON: { maxRequests: 20, windowMs: 60000 },
 } as const;

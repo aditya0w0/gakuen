@@ -18,7 +18,7 @@ import type { NextRequest } from "next/server";
 const ipRequestCounts = new Map<string, { count: number; windowStart: number; blocked: boolean; blockedUntil: number }>();
 
 const RATE_LIMIT = {
-    REQUESTS_PER_MINUTE: 120,
+    REQUESTS_PER_MINUTE: 600, // Increased for admin workflows
     BLOCK_DURATION_MS: 15 * 60 * 1000, // 15 minutes
 };
 
@@ -97,6 +97,13 @@ const authRoutes = ["/login", "/signup"];
 // Skip DDoS check for static assets
 const skipDDoSPaths = ["/_next/", "/favicon", "/logo", "/images/", "/fonts/"];
 
+// Skip rate limiting for admin routes and localhost
+const skipRateLimitPaths = ["/dashboard", "/courses", "/users", "/api/admin", "/api/courses"];
+
+function isLocalhost(ip: string): boolean {
+    return ip === '127.0.0.1' || ip === '::1' || ip === 'localhost' || ip === 'unknown' || ip.startsWith('192.168.') || ip.startsWith('10.');
+}
+
 // ============================================
 // Main Proxy Function
 // ============================================
@@ -104,9 +111,12 @@ const skipDDoSPaths = ["/_next/", "/favicon", "/logo", "/images/", "/fonts/"];
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // 1. DDoS Protection (skip static assets)
-    if (!skipDDoSPaths.some(p => pathname.startsWith(p))) {
-        const ip = getClientIP(request);
+    // 1. DDoS Protection (skip static assets, localhost, and admin routes)
+    const ip = getClientIP(request);
+    const isLocal = isLocalhost(ip);
+    const isAdminRoute = skipRateLimitPaths.some(p => pathname.startsWith(p));
+
+    if (!skipDDoSPaths.some(p => pathname.startsWith(p)) && !isLocal && !isAdminRoute) {
         const rateLimit = checkRateLimit(ip);
 
         if (!rateLimit.allowed) {

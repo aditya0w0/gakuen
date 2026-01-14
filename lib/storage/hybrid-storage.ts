@@ -110,29 +110,22 @@ export const hybridStorage = {
         },
 
         async logout(): Promise<void> {
-            // Sync with timeout - don't block logout if sync hangs
-            try {
-                await Promise.race([
-                    syncManager.syncNow(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Sync timeout')), 3000))
-                ]);
-            } catch (e) {
-                console.warn('Logout sync skipped:', e);
+            // Fire sync in background - don't block logout
+            if (isFirebaseEnabled()) {
+                syncManager.syncNow().catch(e => console.warn('Background sync on logout:', e));
             }
 
+            // Clear immediately for instant logout
             localCache.clear();
 
-            // Clear httpOnly cookie via API
-            try {
-                await fetch('/api/auth/clear-token', { method: 'POST' });
-            } catch (error) {
-                console.error('Failed to clear token cookie:', error);
-            }
+            // Clear httpOnly cookie via API (fire and forget)
+            fetch('/api/auth/clear-token', { method: 'POST' }).catch(() => { });
 
-            // Clear client-side cookie (legacy)
+            // Clear client-side cookie
             if (typeof window !== 'undefined') {
-                const { authCookies } = await import('../auth/cookies');
-                authCookies.clear();
+                import('../auth/cookies').then(({ authCookies }) => {
+                    authCookies.clear();
+                });
             }
 
             if (isFirebaseEnabled()) {

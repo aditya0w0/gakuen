@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2, BookOpen, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, BookOpen, Loader2, Download, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -16,6 +16,8 @@ export default function CoursesManagementPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
 
     const handleDeleteConfirm = async () => {
         if (!deleteId) return;
@@ -85,6 +87,60 @@ export default function CoursesManagementPage() {
         }
     };
 
+    const handleExport = async () => {
+        setIsExporting(true);
+        try {
+            const response = await fetch('/api/admin/courses/bulk');
+            if (!response.ok) throw new Error('Export failed');
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `courses-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Export failed:', error);
+            alert('Failed to export courses');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsImporting(true);
+        try {
+            const text = await file.text();
+            const courses = JSON.parse(text);
+
+            const response = await fetch('/api/admin/courses/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(courses),
+            });
+
+            if (!response.ok) throw new Error('Import failed');
+
+            const result = await response.json();
+            alert(`Import complete!\n${result.message}`);
+
+            // Reload courses
+            window.location.reload();
+        } catch (error) {
+            console.error('Import failed:', error);
+            alert('Failed to import courses. Check JSON format.');
+        } finally {
+            setIsImporting(false);
+            e.target.value = ''; // Reset file input
+        }
+    };
+
     if (isLoading) {
         return <div className="flex items-center justify-center h-screen text-neutral-500">Loading courses...</div>;
     }
@@ -97,14 +153,44 @@ export default function CoursesManagementPage() {
                     <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Content Management</h1>
                     <p className="text-neutral-600 dark:text-neutral-400 mt-1">Manage all courses and content</p>
                 </div>
-                <Button
-                    onClick={handleCreateCourse}
-                    disabled={isCreating}
-                    className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    {isCreating ? 'Creating...' : 'Add Course'}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        variant="outline"
+                        className="text-neutral-700 dark:text-neutral-300"
+                    >
+                        <Download className="w-4 h-4 mr-2" />
+                        {isExporting ? 'Exporting...' : 'Export JSON'}
+                    </Button>
+                    <label>
+                        <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleImport}
+                            className="hidden"
+                            disabled={isImporting}
+                        />
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="text-neutral-700 dark:text-neutral-300 cursor-pointer"
+                        >
+                            <span>
+                                <Upload className="w-4 h-4 mr-2" />
+                                {isImporting ? 'Importing...' : 'Import JSON'}
+                            </span>
+                        </Button>
+                    </label>
+                    <Button
+                        onClick={handleCreateCourse}
+                        disabled={isCreating}
+                        className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        {isCreating ? 'Creating...' : 'Add Course'}
+                    </Button>
+                </div>
             </div>
 
             {/* Stats */}

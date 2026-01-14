@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { safeErrorResponse } from '@/lib/api/auth-guard';
 import { validateCoupon } from '@/lib/firebase/coupon-operations';
+import { checkRateLimit, getClientIP, RateLimits } from '@/lib/api/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,13 @@ export const dynamic = 'force-dynamic';
  * Public endpoint (no auth required) - returns only discount info, not full coupon
  */
 export async function POST(request: NextRequest) {
+    // Rate limiting to prevent brute force coupon guessing
+    const ip = getClientIP(request);
+    const rateLimit = checkRateLimit(`coupon:${ip}`, RateLimits.COUPON);
+    if (!rateLimit.allowed) {
+        return NextResponse.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 });
+    }
+
     try {
         const body = await request.json();
         const { code, type } = body;

@@ -19,6 +19,13 @@ export interface Lesson {
     components?: Component[];
 }
 
+// Section for organizing lessons into collapsible groups
+export interface Section {
+    id: string;
+    title: string;
+    lessonIds: string[];  // References to lesson IDs in this section
+}
+
 export interface Course {
     id: string;
     title: string;
@@ -34,6 +41,7 @@ export interface Course {
     price: number;
     isFree?: boolean;
     lessons: Lesson[];
+    sections?: Section[];  // Optional: hierarchical organization
     createdAt?: string;
     isPublished?: boolean;
     createdBy?: string;
