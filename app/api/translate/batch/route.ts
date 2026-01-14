@@ -3,12 +3,16 @@ import { batchTranslate } from "@/lib/ai/gemini-flash";
 import { initAdmin } from "@/lib/auth/firebase-admin";
 import { trackAPICall } from "@/lib/analytics/firestore-analytics";
 import { requireAuth, safeErrorResponse } from "@/lib/api/auth-guard";
+import { checkRateLimit, getClientIP } from "@/lib/api/rate-limit";
 import type { Language } from "@/lib/i18n/translations";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const CACHE_TTL_DAYS = 7;
+
+// Stricter rate limit for translation endpoints to prevent abuse
+const TRANSLATION_RATE_LIMIT = { maxRequests: 20, windowMs: 60000 }; // 20 per minute
 
 // ========================================
 // SERVER-SIDE REQUEST DEDUPLICATION
@@ -28,6 +32,23 @@ setInterval(() => {
  * Cache is shared across all users - first user pays, rest get free
  */
 export async function POST(request: NextRequest) {
+    // 🔒 SECURITY: Rate limiting BEFORE auth to prevent DDoS
+    const clientIP = getClientIP(request);
+    const rateLimit = checkRateLimit(`translate-batch:${clientIP}`, TRANSLATION_RATE_LIMIT);
+    if (!rateLimit.allowed) {
+        console.warn(`⚠️ Rate limit exceeded for translate/batch from IP: ${clientIP}`);
+        return NextResponse.json(
+            { error: 'Too many translation requests. Please wait before trying again.' },
+            {
+                status: 429,
+                headers: {
+                    'Retry-After': String(Math.ceil((rateLimit.resetTime - Date.now()) / 1000)),
+                    'X-RateLimit-Remaining': '0',
+                }
+            }
+        );
+    }
+
     // 🔒 SECURITY: Require authentication (uses AI credits)
     const auth = await requireAuth(request);
     if (!auth.authenticated) return auth.response;
