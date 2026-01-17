@@ -70,7 +70,7 @@ export function deserializeFromComponents(components: Component[]): TiptapDoc {
             case 'image': {
                 const image = comp as ImageComponent;
                 content.push({
-                    type: 'image',
+                    type: 'customImage',
                     attrs: {
                         src: image.url,
                         alt: image.alt || '',
@@ -203,7 +203,8 @@ export function serializeToComponents(doc: TiptapDoc): Component[] {
                 break;
             }
 
-            case 'image': {
+            case 'image':
+            case 'customImage': {
                 components.push({
                     id: uuidv4(),
                     type: 'image',
