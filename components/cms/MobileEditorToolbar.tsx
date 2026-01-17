@@ -16,6 +16,7 @@ import {
     Palette,
     Sparkles,
     Loader2,
+    Strikethrough,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -63,7 +64,6 @@ export function MobileEditorToolbar({ editor }: MobileEditorToolbarProps) {
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [customAvatars, setCustomAvatars] = useState<Record<string, string>>({});
 
-    // Load custom avatars from localStorage
     useEffect(() => {
         const saved = localStorage.getItem('ai-persona-avatars');
         if (saved) {
@@ -75,32 +75,7 @@ export function MobileEditorToolbar({ editor }: MobileEditorToolbarProps) {
 
     if (!editor) return null;
 
-    const insertBlock = (type: string) => {
-        switch (type) {
-            case 'h1':
-                editor.chain().focus().toggleHeading({ level: 1 }).run();
-                break;
-            case 'h2':
-                editor.chain().focus().toggleHeading({ level: 2 }).run();
-                break;
-            case 'code':
-                editor.chain().focus().toggleCodeBlock().run();
-                break;
-            case 'divider':
-                editor.chain().focus().setHorizontalRule().run();
-                break;
-            case 'image':
-                editor.chain().focus().insertContent({ type: 'customImage', attrs: { src: '', alt: '' } }).run();
-                break;
-        }
-    };
-
-    const setColor = (color: string) => {
-        editor.chain().focus().setColor(color).run();
-        setShowColorMenu(false);
-    };
-
-    const handleAiRewrite = async (prompt: string, personaName: string) => {
+    const handleAiRewrite = async (prompt: string) => {
         const { from, to } = editor.state.selection;
         const selectedText = editor.state.doc.textBetween(from, to);
         if (!selectedText.trim()) {
@@ -130,169 +105,105 @@ export function MobileEditorToolbar({ editor }: MobileEditorToolbarProps) {
         }
     };
 
+    const ToolBtn = ({ active, onClick, children, title }: { active?: boolean; onClick: () => void; children: React.ReactNode; title?: string }) => (
+        <button
+            onClick={onClick}
+            title={title}
+            className={`p-2.5 rounded-lg transition-all flex-1 flex items-center justify-center ${active
+                ? 'bg-indigo-600/40 text-indigo-300 border border-indigo-500/50'
+                : 'bg-zinc-800/80 text-zinc-400 hover:text-white border border-zinc-700/50'
+                }`}
+        >
+            {children}
+        </button>
+    );
+
     return (
-        <div className="md:hidden bg-zinc-900 border-t border-zinc-800 p-3 space-y-3">
-            {/* Text Formatting Row */}
-            <div className="flex items-center gap-1">
-                <span className="text-[10px] text-zinc-500 uppercase font-semibold mr-2 shrink-0">Style</span>
-                <div className="flex gap-1 flex-1">
-                    <button
-                        onClick={() => editor.chain().focus().toggleBold().run()}
-                        className={`p-2 rounded-lg transition-all ${editor.isActive('bold')
-                            ? 'bg-indigo-600/30 text-indigo-300'
-                            : 'bg-zinc-800 text-zinc-400 hover:text-white'
-                            }`}
-                    >
-                        <Bold size={16} />
-                    </button>
-                    <button
-                        onClick={() => editor.chain().focus().toggleItalic().run()}
-                        className={`p-2 rounded-lg transition-all ${editor.isActive('italic')
-                            ? 'bg-indigo-600/30 text-indigo-300'
-                            : 'bg-zinc-800 text-zinc-400 hover:text-white'
-                            }`}
-                    >
-                        <Italic size={16} />
-                    </button>
-                    <button
-                        onClick={() => editor.chain().focus().toggleUnderline().run()}
-                        className={`p-2 rounded-lg transition-all ${editor.isActive('underline')
-                            ? 'bg-indigo-600/30 text-indigo-300'
-                            : 'bg-zinc-800 text-zinc-400 hover:text-white'
-                            }`}
-                    >
-                        <Underline size={16} />
-                    </button>
-                    <button
-                        onClick={() => editor.chain().focus().toggleCode().run()}
-                        className={`p-2 rounded-lg transition-all ${editor.isActive('code')
-                            ? 'bg-indigo-600/30 text-indigo-300'
-                            : 'bg-zinc-800 text-zinc-400 hover:text-white'
-                            }`}
-                    >
-                        <Code size={16} />
-                    </button>
-
-                    {/* Color Picker */}
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowColorMenu(!showColorMenu)}
-                            className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-all"
-                        >
-                            <Palette size={16} />
-                        </button>
-                        {showColorMenu && (
-                            <div className="absolute bottom-full left-0 mb-2 bg-zinc-900 border border-zinc-700 rounded-lg p-2 shadow-xl z-50">
-                                <div className="grid grid-cols-4 gap-1">
-                                    {COLOR_PRESETS.map((preset) => (
-                                        <button
-                                            key={preset.color}
-                                            onClick={() => setColor(preset.color)}
-                                            className="w-7 h-7 rounded-md border border-zinc-600 hover:scale-110 transition-transform"
-                                            style={{ backgroundColor: preset.color }}
-                                            title={preset.label}
-                                        />
-                                    ))}
-                                </div>
+        <div className="md:hidden bg-zinc-900/95 backdrop-blur border-t border-zinc-800 p-2">
+            {/* Compact Grid Layout - 2 rows for formatting */}
+            <div className="grid grid-cols-8 gap-1.5 mb-2">
+                {/* Row 1: Text styles + Color */}
+                <ToolBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Bold">
+                    <Bold size={15} />
+                </ToolBtn>
+                <ToolBtn active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} title="Italic">
+                    <Italic size={15} />
+                </ToolBtn>
+                <ToolBtn active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()} title="Underline">
+                    <Underline size={15} />
+                </ToolBtn>
+                <ToolBtn active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()} title="Strike">
+                    <Strikethrough size={15} />
+                </ToolBtn>
+                <ToolBtn active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()} title="Bullet List">
+                    <List size={15} />
+                </ToolBtn>
+                <ToolBtn active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Numbered List">
+                    <ListOrdered size={15} />
+                </ToolBtn>
+                <ToolBtn active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()} title="Quote">
+                    <Quote size={15} />
+                </ToolBtn>
+                <div className="relative flex-1">
+                    <ToolBtn onClick={() => setShowColorMenu(!showColorMenu)} title="Color">
+                        <Palette size={15} />
+                    </ToolBtn>
+                    {showColorMenu && (
+                        <div className="absolute bottom-full right-0 mb-2 bg-zinc-900 border border-zinc-700 rounded-lg p-2 shadow-xl z-50">
+                            <div className="grid grid-cols-4 gap-1.5">
+                                {COLOR_PRESETS.map((preset) => (
+                                    <button
+                                        key={preset.color}
+                                        onClick={() => { editor.chain().focus().setColor(preset.color).run(); setShowColorMenu(false); }}
+                                        className="w-7 h-7 rounded-md border border-zinc-600 hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: preset.color }}
+                                        title={preset.label}
+                                    />
+                                ))}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Lists & Blocks Row */}
-            <div className="flex items-center gap-1">
-                <span className="text-[10px] text-zinc-500 uppercase font-semibold mr-2 shrink-0">Lists</span>
-                <div className="flex gap-1 flex-1">
-                    <button
-                        onClick={() => editor.chain().focus().toggleBulletList().run()}
-                        className={`p-2 rounded-lg transition-all ${editor.isActive('bulletList')
-                            ? 'bg-indigo-600/30 text-indigo-300'
-                            : 'bg-zinc-800 text-zinc-400 hover:text-white'
-                            }`}
-                    >
-                        <List size={16} />
-                    </button>
-                    <button
-                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                        className={`p-2 rounded-lg transition-all ${editor.isActive('orderedList')
-                            ? 'bg-indigo-600/30 text-indigo-300'
-                            : 'bg-zinc-800 text-zinc-400 hover:text-white'
-                            }`}
-                    >
-                        <ListOrdered size={16} />
-                    </button>
-                    <button
-                        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                        className={`p-2 rounded-lg transition-all ${editor.isActive('blockquote')
-                            ? 'bg-indigo-600/30 text-indigo-300'
-                            : 'bg-zinc-800 text-zinc-400 hover:text-white'
-                            }`}
-                    >
-                        <Quote size={16} />
-                    </button>
-                </div>
+            {/* Row 2: Insert blocks */}
+            <div className="grid grid-cols-8 gap-1.5 mb-2">
+                <ToolBtn active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} title="Heading 1">
+                    <Heading1 size={15} />
+                </ToolBtn>
+                <ToolBtn active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} title="Heading 2">
+                    <Heading2 size={15} />
+                </ToolBtn>
+                <ToolBtn active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()} title="Inline Code">
+                    <Code size={15} />
+                </ToolBtn>
+                <ToolBtn onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Divider">
+                    <Minus size={15} />
+                </ToolBtn>
+                <ToolBtn onClick={() => editor.chain().focus().insertContent({ type: 'customImage', attrs: { src: '', alt: '' } }).run()} title="Image">
+                    <Image size={15} />
+                </ToolBtn>
+                {/* 3 empty slots for future features or balance */}
+                <div className="col-span-3" />
             </div>
 
-            {/* Insert Blocks Row */}
-            <div className="flex items-center gap-1">
-                <span className="text-[10px] text-zinc-500 uppercase font-semibold mr-2 shrink-0">Insert</span>
-                <div className="flex gap-1 flex-1 flex-wrap">
-                    <button
-                        onClick={() => insertBlock('h1')}
-                        className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-all"
-                        title="Heading 1"
-                    >
-                        <Heading1 size={16} />
-                    </button>
-                    <button
-                        onClick={() => insertBlock('h2')}
-                        className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-all"
-                        title="Heading 2"
-                    >
-                        <Heading2 size={16} />
-                    </button>
-                    <button
-                        onClick={() => insertBlock('code')}
-                        className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-all"
-                        title="Code Block"
-                    >
-                        <Code size={16} />
-                    </button>
-                    <button
-                        onClick={() => insertBlock('divider')}
-                        className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-all"
-                        title="Divider"
-                    >
-                        <Minus size={16} />
-                    </button>
-                    <button
-                        onClick={() => insertBlock('image')}
-                        className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-all"
-                        title="Image"
-                    >
-                        <Image size={16} />
-                    </button>
+            {/* AI Writer Row - Compact horizontal */}
+            <div className="flex items-center gap-2 pt-2 border-t border-zinc-800/50">
+                <div className="flex items-center gap-1.5 shrink-0">
+                    <Sparkles size={12} className="text-indigo-400" />
+                    <span className="text-[9px] text-zinc-500 uppercase font-semibold">AI</span>
+                    {isAiLoading && <Loader2 size={10} className="animate-spin text-indigo-400" />}
                 </div>
-            </div>
-
-            {/* AI Writer Section */}
-            <div className="pt-2 border-t border-zinc-800">
-                <div className="flex items-center gap-2 mb-2">
-                    <Sparkles size={14} className="text-indigo-400" />
-                    <span className="text-[10px] text-zinc-500 uppercase font-semibold">AI Writer</span>
-                    {isAiLoading && <Loader2 size={12} className="animate-spin text-indigo-400" />}
-                </div>
-                <div className="flex items-center justify-center gap-4">
+                <div className="flex items-center gap-2 flex-1 justify-center">
                     {AI_PERSONAS.map(({ name, avatar, color, ring, prompt }) => (
                         <button
                             key={name}
                             disabled={isAiLoading}
-                            onClick={() => handleAiRewrite(prompt, name)}
-                            className={`flex flex-col items-center gap-1 ${isAiLoading ? 'opacity-50' : ''}`}
+                            onClick={() => handleAiRewrite(prompt)}
+                            className={`flex flex-col items-center ${isAiLoading ? 'opacity-50' : ''}`}
                             title={`Rewrite as ${name}`}
                         >
-                            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${color} flex items-center justify-center overflow-hidden ring-2 ${ring} ring-offset-2 ring-offset-zinc-900 transition-transform active:scale-95`}>
+                            <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${color} flex items-center justify-center overflow-hidden ring-2 ${ring} ring-offset-1 ring-offset-zinc-900 transition-transform active:scale-90`}>
                                 {customAvatars[name] ? (
                                     <img src={customAvatars[name]} alt={name} className="w-full h-full object-cover" />
                                 ) : (
@@ -303,15 +214,14 @@ export function MobileEditorToolbar({ editor }: MobileEditorToolbarProps) {
                                             className="w-full h-full object-cover"
                                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                         />
-                                        <span className="absolute text-white text-xs font-bold">{name[0]}</span>
+                                        <span className="absolute text-white text-[10px] font-bold">{name[0]}</span>
                                     </>
                                 )}
                             </div>
-                            <span className="text-[9px] text-zinc-500">{name}</span>
+                            <span className="text-[8px] text-zinc-500 mt-0.5">{name}</span>
                         </button>
                     ))}
                 </div>
-                <p className="text-[8px] text-zinc-600 text-center mt-2">Select text, then tap a persona to rewrite</p>
             </div>
         </div>
     );
