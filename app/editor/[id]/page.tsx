@@ -646,6 +646,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                     <FluidEditor
                                         ref={fluidEditorRef}
                                         key={editingIndex} // Re-mount when switching lessons
+                                        initialContent={getFluidEditorInitialContent()}
                                         onUpdate={handleFluidEditorUpdate}
                                         onEditorReady={setFluidEditor}
                                         placeholder="Type '/' for commands, or just start writing..."
