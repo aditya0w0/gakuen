@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 
 // Dynamic sitemap generator for better SEO and Google indexing
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gakuen.app';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://gakuen-six.vercel.app';
 
     // Current date for lastModified
     const now = new Date();

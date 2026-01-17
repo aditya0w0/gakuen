@@ -1,13 +1,15 @@
 // JSON-LD Structured Data for SEO
 // Add this to layout.tsx or individual pages for rich search results
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://gakuen-six.vercel.app";
+
 export function OrganizationSchema() {
     const schema = {
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "Gakuen",
-        "url": "https://gakuen.app",
-        "logo": "https://gakuen.app/logo.png",
+        "url": BASE_URL,
+        "logo": `${BASE_URL}/logo.png`,
         "description": "Modern Learning Platform - Learn programming, design, and more with AI-powered tutoring",
         "sameAs": [
             // Add your social media links here
@@ -34,13 +36,13 @@ export function WebsiteSchema() {
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "Gakuen",
-        "url": "https://gakuen.app",
+        "url": BASE_URL,
         "description": "Modern online learning platform with AI-powered tutoring",
         "potentialAction": {
             "@type": "SearchAction",
             "target": {
                 "@type": "EntryPoint",
-                "urlTemplate": "https://gakuen.app/browse?q={search_term_string}"
+                "urlTemplate": `${BASE_URL}/browse?q={search_term_string}`
             },
             "query-input": "required name=search_term_string"
         }
@@ -59,8 +61,8 @@ export function EducationalOrganizationSchema() {
         "@context": "https://schema.org",
         "@type": "EducationalOrganization",
         "name": "Gakuen",
-        "url": "https://gakuen.app",
-        "logo": "https://gakuen.app/logo.png",
+        "url": BASE_URL,
+        "logo": `${BASE_URL}/logo.png`,
         "description": "Online learning platform offering courses in programming, design, and more",
         "areaServed": "Worldwide",
         "availableLanguage": ["English", "Indonesian"],
@@ -115,7 +117,7 @@ export function CourseSchema({
         "provider": {
             "@type": "Organization",
             "name": provider,
-            "url": "https://gakuen.app"
+            "url": BASE_URL
         },
         "url": courseUrl,
         "isAccessibleForFree": price === 0 || price === undefined,

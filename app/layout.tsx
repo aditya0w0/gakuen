@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://gakuen.app",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://gakuen-six.vercel.app",
     siteName: "Gakuen",
     title: "Gakuen - Modern Learning Platform",
     description: "Learn programming, design, and more with AI-powered tutoring",
@@ -74,10 +74,10 @@ export const metadata: Metadata = {
     // bing: "your-bing-verification",
   },
   alternates: {
-    canonical: "https://gakuen.app",
+    canonical: process.env.NEXT_PUBLIC_APP_URL || "https://gakuen-six.vercel.app",
     languages: {
-      "en-US": "https://gakuen.app",
-      "id-ID": "https://gakuen.app/id",
+      "en-US": process.env.NEXT_PUBLIC_APP_URL || "https://gakuen-six.vercel.app",
+      "id-ID": `${process.env.NEXT_PUBLIC_APP_URL || "https://gakuen-six.vercel.app"}/id`,
     },
   },
 };
