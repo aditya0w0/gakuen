@@ -31,6 +31,7 @@ export interface Course {
     title: string;
     description: string;
     instructor: string;
+    instructorAvatar?: string;  // Custom instructor profile image
     thumbnail: string;
     category: string;
     level: "beginner" | "intermediate" | "advanced";

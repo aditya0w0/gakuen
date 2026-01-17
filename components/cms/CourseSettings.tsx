@@ -1,7 +1,7 @@
 "use client";
 
 import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
-import { useState } from "react";
+import React, { useState } from "react";
 import { Upload, Wand2, Loader2, X, Plus } from "lucide-react";
 
 // Available course categories
@@ -27,12 +27,14 @@ interface CourseSettingsProps {
     courseDescription: string;
     courseThumbnail?: string;
     courseAuthor?: string;
+    courseAuthorAvatar?: string;
     courseCategory?: string;
     courseLevel?: CourseLevel;
     onTitleChange: (title: string) => void;
     onDescriptionChange: (description: string) => void;
     onThumbnailChange?: (url: string) => void;
     onAuthorChange?: (author: string) => void;
+    onAuthorAvatarChange?: (url: string) => void;
     onCategoryChange?: (category: string) => void;
     onLevelChange?: (level: CourseLevel) => void;
     createdAt?: string;
@@ -45,12 +47,14 @@ export function CourseSettings({
     courseDescription,
     courseThumbnail,
     courseAuthor,
+    courseAuthorAvatar,
     courseCategory,
     courseLevel,
     onTitleChange,
     onDescriptionChange,
     onThumbnailChange,
     onAuthorChange,
+    onAuthorAvatarChange,
     onCategoryChange,
     onLevelChange,
     createdAt,
@@ -62,6 +66,19 @@ export function CourseSettings({
     const [customCategory, setCustomCategory] = useState("");
     const [showCustomCategory, setShowCustomCategory] = useState(false);
     const [prompt, setPrompt] = useState("");
+    const [thumbnailError, setThumbnailError] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+    // Reset error when thumbnail URL changes
+    React.useEffect(() => {
+        setThumbnailError(false);
+    }, [courseThumbnail]);
+
+    // Reset avatar error when URL changes
+    React.useEffect(() => {
+        setAvatarError(false);
+    }, [courseAuthorAvatar]);
 
     const formatDate = (dateString?: string) => {
         if (!dateString) return "N/A";
@@ -134,19 +151,32 @@ export function CourseSettings({
                 </label>
                 <div className="relative w-full h-64 bg-zinc-800 rounded-xl overflow-hidden group">
                     {/* Image or Placeholder */}
-                    {courseThumbnail && courseThumbnail !== 'https://placehold.co/800x400' ? (
+                    {courseThumbnail && courseThumbnail !== 'https://placehold.co/800x400' && !thumbnailError ? (
                         <img
                             src={courseThumbnail}
                             alt="Course thumbnail"
                             className="w-full h-full object-cover"
+                            onError={() => setThumbnailError(true)}
                         />
                     ) : (
-                        /* Same decorative background as ImageBlock */
-                        <div className="absolute inset-0 bg-[#0f1014]">
+                        /* Same decorative background as ImageBlock - also shown on error */
+                        <div
+                            className="absolute inset-0 bg-[#0f1014] cursor-pointer"
+                            onClick={() => thumbnailError && setThumbnailError(false)}
+                            title={thumbnailError ? "Click to retry loading image" : undefined}
+                        >
                             <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-orange-500/20 to-transparent"></div>
                             <div className="absolute bottom-0 left-0 w-full h-full bg-gradient-to-tr from-blue-600/10 to-transparent"></div>
                             <div className="absolute top-10 right-10 w-40 h-40 bg-orange-500/30 rounded-full blur-3xl"></div>
                             <div className="absolute bottom-10 left-10 w-60 h-60 bg-indigo-600/20 rounded-full blur-3xl"></div>
+                            {thumbnailError && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="text-center">
+                                        <p className="text-zinc-400 text-sm">Failed to load image</p>
+                                        <p className="text-zinc-500 text-xs mt-1">Click to retry</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -234,18 +264,89 @@ export function CourseSettings({
                 />
             </div>
 
-            {/* Author */}
+            {/* Author / Instructor */}
             <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-2">
                     Author / Instructor
                 </label>
-                <input
-                    type="text"
-                    value={courseAuthor || ''}
-                    onChange={(e) => onAuthorChange?.(e.target.value)}
-                    className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-indigo-500"
-                    placeholder="Enter instructor name"
-                />
+                <div className="flex items-center gap-4">
+                    {/* Avatar Upload */}
+                    <div className="relative group shrink-0">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            id="instructor-avatar-upload"
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+
+                                setIsUploadingAvatar(true);
+                                try {
+                                    const formData = new FormData();
+                                    formData.append('file', file);
+                                    formData.append('type', 'avatar');
+
+                                    const response = await authenticatedFetch('/api/upload', {
+                                        method: 'POST',
+                                        body: formData,
+                                    });
+
+                                    if (response.ok) {
+                                        const { url } = await response.json();
+                                        onAuthorAvatarChange?.(url);
+                                    } else {
+                                        const error = await response.text();
+                                        alert(`Upload failed: ${error}`);
+                                    }
+                                } catch (error) {
+                                    console.error('Avatar upload failed:', error);
+                                    alert('Failed to upload avatar');
+                                } finally {
+                                    setIsUploadingAvatar(false);
+                                    e.target.value = '';
+                                }
+                            }}
+                        />
+                        <label
+                            htmlFor="instructor-avatar-upload"
+                            className="block w-16 h-16 rounded-full bg-zinc-800 border-2 border-zinc-700 hover:border-indigo-500 cursor-pointer overflow-hidden transition-colors"
+                            title="Click to upload instructor avatar"
+                        >
+                            {isUploadingAvatar ? (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <Loader2 size={20} className="animate-spin text-indigo-400" />
+                                </div>
+                            ) : courseAuthorAvatar && !avatarError ? (
+                                <img
+                                    src={courseAuthorAvatar}
+                                    alt="Instructor"
+                                    className="w-full h-full object-cover"
+                                    onError={() => setAvatarError(true)}
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500/20 to-purple-500/20">
+                                    <span className="text-xl font-bold text-indigo-300/60">
+                                        {(courseAuthor || 'I').charAt(0).toUpperCase()}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
+                                <Upload size={16} className="text-white" />
+                            </div>
+                        </label>
+                    </div>
+
+                    {/* Name Input */}
+                    <input
+                        type="text"
+                        value={courseAuthor || ''}
+                        onChange={(e) => onAuthorChange?.(e.target.value)}
+                        className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-indigo-500"
+                        placeholder="Enter instructor name"
+                    />
+                </div>
+                <p className="text-xs text-zinc-500 mt-2">Click the avatar to upload a custom instructor image</p>
             </div>
 
             {/* Category and Level */}
@@ -299,11 +400,11 @@ export function CourseSettings({
                                     <option key={cat} value={cat}>{cat}</option>
                                 ))}
                                 {/* Show current category if it's custom and not in the list */}
-                                {courseCategory && 
-                                 !COURSE_CATEGORIES.includes(courseCategory) && 
-                                 courseCategory !== 'Uncategorized' && (
-                                    <option value={courseCategory}>{courseCategory}</option>
-                                )}
+                                {courseCategory &&
+                                    !COURSE_CATEGORIES.includes(courseCategory) &&
+                                    courseCategory !== 'Uncategorized' && (
+                                        <option value={courseCategory}>{courseCategory}</option>
+                                    )}
                             </select>
                             <button
                                 onClick={() => setShowCustomCategory(true)}
