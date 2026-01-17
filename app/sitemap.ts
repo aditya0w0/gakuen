@@ -7,37 +7,49 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Current date for lastModified
     const now = new Date();
 
-    // Static pages with proper priorities
+    // Helper function to create alternates for multi-language support
+    const createAlternates = (path: string) => ({
+        languages: {
+            'en-US': `${baseUrl}${path}`,
+            'id-ID': `${baseUrl}/id${path}`,
+        },
+    });
+
+    // Static pages with proper priorities and alternates
     const staticPages: MetadataRoute.Sitemap = [
         {
             url: baseUrl,
             lastModified: now,
             changeFrequency: 'daily',
             priority: 1.0,
+            alternates: createAlternates(''),
         },
         {
             url: `${baseUrl}/browse`,
             lastModified: now,
             changeFrequency: 'daily',
             priority: 0.9,
+            alternates: createAlternates('/browse'),
         },
         {
             url: `${baseUrl}/pricing`,
             lastModified: now,
             changeFrequency: 'weekly',
             priority: 0.8,
+            alternates: createAlternates('/pricing'),
         },
         {
-            url: `${baseUrl}/about`,
+            url: `${baseUrl}/login`,
             lastModified: now,
             changeFrequency: 'monthly',
-            priority: 0.6,
+            priority: 0.7,
         },
         {
             url: `${baseUrl}/contact`,
             lastModified: now,
             changeFrequency: 'monthly',
             priority: 0.5,
+            alternates: createAlternates('/contact'),
         },
         {
             url: `${baseUrl}/privacy`,
