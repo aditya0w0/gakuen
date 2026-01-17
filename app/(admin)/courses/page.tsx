@@ -188,21 +188,22 @@ export default function CoursesManagementPage() {
 
     return (
         <div className="space-y-6 p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+            {/* Header - Responsive */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Content Management</h1>
-                    <p className="text-neutral-600 dark:text-neutral-400 mt-1">Manage all courses and content</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white">Content Management</h1>
+                    <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 mt-1">Manage all courses and content</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <Button
                         onClick={handleExport}
                         disabled={isExporting}
                         variant="outline"
+                        size="sm"
                         className="text-neutral-700 dark:text-neutral-300"
                     >
-                        <Download className="w-4 h-4 mr-2" />
-                        {isExporting ? 'Exporting...' : 'Export JSON'}
+                        <Download className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
                     </Button>
                     <label>
                         <input
@@ -215,21 +216,23 @@ export default function CoursesManagementPage() {
                         <Button
                             asChild
                             variant="outline"
+                            size="sm"
                             className="text-neutral-700 dark:text-neutral-300 cursor-pointer"
                         >
                             <span>
-                                <Upload className="w-4 h-4 mr-2" />
-                                {isImporting ? 'Importing...' : 'Import JSON'}
+                                <Upload className="w-4 h-4 sm:mr-2" />
+                                <span className="hidden sm:inline">{isImporting ? 'Importing...' : 'Import'}</span>
                             </span>
                         </Button>
                     </label>
                     <Button
                         onClick={handleCreateCourse}
                         disabled={isCreating}
+                        size="sm"
                         className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
                     >
-                        <Plus className="w-4 h-4 mr-2" />
-                        {isCreating ? 'Creating...' : 'Add Course'}
+                        <Plus className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">{isCreating ? 'Creating...' : 'Add Course'}</span>
                     </Button>
                 </div>
             </div>
@@ -252,9 +255,10 @@ export default function CoursesManagementPage() {
                 </div>
             </div>
 
-            {/* Courses Table */}
+            {/* Courses List - Responsive: Cards on mobile, Table on desktop */}
             <div className="bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
-                <table className="w-full">
+                {/* Desktop Table - Hidden on mobile */}
+                <table className="w-full hidden md:table">
                     <thead className="bg-neutral-50 dark:bg-neutral-900/50 border-b border-neutral-200 dark:border-neutral-800">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">
@@ -292,7 +296,7 @@ export default function CoursesManagementPage() {
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-2">
                                         <BookOpen className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                                        <span className="text-sm text-neutral-900 dark:text-white">{course.lessons.length}</span>
+                                        <span className="text-sm text-neutral-900 dark:text-white">{course.lessons?.length || 0}</span>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
@@ -326,6 +330,53 @@ export default function CoursesManagementPage() {
                         ))}
                     </tbody>
                 </table>
+
+                {/* Mobile Cards - Hidden on desktop */}
+                <div className="md:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+                    {courses.map((course) => (
+                        <div key={course.id} className="p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors">
+                            <div className="flex items-start gap-3">
+                                <ThumbnailImage src={course.thumbnail} alt={course.title} />
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{course.title}</p>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{course.instructor}</p>
+                                    <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                        <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                                            {course.category}
+                                        </span>
+                                        <span className="text-xs text-neutral-600 dark:text-neutral-400 flex items-center gap-1">
+                                            <BookOpen className="w-3 h-3" />
+                                            {course.lessons?.length || 0} lessons
+                                        </span>
+                                        <span
+                                            className={`px-2 py-0.5 rounded text-[10px] font-medium ${course.level === "Beginner"
+                                                ? "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400"
+                                                : course.level === "Intermediate"
+                                                    ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                                                    : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400"
+                                                }`}
+                                        >
+                                            {course.level}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                    <Link href={`/editor/${course.id}`}>
+                                        <button className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+                                            <Edit className="w-4 h-4" />
+                                        </button>
+                                    </Link>
+                                    <button
+                                        onClick={() => setDeleteId(course.id)}
+                                        className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             <SimpleModal
