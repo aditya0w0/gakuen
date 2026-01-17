@@ -174,16 +174,14 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
     };
 
     const setBlockType = (type: string) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const chain = editor.chain().focus() as any;
         if (type === 'paragraph') {
-            chain.clearNodes().run();
+            editor.chain().focus().clearNodes().run();
         } else if (type === 'h1') {
-            chain.toggleHeading({ level: 1 }).run();
+            editor.chain().focus().toggleHeading({ level: 1 }).run();
         } else if (type === 'h2') {
-            chain.toggleHeading({ level: 2 }).run();
+            editor.chain().focus().toggleHeading({ level: 2 }).run();
         } else if (type === 'h3') {
-            chain.toggleHeading({ level: 3 }).run();
+            editor.chain().focus().toggleHeading({ level: 3 }).run();
         }
         closeAllDropdowns();
     };
