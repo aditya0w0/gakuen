@@ -8,6 +8,30 @@ import { Users, BookOpen, TrendingUp, DollarSign, Eye, Edit, Trash2, Settings, Z
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
+// Dashboard thumbnail with error handling
+function DashboardThumbnail({ src, alt }: { src?: string; alt: string }) {
+    const [error, setError] = useState(false);
+
+    useEffect(() => { setError(false); }, [src]);
+
+    if (!src || error) {
+        return (
+            <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center">
+                <span className="text-2xl font-bold text-blue-500/60">{alt.charAt(0).toUpperCase()}</span>
+            </div>
+        );
+    }
+
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className="w-24 h-24 rounded-lg object-cover"
+            onError={() => setError(true)}
+        />
+    );
+}
+
 interface FeatureFlags {
     subscriptionsEnabled: boolean;
     aiEnabled: boolean;
@@ -404,11 +428,7 @@ export default function AdminDashboard() {
                     {courses.map((course) => (
                         <Card key={course.id} className="p-4 bg-white dark:bg-white/5 border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/10 transition-all group">
                             <div className="flex gap-4">
-                                <img
-                                    src={course.thumbnail}
-                                    alt={course.title}
-                                    className="w-24 h-24 rounded-lg object-cover"
-                                />
+                                <DashboardThumbnail src={course.thumbnail} alt={course.title} />
                                 <div className="flex-1 space-y-2">
                                     <div className="flex items-start justify-between">
                                         <div>

@@ -20,12 +20,12 @@ const DRIVE_FOLDERS: Record<UploadType, 'avatars' | 'courses' | 'lessons' | 'cms
     cms: 'cms'
 };
 
-// Max file sizes per type (in bytes)
+// Max file sizes per type (in bytes) - generous limits since Sharp compresses
 const MAX_SIZES: Record<UploadType, number> = {
-    avatar: 2 * 1024 * 1024,    // 2MB
-    course: 5 * 1024 * 1024,    // 5MB  
-    lesson: 5 * 1024 * 1024,    // 5MB
-    cms: 5 * 1024 * 1024,       // 5MB
+    avatar: 30 * 1024 * 1024,   // 30MB - Sharp will compress to WebP
+    course: 30 * 1024 * 1024,   // 30MB  
+    lesson: 30 * 1024 * 1024,   // 30MB
+    cms: 30 * 1024 * 1024,      // 30MB
 };
 
 export const POST = withAuthTracked(async (request, { user }) => {
@@ -55,20 +55,53 @@ export const POST = withAuthTracked(async (request, { user }) => {
         // Get file buffer
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
+        const inputSizeMB = buffer.length / (1024 * 1024);
 
-        // Process with Sharp - convert to WebP, 85% quality
+        // Smart compression based on input size
+        // Larger files get more aggressive compression
+        let quality: number;
+        let maxWidth: number;
+
+        if (type === 'avatar') {
+            // Avatars are always small
+            quality = 85;
+            maxWidth = 400;
+        } else if (inputSizeMB > 20) {
+            // Very large files (20-30MB): aggressive compression
+            quality = 70;
+            maxWidth = 1600;
+            console.log(`📦 Large file (${inputSizeMB.toFixed(1)}MB) - using aggressive compression (quality: ${quality})`);
+        } else if (inputSizeMB > 10) {
+            // Large files (10-20MB): moderate compression  
+            quality = 75;
+            maxWidth = 1800;
+            console.log(`📦 Medium-large file (${inputSizeMB.toFixed(1)}MB) - using moderate compression (quality: ${quality})`);
+        } else if (inputSizeMB > 5) {
+            // Medium files (5-10MB): light compression
+            quality = 80;
+            maxWidth = 2000;
+        } else {
+            // Small files (<5MB): high quality
+            quality = 85;
+            maxWidth = 2400;
+        }
+
+        // Process with Sharp - convert PNG/JPG/etc to WebP with smart quality
         const imageToProcess = buffer;
         let wasReplaced = false;
 
         const processedBuffer = await sharp(imageToProcess)
             .resize({
-                width: type === 'avatar' ? 400 : 1200,
+                width: type === 'avatar' ? 400 : maxWidth,
                 height: type === 'avatar' ? 400 : undefined,
                 fit: 'inside',
                 withoutEnlargement: true
             })
-            .webp({ quality: 85 })
+            .webp({ quality })
             .toBuffer();
+
+        const outputSizeKB = processedBuffer.length / 1024;
+        console.log(`✨ Compressed: ${inputSizeMB.toFixed(1)}MB → ${outputSizeKB.toFixed(0)}KB (${((1 - processedBuffer.length / buffer.length) * 100).toFixed(0)}% reduction)`);
 
         // Get image metadata
         const metadata = await sharp(processedBuffer).metadata();
@@ -126,7 +159,7 @@ export const POST = withAuthTracked(async (request, { user }) => {
         // Determine the upload directory based on type (uses same folder names as Drive)
         const uploadSubdir = DRIVE_FOLDERS[type]; // Will always be valid: avatars, courses, lessons, or cms
         const uploadsDir = join(process.cwd(), 'public', 'uploads', uploadSubdir);
-        
+
         // Create directory if it doesn't exist
         if (!existsSync(uploadsDir)) {
             await mkdir(uploadsDir, { recursive: true });
@@ -135,10 +168,10 @@ export const POST = withAuthTracked(async (request, { user }) => {
         // Generate filename with user ID for organization
         const localFilename = `${user.id}-${uuidv4().slice(0, 8)}.webp`;
         const filepath = join(uploadsDir, localFilename);
-        
+
         // Write binary file (NOT base64)
         await writeFile(filepath, processedBuffer);
-        
+
         // Generate a local file ID that points to our image serving API
         // Format: local-{type}-{filename}
         const localFileId = `local-${uploadSubdir}-${localFilename}`;

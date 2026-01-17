@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   // Performance optimizations
   experimental: {
     optimizeCss: true, // CSS optimization
+    serverActions: {
+      bodySizeLimit: '35mb', // Allow up to 35MB uploads (with some buffer)
+    },
   },
 
   // Image optimization
@@ -149,8 +152,8 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com https://www.gstatic.com", // Added Google APIs for auth
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://*.googleusercontent.com https://*.google.com https://*.gstatic.com https://picsum.photos https://api.dicebear.com",
-              "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://accounts.google.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com",
+              "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com https://*.google.com https://*.gstatic.com https://picsum.photos https://api.dicebear.com",
+              "connect-src 'self' https://*.googleapis.com https://*.googleusercontent.com https://lh3.googleusercontent.com https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://accounts.google.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com",
               "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://accounts.google.com https://*.firebaseapp.com",
               "object-src 'none'",
               "base-uri 'self'",

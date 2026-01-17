@@ -8,6 +8,47 @@ import { useState, useEffect } from "react";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { SimpleModal } from "@/components/ui/SimpleModal";
 
+// Thumbnail component with error handling and fallback
+function ThumbnailImage({ src, alt }: { src?: string; alt: string }) {
+    const [error, setError] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
+
+    // Reset error state when src changes
+    useEffect(() => {
+        setError(false);
+        setRetryCount(0);
+    }, [src]);
+
+    // Retry loading image on click (up to 3 times)
+    const handleRetry = () => {
+        if (retryCount < 3) {
+            setError(false);
+            setRetryCount(prev => prev + 1);
+        }
+    };
+
+    if (!src || error) {
+        return (
+            <div
+                onClick={handleRetry}
+                className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center flex-shrink-0 cursor-pointer hover:from-blue-500/30 hover:to-indigo-500/30 transition-colors"
+                title={error ? "Click to retry loading image" : "No thumbnail"}
+            >
+                <span className="text-lg font-bold text-blue-500/60">{alt.charAt(0).toUpperCase()}</span>
+            </div>
+        );
+    }
+
+    return (
+        <img
+            src={`${src}${retryCount > 0 ? `?retry=${retryCount}` : ''}`}
+            alt={alt}
+            className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+            onError={() => setError(true)}
+        />
+    );
+}
+
 export default function CoursesManagementPage() {
     const router = useRouter();
     const { isAdmin, isLoading: authLoading } = useRequireAdmin();
@@ -238,11 +279,7 @@ export default function CoursesManagementPage() {
                             <tr key={course.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <img
-                                            src={course.thumbnail}
-                                            alt={course.title}
-                                            className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                                        />
+                                        <ThumbnailImage src={course.thumbnail} alt={course.title} />
                                         <div className="min-w-0">
                                             <p className="text-sm font-medium text-neutral-900 dark:text-white truncate max-w-[200px]">{course.title}</p>
                                             <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{course.instructor}</p>

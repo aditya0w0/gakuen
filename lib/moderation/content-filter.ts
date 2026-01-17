@@ -111,19 +111,28 @@ export async function moderateImage(imageBuffer: Buffer): Promise<ModerationResu
             spoof: (safeSearch.spoof as Likelihood) || 'UNKNOWN',
         };
 
-        // Check for blocked content
+        // Log scores for debugging
+        console.log(`🔍 Content moderation scores: adult=${scores.adult}, racy=${scores.racy}, violence=${scores.violence}`);
+
+        // Check for blocked content - ONLY block clearly explicit content
+        // We're very lenient because:
+        // 1. Anime/game art often gets flagged as "racy" even when SFW
+        // 2. Stylized art (Genshin Impact, etc.) should be allowed
+        // 3. We only want to block actual pornographic/explicit content
         const blockedReasons: string[] = [];
 
-        if (BLOCKED_LIKELIHOODS.includes(scores.adult)) {
+        // Only block VERY_LIKELY adult content (actual explicit material)
+        if (scores.adult === 'VERY_LIKELY') {
             blockedReasons.push('adult content');
         }
-        if (BLOCKED_LIKELIHOODS.includes(scores.violence)) {
+
+        // Only block VERY_LIKELY violence (gore, etc.)
+        if (scores.violence === 'VERY_LIKELY') {
             blockedReasons.push('violent content');
         }
-        // Racy is more lenient - only block VERY_LIKELY
-        if (scores.racy === 'VERY_LIKELY') {
-            blockedReasons.push('explicit content');
-        }
+
+        // Racy is NOT blocked - stylized anime art often triggers this falsely
+        // This allows Genshin Impact, anime, and similar artistic content
 
         if (blockedReasons.length > 0) {
             console.log(`🎭 NSFW content detected: ${blockedReasons.join(', ')} - will replace with meme`);

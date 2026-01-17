@@ -193,7 +193,19 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
                             ) : (
                                 <>
                                     <div className="flex items-center gap-2">
-                                        <div className="h-8 w-8 rounded-full bg-neutral-100 dark:bg-zinc-800 border border-neutral-200 dark:border-white/5 flex items-center justify-center text-xs font-bold text-neutral-400 dark:text-white/50">
+                                        {course.instructorAvatar ? (
+                                            <img
+                                                src={course.instructorAvatar}
+                                                alt={course.instructor || "Instructor"}
+                                                className="h-8 w-8 rounded-full object-cover border border-neutral-200 dark:border-white/10"
+                                                onError={(e) => {
+                                                    // Fallback to initial on error
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                }}
+                                            />
+                                        ) : null}
+                                        <div className={`h-8 w-8 rounded-full bg-neutral-100 dark:bg-zinc-800 border border-neutral-200 dark:border-white/5 flex items-center justify-center text-xs font-bold text-neutral-400 dark:text-white/50 ${course.instructorAvatar ? 'hidden' : ''}`}>
                                             {(course.instructor || "A")[0]}
                                         </div>
                                         <div className="text-xs text-neutral-500 dark:text-zinc-500">
