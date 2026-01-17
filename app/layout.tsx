@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/theme";
 import { LanguageProvider } from "@/lib/i18n";
 import { CookieConsent } from "@/components/CookieConsent";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { OrganizationSchema, WebsiteSchema, EducationalOrganizationSchema } from "@/components/seo/StructuredData";
 
 // SEO Metadata
 export const metadata: Metadata = {
@@ -66,6 +67,19 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Gakuen",
   },
+  // Google Search Console verification - replace with your actual verification code
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || "",
+    // yandex: "your-yandex-verification",
+    // bing: "your-bing-verification",
+  },
+  alternates: {
+    canonical: "https://gakuen.app",
+    languages: {
+      "en-US": "https://gakuen.app",
+      "id-ID": "https://gakuen.app/id",
+    },
+  },
 };
 
 // Viewport configuration (separate from metadata in Next.js 14+)
@@ -113,8 +127,14 @@ export default function RootLayout({
             `,
           }}
         />
-        {/* Preconnect to external services */}
+        {/* Preconnect to external services for performance */}
         <link rel="dns-prefetch" href="https://www.youtube-nocookie.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Structured Data for Google Rich Results */}
+        <OrganizationSchema />
+        <WebsiteSchema />
+        <EducationalOrganizationSchema />
       </head>
       <body
         className="font-sans antialiased bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors duration-300"
