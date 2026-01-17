@@ -11,10 +11,7 @@ import {
     Plus,
     GripVertical,
     Trash2,
-    FolderOpen,
-    PanelRightOpen,
-    PanelRightClose,
-    X
+    FolderOpen
 } from "lucide-react";
 import { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
@@ -26,6 +23,7 @@ import { ContextMenu } from "@/components/cms/ContextMenu";
 import { CourseSettings } from "@/components/cms/CourseSettings";
 import { FluidEditor, FluidEditorRef } from "@/components/cms/FluidEditor";
 import { FluidEditorSidebar } from "@/components/cms/FluidEditorSidebar";
+import { MobileEditorToolbar } from "@/components/cms/MobileEditorToolbar";
 import { serializeToComponents, deserializeFromComponents } from "@/lib/cms/serialization";
 import { fetchCourse, updateCourse } from "@/lib/api/courseApi";
 import { saveCourseMetadata } from "@/lib/firebase/firestore";
@@ -658,6 +656,8 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                         editable={!previewMode}
                                         className="min-h-[300px]"
                                     />
+                                    {/* Mobile Inline Toolbar */}
+                                    <MobileEditorToolbar editor={fluidEditor} />
                                 </div>
                             ) : (
                                 /* Classic Editor Mode - Block-based with drag-drop */
@@ -1009,40 +1009,8 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                     )}
                 </main>
 
-                {/* Mobile Sidebar Toggle Button */}
-                <button
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="md:hidden fixed bottom-20 right-4 z-50 p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-lg transition-all"
-                    aria-label="Toggle sidebar"
-                >
-                    {sidebarOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
-                </button>
-
-                {/* Mobile Sidebar Overlay */}
-                {sidebarOpen && (
-                    <div
-                        className="md:hidden fixed inset-0 bg-black/50 z-40"
-                        onClick={() => setSidebarOpen(false)}
-                    />
-                )}
-
-                {/* Right Panel - Responsive sidebar */}
-                <aside className={`
-                    fixed md:relative md:block
-                    top-0 right-0 h-full
-                    w-80 shrink-0
-                    z-50 md:z-auto
-                    transform transition-transform duration-300 ease-in-out
-                    ${sidebarOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
-                `}>
-                    {/* Mobile close button */}
-                    <button
-                        onClick={() => setSidebarOpen(false)}
-                        className="md:hidden absolute top-3 right-3 z-10 p-2 text-zinc-400 hover:text-white"
-                    >
-                        <X size={20} />
-                    </button>
-
+                {/* Right Panel - Desktop only (mobile uses inline toolbar) */}
+                <aside className="hidden md:block w-80 shrink-0">
                     {activeView === 'content' && editorMode === 'fluid' ? (
                         <FluidEditorSidebar
                             editor={fluidEditor}
