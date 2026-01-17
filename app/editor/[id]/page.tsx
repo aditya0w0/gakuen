@@ -11,7 +11,10 @@ import {
     Plus,
     GripVertical,
     Trash2,
-    FolderOpen
+    FolderOpen,
+    PanelRightOpen,
+    PanelRightClose,
+    X
 } from "lucide-react";
 import { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
@@ -135,6 +138,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     const [inlineTyping, setInlineTyping] = useState(false);
     const [editorMode, setEditorMode] = useState<'classic' | 'fluid'>('fluid'); // Default to fluid for Notion-like experience
     const [fluidEditor, setFluidEditor] = useState<import('@tiptap/react').Editor | null>(null);
+    const [sidebarOpen, setSidebarOpen] = useState(false); // Hidden on mobile by default
     const inlineInputRef = useRef<HTMLTextAreaElement>(null);
     const fluidEditorRef = useRef<FluidEditorRef>(null);
     const _saveTimeoutRef = useRef<NodeJS.Timeout | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -1004,8 +1008,40 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                     )}
                 </main>
 
-                {/* Right Panel - Conditional based on editor mode */}
-                <aside className="w-80 shrink-0">
+                {/* Mobile Sidebar Toggle Button */}
+                <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="md:hidden fixed bottom-20 right-4 z-50 p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-lg transition-all"
+                    aria-label="Toggle sidebar"
+                >
+                    {sidebarOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+                </button>
+
+                {/* Mobile Sidebar Overlay */}
+                {sidebarOpen && (
+                    <div
+                        className="md:hidden fixed inset-0 bg-black/50 z-40"
+                        onClick={() => setSidebarOpen(false)}
+                    />
+                )}
+
+                {/* Right Panel - Responsive sidebar */}
+                <aside className={`
+                    fixed md:relative md:block
+                    top-0 right-0 h-full
+                    w-80 shrink-0
+                    z-50 md:z-auto
+                    transform transition-transform duration-300 ease-in-out
+                    ${sidebarOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+                `}>
+                    {/* Mobile close button */}
+                    <button
+                        onClick={() => setSidebarOpen(false)}
+                        className="md:hidden absolute top-3 right-3 z-10 p-2 text-zinc-400 hover:text-white"
+                    >
+                        <X size={20} />
+                    </button>
+
                     {activeView === 'content' && editorMode === 'fluid' ? (
                         <FluidEditorSidebar
                             editor={fluidEditor}
