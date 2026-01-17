@@ -175,7 +175,7 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
 
     const setBlockType = (type: string) => {
         if (type === 'paragraph') {
-            editor.chain().focus().setParagraph().run();
+            editor.chain().focus().clearNodes().run();
         } else if (type === 'h1') {
             editor.chain().focus().toggleHeading({ level: 1 }).run();
         } else if (type === 'h2') {
