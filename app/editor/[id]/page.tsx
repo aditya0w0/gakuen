@@ -375,10 +375,10 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     // Get initial content for FluidEditor from existing components
     const getFluidEditorInitialContent = () => {
         if (components.length === 0) return '';
-        // Convert Component[] to Tiptap JSON, then let Tiptap render it
+        // Convert Component[] to Tiptap JSON object
         const doc = deserializeFromComponents(components);
-        // Return as JSON string for Tiptap to parse
-        return JSON.stringify(doc);
+        // Return as JSON object for Tiptap (not stringified)
+        return doc;
     };
 
     // Context menu handlers
