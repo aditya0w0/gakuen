@@ -1,6 +1,6 @@
 // Firebase initialization and configuration
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
-import { getAuth, Auth } from "firebase/auth";
+import { getAuth, Auth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 import type { FirebaseConfig } from "./types";
 
@@ -24,8 +24,9 @@ export const isFirebaseEnabled = (): boolean => {
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
+let persistenceSet = false;
 
-export const initFirebase = () => {
+export const initFirebase = async () => {
     if (!isFirebaseEnabled()) {
         console.log("Firebase disabled - using local storage only");
         return { app: null, auth: null, db: null };
@@ -35,7 +36,17 @@ export const initFirebase = () => {
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
-        console.log("Firebase initialized");
+
+        // Set persistence to LOCAL - survives browser restarts
+        if (!persistenceSet && typeof window !== 'undefined') {
+            try {
+                await setPersistence(auth, browserLocalPersistence);
+                persistenceSet = true;
+                console.log("Firebase initialized with LOCAL persistence");
+            } catch (error) {
+                console.warn("Failed to set Firebase persistence:", error);
+            }
+        }
     } else {
         app = getApps()[0];
         auth = getAuth(app);

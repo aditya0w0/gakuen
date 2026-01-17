@@ -6,6 +6,7 @@ import { sanitizeString, validateCourseId } from '@/lib/api/validators';
 export const dynamic = 'force-dynamic';
 
 // GET is public - anyone can browse courses
+// 🔒 SECURITY: Only return safe metadata, NOT full lesson content
 export async function GET() {
     try {
         let courses = await listCourses();
@@ -28,7 +29,28 @@ export async function GET() {
             // Continue with file-based data
         }
 
-        return NextResponse.json(courses, {
+        // 🔒 SECURITY: Strip sensitive data from public listing
+        // Only return metadata needed for course browsing/discovery
+        // Full lesson content is only available via /api/courses/[id] for enrolled users
+        const publicCourses = courses.map(course => ({
+            id: course.id,
+            title: course.title,
+            description: course.description,
+            thumbnail: course.thumbnail,
+            category: course.category,
+            level: course.level,
+            duration: course.duration,
+            lessonsCount: course.lessonsCount || course.lessons?.length || 0,
+            enrolledCount: course.enrolledCount || 0,
+            rating: course.rating || 0,
+            price: course.price || 0,
+            instructor: course.instructor,
+            isPublished: course.isPublished,
+            createdAt: course.createdAt,
+            // ❌ DO NOT include: lessons, content, components, createdBy
+        }));
+
+        return NextResponse.json(publicCourses, {
             headers: {
                 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
                 'Pragma': 'no-cache',
@@ -39,6 +61,7 @@ export async function GET() {
         return safeErrorResponse(error, 'Failed to fetch courses');
     }
 }
+
 
 // POST requires admin
 export async function POST(request: NextRequest) {

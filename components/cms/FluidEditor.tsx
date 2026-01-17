@@ -250,6 +250,8 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
                 heading: {
                     levels: [1, 2, 3],
                 },
+                // Disable Link - we configure it separately below
+                link: false,
             }),
             Placeholder.configure({
                 placeholder,

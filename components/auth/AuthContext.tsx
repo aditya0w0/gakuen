@@ -25,53 +25,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
 
     useEffect(() => {
-        // Initialize Firebase
-        initFirebase();
+        let mounted = true;
 
-        // Load user from cache immediately (O(1))
-        const cachedUser = hybridStorage.auth.getSession();
-        if (cachedUser) {
-            setUser(cachedUser);
-            setIsLoading(false);
+        const initAuth = async () => {
+            // Initialize Firebase with persistence (async)
+            await initFirebase();
 
-            // Sync cookie with localStorage (for existing sessions)
-            import('@/lib/auth/cookies').then(({ authCookies }) => {
-                authCookies.set(cachedUser);
-            });
-        }
+            // Load user from cache immediately (O(1))
+            const cachedUser = hybridStorage.auth.getSession();
+            if (cachedUser && mounted) {
+                setUser(cachedUser);
+                setIsLoading(false);
 
-        // Also listen to Firebase auth state for real-time sync
-        import('@/lib/firebase/auth').then(({ firebaseAuth }) => {
-            import('@/lib/firebase/firestore').then(({ getUserProfile }) => {
+                // Sync cookie with localStorage (for existing sessions)
+                import('@/lib/auth/cookies').then(({ authCookies }) => {
+                    authCookies.set(cachedUser);
+                });
+            }
+
+            // Listen to Firebase auth state for real-time sync & session restoration
+            try {
+                const { firebaseAuth } = await import('@/lib/firebase/auth');
+                const { getUserProfile } = await import('@/lib/firebase/firestore');
+
                 const unsubscribe = firebaseAuth.onAuthChange(async (firebaseUser) => {
+                    if (!mounted) return;
+
                     if (firebaseUser) {
                         // User is signed in - get full profile
                         const profile = await getUserProfile(firebaseUser.uid);
-                        if (profile) {
+                        if (profile && mounted) {
                             setUser(profile);
-                            // Update localStorage
+                            // Update localStorage to keep cache in sync
                             import('@/lib/storage/local-cache').then(({ localCache }) => {
                                 localCache.user.set(profile);
                             });
+                            // Also update cookie
+                            import('@/lib/auth/cookies').then(({ authCookies }) => {
+                                authCookies.set(profile);
+                            });
                         }
-                    } else {
-                        // User signed out
+                    } else if (!cachedUser) {
+                        // Only clear user if we also don't have cached user
+                        // This prevents flash during logout navigation
                         setUser(null);
                     }
                     setIsLoading(false);
                 });
 
-                // Cleanup listener on unmount
-                return () => unsubscribe();
-            });
-        });
+                return unsubscribe;
+            } catch (error) {
+                console.error('Failed to setup auth listener:', error);
+                if (mounted) setIsLoading(false);
+            }
+        };
 
-        // Set loading to false after initial check if no cached user
-        if (!cachedUser) {
-            // Give Firebase a moment to initialize, then set loading false
-            const timeout = setTimeout(() => setIsLoading(false), 500);
-            return () => clearTimeout(timeout);
-        }
+        // Set loading to false after timeout if Firebase takes too long
+        const timeout = setTimeout(() => {
+            if (mounted) setIsLoading(false);
+        }, 2000);
+
+        initAuth();
+
+        return () => {
+            mounted = false;
+            clearTimeout(timeout);
+        };
     }, []);
 
     const login = async (email: string, password: string) => {
@@ -141,11 +160,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = async () => {
         setIsLoading(true);
-        await hybridStorage.auth.logout();
-        setUser(null);
+        setUser(null); // Clear user first to prevent any re-auth race conditions
         setError(null);
+
+        // Navigate BEFORE async logout to ensure immediate redirect
+        router.replace("/login");
+
+        // Then cleanup in background
+        await hybridStorage.auth.logout();
         setIsLoading(false);
-        router.push("/");
     };
 
     const refreshUser = async () => {

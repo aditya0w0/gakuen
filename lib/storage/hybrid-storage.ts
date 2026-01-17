@@ -4,6 +4,7 @@ import { localCache } from "./local-cache";
 import { syncManager } from "./sync-manager";
 import { firebaseAuth } from "../firebase/auth";
 import { isFirebaseEnabled } from "../firebase/config";
+import { getFirebaseErrorMessage } from "../firebase/firebase-errors";
 
 export const hybridStorage = {
     // Authentication
@@ -20,24 +21,32 @@ export const hybridStorage = {
                 authCookies.clear();
             }
 
-            const user = await firebaseAuth.signIn(email, password);
-            if (user) {
-                localCache.user.set(user);
+            try {
+                const user = await firebaseAuth.signIn(email, password);
+                if (user) {
+                    localCache.user.set(user);
 
-                // Set cookie for middleware access
-                if (typeof window !== 'undefined') {
-                    const { authCookies } = await import('../auth/cookies');
-                    authCookies.set(user);
+                    // Set cookie for middleware access
+                    if (typeof window !== 'undefined') {
+                        const { authCookies } = await import('../auth/cookies');
+                        authCookies.set(user);
+                    }
+
+                    await syncManager.pullProgress(user.id);
+                    return user;
                 }
-
-                await syncManager.pullProgress(user.id);
-                return user;
+                throw new Error("Login failed");
+            } catch (error) {
+                throw new Error(getFirebaseErrorMessage(error));
             }
-            throw new Error("Login failed");
         },
 
         async signup(email: string, password: string, name: string): Promise<User> {
-            if (isFirebaseEnabled()) {
+            if (!isFirebaseEnabled()) {
+                throw new Error("Signup requires Firebase. Please enable Firebase in settings.");
+            }
+
+            try {
                 const user = await firebaseAuth.signUp(email, password, name);
 
                 // Set user immediately
@@ -60,10 +69,9 @@ export const hybridStorage = {
                 localCache.progress.set(emptyProgress);
 
                 return user;
+            } catch (error) {
+                throw new Error(getFirebaseErrorMessage(error));
             }
-
-            // Local signup not supported - need Firebase
-            throw new Error("Signup requires Firebase. Please enable Firebase in settings.");
         },
 
         async signInWithGoogle(): Promise<User> {
@@ -78,35 +86,39 @@ export const hybridStorage = {
                 authCookies.clear();
             }
 
-            const user = await firebaseAuth.signInWithGoogle();
-            if (!user) {
-                throw new Error("Google sign-in failed");
-            }
-
-            localCache.user.set(user);
-
-            // Set cookie for middleware access
-            if (typeof window !== 'undefined') {
-                const { authCookies } = await import('../auth/cookies');
-                authCookies.set(user);
-            }
-
-            // Try to pull progress, but don't fail if it doesn't exist
             try {
-                await syncManager.pullProgress(user.id);
-            } catch (error) {
-                // First-time Google user - initialize empty progress
-                const emptyProgress = {
-                    completedLessons: [],
-                    courseProgress: {},
-                    totalHours: 0,
-                    currentStreak: 0,
-                    lastActivity: new Date().toISOString(),
-                };
-                localCache.progress.set(emptyProgress);
-            }
+                const user = await firebaseAuth.signInWithGoogle();
+                if (!user) {
+                    throw new Error("Google sign-in failed");
+                }
 
-            return user;
+                localCache.user.set(user);
+
+                // Set cookie for middleware access
+                if (typeof window !== 'undefined') {
+                    const { authCookies } = await import('../auth/cookies');
+                    authCookies.set(user);
+                }
+
+                // Try to pull progress, but don't fail if it doesn't exist
+                try {
+                    await syncManager.pullProgress(user.id);
+                } catch {
+                    // First-time Google user - initialize empty progress
+                    const emptyProgress = {
+                        completedLessons: [],
+                        courseProgress: {},
+                        totalHours: 0,
+                        currentStreak: 0,
+                        lastActivity: new Date().toISOString(),
+                    };
+                    localCache.progress.set(emptyProgress);
+                }
+
+                return user;
+            } catch (error) {
+                throw new Error(getFirebaseErrorMessage(error));
+            }
         },
 
         async logout(): Promise<void> {

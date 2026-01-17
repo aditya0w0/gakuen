@@ -6,7 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, BookOpen, TrendingUp, DollarSign, Eye, Edit, Trash2, Settings, Zap, CreditCard, Cloud } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { dashboardCache, CACHE_KEYS } from "@/lib/cache/dashboard-cache";
 
 // Dashboard thumbnail with error handling
 function DashboardThumbnail({ src, alt }: { src?: string; alt: string }) {
@@ -61,56 +62,90 @@ interface RecentUser {
 
 export default function AdminDashboard() {
     const { user } = useAuth();
-    const [courses, setCourses] = useState<Course[]>([]);
-    const [stats, setStats] = useState<DashboardStats | null>(null);
-    const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [features, setFeatures] = useState<FeatureFlags | null>(null);
+    const [courses, setCourses] = useState<Course[]>(() =>
+        dashboardCache.getCached<Course[]>(CACHE_KEYS.COURSES) || []
+    );
+    const [stats, setStats] = useState<DashboardStats | null>(() =>
+        dashboardCache.getCached<DashboardStats>(CACHE_KEYS.STATS)
+    );
+    const [recentUsers, setRecentUsers] = useState<RecentUser[]>(() =>
+        dashboardCache.getCached<{ users: RecentUser[] }>(CACHE_KEYS.USERS)?.users || []
+    );
+    const [features, setFeatures] = useState<FeatureFlags | null>(() =>
+        dashboardCache.getCached<FeatureFlags>(CACHE_KEYS.FEATURES)
+    );
+
+    // Only show loading if we have NO cached data at all
+    const hasCachedData = courses.length > 0 || stats !== null || recentUsers.length > 0;
+    const [isLoading, setIsLoading] = useState(!hasCachedData);
     const [isTogglingFeature, setIsTogglingFeature] = useState<string | null>(null);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const isMounted = useRef(true);
+
+    // Fetchers for each data type
+    const fetchCourses = useCallback(() =>
+        fetch('/api/courses').then(r => r.ok ? r.json() : [])
+        , []);
+
+    const fetchStats = useCallback(() =>
+        fetch('/api/admin/dashboard').then(r => r.ok ? r.json() : null)
+        , []);
+
+    const fetchUsers = useCallback(() =>
+        fetch('/api/admin/users?limit=5&page=1').then(r => r.ok ? r.json() : { users: [] })
+        , []);
+
+    const fetchFeatures = useCallback(() =>
+        fetch('/api/admin/features').then(r => r.ok ? r.json() : null)
+        , []);
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
+        isMounted.current = true;
+
+        const loadDashboardData = async () => {
+            // If we have cached data, show it immediately (already set in useState)
+            // Then fetch fresh data in the background
+
             try {
-                // Fetch all data in parallel for faster loading
-                const [coursesRes, statsRes, usersRes, featuresRes] = await Promise.all([
-                    fetch('/api/courses', { cache: 'no-store' }),
-                    fetch('/api/admin/dashboard'),
-                    fetch('/api/admin/users?limit=5&page=1'),
-                    fetch('/api/admin/features'),
+                // Fetch all data using cache (stale-while-revalidate)
+                const [coursesData, statsData, usersData, featuresData] = await Promise.all([
+                    dashboardCache.get(CACHE_KEYS.COURSES, fetchCourses, (data) => {
+                        if (isMounted.current && Array.isArray(data)) setCourses(data);
+                    }),
+                    dashboardCache.get(CACHE_KEYS.STATS, fetchStats, (data) => {
+                        if (isMounted.current && data) setStats(data);
+                    }),
+                    dashboardCache.get(CACHE_KEYS.USERS, fetchUsers, (data) => {
+                        if (isMounted.current && data?.users) setRecentUsers(data.users);
+                    }),
+                    dashboardCache.get(CACHE_KEYS.FEATURES, fetchFeatures, (data) => {
+                        if (isMounted.current && data) setFeatures(data);
+                    }),
                 ]);
 
-                // Process courses
-                if (coursesRes.ok) {
-                    const coursesData = await coursesRes.json();
-                    setCourses(Array.isArray(coursesData) ? coursesData : []);
-                }
-
-                // Process stats
-                if (statsRes.ok) {
-                    const statsData = await statsRes.json();
-                    setStats(statsData);
-                }
-
-                // Process users
-                if (usersRes.ok) {
-                    const usersData = await usersRes.json();
-                    setRecentUsers(usersData.users || []);
-                }
-
-                // Process feature flags
-                if (featuresRes.ok) {
-                    const featuresData = await featuresRes.json();
-                    setFeatures(featuresData);
+                // Update state with fetched data
+                if (isMounted.current) {
+                    if (Array.isArray(coursesData)) setCourses(coursesData);
+                    if (statsData) setStats(statsData);
+                    if (usersData?.users) setRecentUsers(usersData.users);
+                    if (featuresData) setFeatures(featuresData);
                 }
             } catch (error) {
                 console.error('Failed to fetch dashboard data:', error);
             } finally {
-                setIsLoading(false);
+                if (isMounted.current) {
+                    setIsLoading(false);
+                    setIsRefreshing(false);
+                }
             }
         };
 
-        fetchDashboardData();
-    }, []);
+        loadDashboardData();
+
+        return () => {
+            isMounted.current = false;
+        };
+    }, [fetchCourses, fetchStats, fetchUsers, fetchFeatures]);
 
     // Toggle feature handler
     const handleToggleFeature = async (feature: 'subscriptionsEnabled' | 'aiEnabled' | 'freeCoursesMode' | 'disableRateLimits' | 'aiUnlimitedMode') => {

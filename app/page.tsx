@@ -638,7 +638,7 @@ export default function LandingPage() {
                 name: "Sarah Chen",
                 rank: "Lv. 70",
                 role: "Software Engineer",
-                avatar: "S",
+                avatar: "https://i.pravatar.cc/150?img=5",
                 color: "from-cyan-500 to-blue-600",
                 quote: "Finally, an AI tutor that actually understands how I learn. Like having a brilliant friend who's always free.",
                 rating: 5,
@@ -647,7 +647,7 @@ export default function LandingPage() {
                 name: "Marcus Rivera",
                 rank: "Lv. 45",
                 role: "CS Student",
-                avatar: "M",
+                avatar: "https://i.pravatar.cc/150?img=12",
                 color: "from-amber-400 to-orange-500",
                 quote: "Went from struggling in algorithms to acing my interviews. The adaptive learning is game-changing.",
                 rating: 5,
@@ -656,9 +656,36 @@ export default function LandingPage() {
                 name: "Emily Zhang",
                 rank: "Lv. 82",
                 role: "Tech Lead @ Meta",
-                avatar: "E",
+                avatar: "https://i.pravatar.cc/150?img=9",
                 color: "from-purple-500 to-pink-500",
                 quote: "I've tried every learning platform. This is the only one that feels like it was built for engineers.",
+                rating: 5,
+              },
+              {
+                name: "James Okonkwo",
+                rank: "Lv. 55",
+                role: "Data Scientist",
+                avatar: "https://i.pravatar.cc/150?img=68",
+                color: "from-emerald-500 to-teal-500",
+                quote: "The AI tutor explains complex ML concepts in ways my professors never could. Worth every minute.",
+                rating: 5,
+              },
+              {
+                name: "Priya Sharma",
+                rank: "Lv. 63",
+                role: "Frontend Dev @ Stripe",
+                avatar: "https://i.pravatar.cc/150?img=25",
+                color: "from-rose-500 to-pink-500",
+                quote: "From bootcamp grad to senior dev in 18 months. The personalized learning path made all the difference.",
+                rating: 5,
+              },
+              {
+                name: "Alex Kim",
+                rank: "Lv. 38",
+                role: "Career Changer",
+                avatar: "https://i.pravatar.cc/150?img=33",
+                color: "from-indigo-500 to-violet-500",
+                quote: "Switched from marketing to tech at 35. This platform made the transition smooth and actually enjoyable!",
                 rating: 5,
               },
             ].map((review, i) => (
@@ -667,7 +694,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: i * 0.15 }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
                 className="group relative"
               >
                 {/* Card */}
@@ -687,9 +714,11 @@ export default function LandingPage() {
 
                   {/* User Info */}
                   <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${review.color} flex items-center justify-center text-white font-bold text-lg`}>
-                      {review.avatar}
-                    </div>
+                    <img
+                      src={review.avatar}
+                      alt={review.name}
+                      className="w-12 h-12 rounded-lg object-cover ring-2 ring-white/10"
+                    />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-white">{review.name}</span>
