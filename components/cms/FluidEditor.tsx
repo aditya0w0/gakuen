@@ -213,7 +213,7 @@ function SlashCommandMenu({
 
 // Editor props
 export interface FluidEditorProps {
-    initialContent?: string;
+    initialContent?: string | object;
     onUpdate?: (html: string, json: object) => void;
     onEditorReady?: (editor: Editor) => void;
     placeholder?: string;
