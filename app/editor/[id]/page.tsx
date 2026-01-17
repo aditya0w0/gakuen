@@ -49,34 +49,34 @@ const TopBar = ({
     onViewChange: (view: 'content' | 'settings' | 'sections') => void;
     isPublished: boolean;
 }) => (
-    <header className="h-14 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center space-x-3">
+    <header className="h-12 md:h-14 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between px-2 md:px-4 shrink-0">
+        <div className="flex items-center space-x-2 md:space-x-3">
             <Link href="/courses" className="text-zinc-500 hover:text-white transition-colors">
                 <ChevronLeft size={20} />
             </Link>
-            <div className="flex space-x-1 bg-zinc-900/50 p-1 rounded-lg border border-zinc-800/50">
+            <div className="flex space-x-0.5 md:space-x-1 bg-zinc-900/50 p-0.5 md:p-1 rounded-lg border border-zinc-800/50">
                 <button
                     onClick={() => onViewChange('content')}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${activeView === 'content' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`px-2 md:px-3 py-1 text-[10px] md:text-xs font-semibold rounded-md transition-colors ${activeView === 'content' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}
                 >
                     Content
                 </button>
                 <button
                     onClick={() => onViewChange('settings')}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${activeView === 'settings' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`px-2 md:px-3 py-1 text-[10px] md:text-xs font-semibold rounded-md transition-colors ${activeView === 'settings' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}
                 >
                     Settings
                 </button>
                 <button
                     onClick={() => onViewChange('sections')}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${activeView === 'sections' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`px-2 md:px-3 py-1 text-[10px] md:text-xs font-semibold rounded-md transition-colors ${activeView === 'sections' ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700' : 'text-zinc-500 hover:text-zinc-300'}`}
                 >
                     Sections
                 </button>
             </div>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 md:space-x-3">
             <span className="text-xs text-zinc-500 bg-zinc-900 px-2.5 py-1 rounded-full border border-zinc-800 hidden md:inline-block">
                 {isSaving ? "Saving..." : "Saved"}
             </span>
@@ -92,13 +92,13 @@ const TopBar = ({
             <button
                 onClick={onSave}
                 disabled={isSaving}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors shadow-lg ${isPublished
+                className={`flex items-center space-x-1 md:space-x-1.5 px-2 md:px-3 py-1.5 text-xs font-medium rounded-lg transition-colors shadow-lg ${isPublished
                     ? 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'
                     : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/20'
                     }`}
             >
                 <Save size={14} />
-                <span>{isSaving ? 'Saving...' : isPublished ? 'Update' : 'Publish'}</span>
+                <span className="hidden sm:inline">{isSaving ? 'Saving...' : isPublished ? 'Update' : 'Publish'}</span>
             </button>
 
             <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full border border-zinc-800"></div>
@@ -464,7 +464,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                 >
                     {activeView === 'content' ? (
                         <div
-                            className="max-w-5xl mx-auto"
+                            className="max-w-5xl mx-auto px-2 md:px-0"
                             onDragOver={(e) => {
                                 e.preventDefault();
                                 e.dataTransfer.dropEffect = 'copy';
@@ -480,12 +480,13 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                         >
                             {/* Lesson Header */}
                             {currentLesson && (
-                                <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-800/50">
-                                    <div className="flex-1">
-                                        <div className="flex items-center space-x-2 text-zinc-500 text-xs mb-1.5">
-                                            <span className="text-zinc-600">{course.title}</span>
+                                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 pb-3 border-b border-zinc-800/50 px-4 pt-4">
+                                    <div className="flex-1 min-w-0">
+                                        {/* Breadcrumb - hidden on mobile */}
+                                        <div className="hidden md:flex items-center space-x-2 text-zinc-500 text-xs mb-1.5">
+                                            <span className="text-zinc-600 truncate">{course.title}</span>
                                             <ChevronDown size={10} className="-rotate-90" />
-                                            <span className="text-indigo-400">{currentLesson.title}</span>
+                                            <span className="text-indigo-400 truncate">{currentLesson.title}</span>
                                         </div>
                                         <input
                                             type="text"
@@ -500,7 +501,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                             placeholder="Lesson Title"
                                         />
                                     </div>
-                                    <div className="flex items-center gap-2 ml-4">
+                                    <div className="flex items-center gap-2 mt-2 md:mt-0 md:ml-4">
                                         {/* Lesson Selector with Drag Reorder */}
                                         <div className="relative" ref={lessonDropdownRef}>
                                             <button
