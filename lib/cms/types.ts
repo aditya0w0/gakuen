@@ -156,6 +156,7 @@ export type Component =
     | ImageComponent
     | VideoComponent
     | CodeComponent
+    | MultiFileCodeComponent
     | CTAComponent
     | DividerComponent
     | SpacerComponent
