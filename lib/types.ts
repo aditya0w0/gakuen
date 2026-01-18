@@ -17,6 +17,7 @@ export interface Lesson {
     imageUrl?: string;
     order: number;
     components?: Component[];
+    tiptapJson?: object; // Raw Tiptap JSON for FluidEditor - preserves tables and complex content
 }
 
 // Section for organizing lessons into collapsible groups

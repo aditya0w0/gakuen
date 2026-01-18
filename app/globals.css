@@ -392,3 +392,82 @@
 .ProseMirror h3[style*="text-align: justify"] {
   text-align: justify !important;
 }
+
+/* Modern Excel-like Table Styles */
+.ProseMirror .tiptap-table,
+.ProseMirror table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 1rem 0 !important;
+  table-layout: fixed !important;
+  border: 2px solid #3f3f46 !important;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ProseMirror th,
+.ProseMirror td,
+.ProseMirror [data-cell-type] {
+  border: 1px solid #52525b !important;
+  padding: 0.75rem 1rem !important;
+  position: relative;
+  vertical-align: top;
+  min-width: 80px;
+  box-sizing: border-box;
+}
+
+.ProseMirror th,
+.ProseMirror .tableHeader,
+.ProseMirror [data-cell-type="header"] {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  text-align: center;
+  border-color: #2563eb !important;
+}
+
+.ProseMirror td,
+.ProseMirror .tableCell {
+  background: #18181b !important;
+  color: #e4e4e7 !important;
+}
+
+.ProseMirror tr:nth-child(even) td,
+.ProseMirror tr:nth-child(even) .tableCell {
+  background: #1f1f23 !important;
+}
+
+.ProseMirror tr:hover td,
+.ProseMirror tr:hover .tableCell {
+  background: #27272a !important;
+}
+
+/* Selected cell styling */
+.ProseMirror .selectedCell {
+  background: rgba(99, 102, 241, 0.2) !important;
+  border-color: #6366f1 !important;
+}
+
+.ProseMirror .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 2px solid #6366f1;
+}
+
+/* Table resize handle */
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #6366f1;
+  cursor: col-resize;
+  z-index: 20;
+}
+
+.ProseMirror.resize-cursor {
+  cursor: col-resize;
+}

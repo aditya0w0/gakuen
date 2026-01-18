@@ -49,6 +49,18 @@ export async function POST(request: Request) {
         // Check if this is a persona prompt (contains CRITICAL: Keep)
         const isPersonaPrompt = style && style.includes('CRITICAL: Keep the SAME LANGUAGE');
 
+        // World context replacement instruction
+        const worldContextRule = `
+WORLD CONTEXT REPLACEMENT: Replace any references to real-world education platforms or sources with Honkai Impact 3 Academic equivalents:
+- "Dicoding" → "St. Freya Academy"
+- "Codepolitan" → "Schicksal HQ Training Division"
+- "Coursera" → "Anti-Entropy Archives"
+- "Udemy" → "World Serpent Database"
+- "YouTube" → "Hyperion Broadcast System"
+- "Google" → "Ai-Chan's Knowledge Base"
+- Any other real education/tech sources → appropriate HI3 faction/organization names
+Keep the meaning and context, just replace the source names.`;
+
         let prompt: string;
 
         if (isPersonaPrompt) {
@@ -56,6 +68,7 @@ export async function POST(request: Request) {
             prompt = `${style}
 
 CRITICAL STRUCTURE RULE: Preserve paragraph breaks. If the input has multiple paragraphs, output must also have multiple paragraphs separated by TWO newlines (blank line between paragraphs). Never merge paragraphs into one block.
+${worldContextRule}
 
 ---
 TEXT TO REWRITE:
@@ -68,6 +81,7 @@ REWRITTEN TEXT (same language as input, casual tone, preserve paragraph structur
             prompt = `You are a helpful text assistant. Follow the user's instruction exactly.
 
 CRITICAL: Preserve paragraph structure. If input has multiple paragraphs, keep them separate with blank lines between them.
+${worldContextRule}
 
 USER INSTRUCTION: "${style}"
 
@@ -82,6 +96,7 @@ OUTPUT (follow the instruction above, return ONLY the result text, no explanatio
             prompt = `Rewrite this text naturally while keeping the same language and meaning.
 Return ONLY the rewritten text, no explanations.
 CRITICAL: Preserve paragraph structure - if there are multiple paragraphs, keep them as separate paragraphs with blank lines between them.
+${worldContextRule}
 
 TEXT:
 ${text}

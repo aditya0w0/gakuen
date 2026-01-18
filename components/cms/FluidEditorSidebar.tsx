@@ -38,6 +38,14 @@ import {
     Zap,
     Cpu,
     Files,
+    Table2,
+    Plus,
+    Trash2,
+    RowsIcon,
+    Columns,
+    Space,
+    IndentIncrease,
+    IndentDecrease,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Component } from '@/lib/cms/types';
@@ -188,7 +196,7 @@ export function FluidEditorSidebar({ editor, onInsertComponent }: FluidEditorSid
     // Capture active marks from current selection (for preserving styling after AI rewrite)
     const captureActiveMarks = () => {
         const marks: string[] = [];
-        if (!editor) return { marks, color: undefined, fontSize: undefined };
+        if (!editor) return { marks, color: undefined, fontSize: undefined, blockType: 'paragraph' as string, headingLevel: undefined as number | undefined };
 
         if (editor.isActive('bold')) marks.push('bold');
         if (editor.isActive('italic')) marks.push('italic');
@@ -201,21 +209,44 @@ export function FluidEditorSidebar({ editor, onInsertComponent }: FluidEditorSid
         const color = textStyle?.color;
         const fontSize = textStyle?.fontSize;
 
-        return { marks, color, fontSize };
+        // Capture block type (heading or paragraph)
+        let blockType = 'paragraph';
+        let headingLevel: number | undefined;
+        if (editor.isActive('heading', { level: 1 })) {
+            blockType = 'heading';
+            headingLevel = 1;
+        } else if (editor.isActive('heading', { level: 2 })) {
+            blockType = 'heading';
+            headingLevel = 2;
+        } else if (editor.isActive('heading', { level: 3 })) {
+            blockType = 'heading';
+            headingLevel = 3;
+        }
+
+        return { marks, color, fontSize, blockType, headingLevel };
     };
 
     // Insert text and reapply captured marks
-    const insertWithPreservedMarks = (text: string, capturedMarks: { marks: string[]; color?: string; fontSize?: string }, from: number, to: number) => {
+    const insertWithPreservedMarks = (text: string, capturedMarks: { marks: string[]; color?: string; fontSize?: string; blockType?: string; headingLevel?: number }, from: number, to: number) => {
         // First insert the text at the position
         const insertLength = text.length;
 
         if (!editor) return;
 
-        // Convert text with newlines to HTML paragraphs so they don't inherit current block type
-        // Split by double newlines (paragraph breaks) and wrap each in <p> tags
+        // Use captured block type or default to paragraph
+        const blockType = capturedMarks.blockType || 'paragraph';
+        const headingLevel = capturedMarks.headingLevel;
+
+        // Convert text with newlines to proper block elements preserving block type
         const htmlContent = text
             .split(/\n\n+/)
-            .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+            .map(para => {
+                const cleanPara = para.replace(/\n/g, '<br>');
+                if (blockType === 'heading' && headingLevel) {
+                    return `<h${headingLevel}>${cleanPara}</h${headingLevel}>`;
+                }
+                return `<p>${cleanPara}</p>`;
+            })
             .join('');
 
         // Replace the selection with new HTML content (not plain text)
@@ -582,6 +613,125 @@ export function FluidEditorSidebar({ editor, onInsertComponent }: FluidEditorSid
                     </div>
                 </div>
 
+                {/* Line Spacing (Current Paragraph) */}
+                <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Line Spacing</label>
+                    <div className="flex gap-1">
+                        {[
+                            { label: '1.4', value: '1.4' },
+                            { label: '1.6', value: '1.6' },
+                            { label: '1.8', value: '1.8' },
+                            { label: '2.0', value: '2' },
+                        ].map((spacing) => (
+                            <button
+                                key={spacing.label}
+                                onClick={() => editor.chain().focus().setLineHeight(spacing.value).run()}
+                                className={`flex-1 p-2 rounded-lg border transition-all text-[10px] ${editor.isActive({ lineHeight: spacing.value })
+                                    ? 'bg-indigo-600/30 border-indigo-500/50 text-indigo-300'
+                                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'
+                                    }`}
+                                title={`Set line height to ${spacing.value}`}
+                            >
+                                {spacing.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Indentation (Current Paragraph) */}
+                <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Indentation</label>
+                    <div className="flex gap-1">
+                        <button
+                            onClick={() => {
+                                // Get the current selection position
+                                const { from } = editor.state.selection;
+                                try {
+                                    const domInfo = editor.view.domAtPos(from);
+                                    let targetEl = domInfo.node as HTMLElement;
+                                    // Walk up to find the block element (p, h1-h3, blockquote, li)
+                                    while (targetEl && !['P', 'H1', 'H2', 'H3', 'BLOCKQUOTE', 'LI'].includes(targetEl.tagName)) {
+                                        targetEl = targetEl.parentElement!;
+                                    }
+                                    if (targetEl) {
+                                        const current = parseInt(targetEl.style.paddingLeft || '0');
+                                        targetEl.style.paddingLeft = `${Math.max(0, current - 24)}px`;
+                                    }
+                                } catch (e) {
+                                    console.warn('Could not apply indent');
+                                }
+                            }}
+                            className="flex-1 p-2 rounded-lg border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-all"
+                            title="Decrease indent (current paragraph)"
+                        >
+                            <IndentDecrease size={14} className="mx-auto" />
+                        </button>
+                        <button
+                            onClick={() => {
+                                const { from } = editor.state.selection;
+                                try {
+                                    const domInfo = editor.view.domAtPos(from);
+                                    let targetEl = domInfo.node as HTMLElement;
+                                    while (targetEl && !['P', 'H1', 'H2', 'H3', 'BLOCKQUOTE', 'LI'].includes(targetEl.tagName)) {
+                                        targetEl = targetEl.parentElement!;
+                                    }
+                                    if (targetEl) {
+                                        const current = parseInt(targetEl.style.paddingLeft || '0');
+                                        targetEl.style.paddingLeft = `${current + 24}px`;
+                                    }
+                                } catch (e) {
+                                    console.warn('Could not apply indent');
+                                }
+                            }}
+                            className="flex-1 p-2 rounded-lg border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-all"
+                            title="Increase indent (current paragraph)"
+                        >
+                            <IndentIncrease size={14} className="mx-auto" />
+                        </button>
+                        <button
+                            onClick={() => {
+                                const { from } = editor.state.selection;
+                                try {
+                                    const domInfo = editor.view.domAtPos(from);
+                                    let targetEl = domInfo.node as HTMLElement;
+                                    while (targetEl && !['P', 'H1', 'H2', 'H3', 'BLOCKQUOTE', 'LI'].includes(targetEl.tagName)) {
+                                        targetEl = targetEl.parentElement!;
+                                    }
+                                    if (targetEl) {
+                                        targetEl.style.paddingLeft = '';
+                                    }
+                                } catch (e) {
+                                    console.warn('Could not reset indent');
+                                }
+                            }}
+                            className="flex-1 p-2 rounded-lg border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-all text-[10px]"
+                            title="Reset indent (current paragraph)"
+                        >
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                {/* Reset All Formatting */}
+                <div className="space-y-1.5">
+                    <button
+                        onClick={() => {
+                            // Remove all inline styles from text elements
+                            editor.view.dom.querySelectorAll('p, h1, h2, h3, li, blockquote').forEach((el) => {
+                                (el as HTMLElement).style.lineHeight = '';
+                                (el as HTMLElement).style.marginBottom = '';
+                                (el as HTMLElement).style.paddingLeft = '';
+                            });
+                        }}
+                        className="w-full p-2 rounded-lg border bg-red-900/20 border-red-800/40 text-red-400 hover:text-red-300 hover:border-red-600 transition-all text-[10px] flex items-center justify-center gap-2"
+                        title="Reset all formatting for entire document"
+                    >
+                        <RotateCcw size={12} />
+                        Reset All Formatting
+                    </button>
+                </div>
+
+
                 {/* Text Color */}
                 <div className="space-y-1.5">
                     <label className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Text Color</label>
@@ -784,8 +934,74 @@ export function FluidEditorSidebar({ editor, onInsertComponent }: FluidEditorSid
                             <Files size={14} />
                             <span className="text-[9px]">Files</span>
                         </button>
+                        <button
+                            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                            className="flex flex-col items-center gap-0.5 p-2 rounded-lg border bg-gradient-to-br from-blue-600/20 to-cyan-600/20 border-blue-500/30 text-blue-300 hover:text-white hover:border-blue-400 transition-all"
+                            title="Insert Table (3x3)"
+                        >
+                            <Table2 size={14} />
+                            <span className="text-[9px]">Table</span>
+                        </button>
                     </div>
                 </div>
+
+                {/* Table Controls - shown when in table */}
+                {editor.isActive('table') && (
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Table Controls</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                            <button
+                                onClick={() => editor.chain().focus().addRowBefore().run()}
+                                className="flex items-center justify-center gap-1 p-2 rounded-lg border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-all text-[10px]"
+                                title="Add row above"
+                            >
+                                <Plus size={12} /><RowsIcon size={12} /> Above
+                            </button>
+                            <button
+                                onClick={() => editor.chain().focus().addRowAfter().run()}
+                                className="flex items-center justify-center gap-1 p-2 rounded-lg border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-all text-[10px]"
+                                title="Add row below"
+                            >
+                                <Plus size={12} /><RowsIcon size={12} /> Below
+                            </button>
+                            <button
+                                onClick={() => editor.chain().focus().addColumnBefore().run()}
+                                className="flex items-center justify-center gap-1 p-2 rounded-lg border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-all text-[10px]"
+                                title="Add column left"
+                            >
+                                <Plus size={12} /><Columns size={12} /> Left
+                            </button>
+                            <button
+                                onClick={() => editor.chain().focus().addColumnAfter().run()}
+                                className="flex items-center justify-center gap-1 p-2 rounded-lg border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-all text-[10px]"
+                                title="Add column right"
+                            >
+                                <Plus size={12} /><Columns size={12} /> Right
+                            </button>
+                            <button
+                                onClick={() => editor.chain().focus().deleteRow().run()}
+                                className="flex items-center justify-center gap-1 p-2 rounded-lg border bg-red-900/30 border-red-800/50 text-red-400 hover:text-red-300 hover:border-red-600 transition-all text-[10px]"
+                                title="Delete row"
+                            >
+                                <Trash2 size={12} /> Row
+                            </button>
+                            <button
+                                onClick={() => editor.chain().focus().deleteColumn().run()}
+                                className="flex items-center justify-center gap-1 p-2 rounded-lg border bg-red-900/30 border-red-800/50 text-red-400 hover:text-red-300 hover:border-red-600 transition-all text-[10px]"
+                                title="Delete column"
+                            >
+                                <Trash2 size={12} /> Column
+                            </button>
+                            <button
+                                onClick={() => editor.chain().focus().deleteTable().run()}
+                                className="col-span-2 flex items-center justify-center gap-1 p-2 rounded-lg border bg-red-900/30 border-red-800/50 text-red-400 hover:text-red-300 hover:border-red-600 transition-all text-[10px]"
+                                title="Delete entire table"
+                            >
+                                <Trash2 size={12} /> Delete Table
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Code Language Selector - shown when in code block */}
                 {editor.isActive('codeBlock') && (

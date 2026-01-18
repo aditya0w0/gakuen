@@ -1,7 +1,7 @@
 // Serialization utilities for converting between Tiptap JSON and Component[] format
 // This ensures backward compatibility with existing course data
 
-import { Component, HeaderComponent, TextComponent, ImageComponent, CodeComponent, DividerComponent, MultiFileCodeComponent } from './types';
+import { Component, HeaderComponent, TextComponent, ImageComponent, CodeComponent, DividerComponent, MultiFileCodeComponent, TableComponent } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Tiptap node types
@@ -221,6 +221,15 @@ export function deserializeFromComponents(components: Component[]): TiptapDoc {
                 });
                 break;
             }
+
+            case 'table': {
+                // Restore the raw table node structure from tableData
+                const tableComp = comp as TableComponent;
+                if (tableComp.tableData) {
+                    content.push(tableComp.tableData as TiptapNode);
+                }
+                break;
+            }
         }
     }
 
@@ -350,6 +359,16 @@ export function serializeToComponents(doc: TiptapDoc): Component[] {
                     type: 'divider',
                     style: 'solid',
                 } as DividerComponent);
+                break;
+            }
+
+            case 'table': {
+                // Store the entire table node structure as-is
+                components.push({
+                    id: uuidv4(),
+                    type: 'table',
+                    tableData: node,
+                } as TableComponent);
                 break;
             }
         }

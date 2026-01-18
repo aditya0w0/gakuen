@@ -362,6 +362,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
         setSelectedComponentId(null);
     };
 
+
     // Handle fluid editor updates - convert Tiptap JSON to components
     const handleFluidEditorUpdate = (html: string, json: object) => {
         if (editingIndex === null) return;
@@ -728,24 +729,77 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
 
                                                 {isExpanded && (
                                                     <div className="p-3 space-y-2 border-t border-zinc-800">
-                                                        {sectionLessons.map((lesson, idx) => (
-                                                            <div key={`${section.id}-${lesson.id}-${idx}`} className="flex items-center gap-2 p-2 bg-zinc-800/50 rounded-lg">
-                                                                <GripVertical className="w-4 h-4 text-zinc-600" />
-                                                                <span className="flex-1 text-sm text-white">{lesson.title}</span>
-                                                                <button
-                                                                    onClick={() => setSections(sections.map(s => s.id === section.id ? { ...s, lessonIds: s.lessonIds.filter(id => id !== lesson.id) } : s))}
-                                                                    className="text-xs text-zinc-500 hover:text-red-400"
-                                                                >
-                                                                    Remove
-                                                                </button>
-                                                            </div>
-                                                        ))}
+                                                        {sectionLessons.map((lesson, idx) => {
+                                                            // Helper to move lesson up/down within this section
+                                                            const moveLessonInSection = (direction: 'up' | 'down') => {
+                                                                const currentIndex = section.lessonIds.indexOf(lesson.id);
+                                                                if (currentIndex === -1) return;
+
+                                                                const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+                                                                if (newIndex < 0 || newIndex >= section.lessonIds.length) return;
+
+                                                                // Create new lessonIds array with swapped positions
+                                                                const newLessonIds = [...section.lessonIds];
+                                                                [newLessonIds[currentIndex], newLessonIds[newIndex]] = [newLessonIds[newIndex], newLessonIds[currentIndex]];
+
+                                                                // Update sections state
+                                                                const newSections = sections.map(s =>
+                                                                    s.id === section.id ? { ...s, lessonIds: newLessonIds } : s
+                                                                );
+                                                                setSections(newSections);
+
+                                                                // Save to server immediately
+                                                                if (course) {
+                                                                    updateCourse(courseId, {
+                                                                        ...course,
+                                                                        sections: newSections,
+                                                                        lessons,
+                                                                    });
+                                                                }
+                                                            };
+
+                                                            return (
+                                                                <div key={`${section.id}-${lesson.id}`} className="flex items-center gap-2 p-2 bg-zinc-800/50 rounded-lg group">
+                                                                    {/* Up/Down buttons */}
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <button
+                                                                            onClick={() => moveLessonInSection('up')}
+                                                                            disabled={idx === 0}
+                                                                            className={`p-0.5 rounded transition-colors ${idx === 0 ? 'text-zinc-700 cursor-not-allowed' : 'text-zinc-500 hover:text-white hover:bg-zinc-700'}`}
+                                                                            title="Move up"
+                                                                        >
+                                                                            <ChevronUp className="w-3 h-3" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => moveLessonInSection('down')}
+                                                                            disabled={idx === sectionLessons.length - 1}
+                                                                            className={`p-0.5 rounded transition-colors ${idx === sectionLessons.length - 1 ? 'text-zinc-700 cursor-not-allowed' : 'text-zinc-500 hover:text-white hover:bg-zinc-700'}`}
+                                                                            title="Move down"
+                                                                        >
+                                                                            <ChevronDown className="w-3 h-3" />
+                                                                        </button>
+                                                                    </div>
+                                                                    <span className="flex-1 text-sm text-white">{lesson.title}</span>
+                                                                    <button
+                                                                        onClick={() => setSections(sections.map(s => s.id === section.id ? { ...s, lessonIds: s.lessonIds.filter(id => id !== lesson.id) } : s))}
+                                                                        className="text-xs text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                    >
+                                                                        Remove
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })}
 
                                                         {unassignedLessons.length > 0 && (
                                                             <select
                                                                 onChange={(e) => {
                                                                     if (e.target.value) {
-                                                                        setSections(sections.map(s => s.id === section.id ? { ...s, lessonIds: [...s.lessonIds, e.target.value] } : s));
+                                                                        const newSections = sections.map(s => s.id === section.id ? { ...s, lessonIds: [...s.lessonIds, e.target.value] } : s);
+                                                                        setSections(newSections);
+                                                                        // Save to server
+                                                                        if (course) {
+                                                                            updateCourse(courseId, { ...course, sections: newSections, lessons });
+                                                                        }
                                                                         e.target.value = '';
                                                                     }
                                                                 }}

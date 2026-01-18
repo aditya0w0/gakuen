@@ -26,7 +26,8 @@ export type ComponentType =
     | "cta"
     | "divider"
     | "spacer"
-    | "syllabus";
+    | "syllabus"
+    | "table";
 
 export interface BaseComponent {
     id: string;
@@ -149,6 +150,13 @@ export interface SyllabusComponent extends BaseComponent {
     margin?: Spacing;
 }
 
+// Table Component - stores raw Tiptap table node structure
+export interface TableComponent extends BaseComponent {
+    type: "table";
+    tableData: unknown; // Raw Tiptap table node JSON
+    margin?: Spacing;
+}
+
 // Union type of all components
 export type Component =
     | HeaderComponent
@@ -160,7 +168,8 @@ export type Component =
     | CTAComponent
     | DividerComponent
     | SpacerComponent
-    | SyllabusComponent;
+    | SyllabusComponent
+    | TableComponent;
 
 // Component metadata for registry
 export interface ComponentMeta {

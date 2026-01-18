@@ -23,8 +23,15 @@ export async function updateCourse(id: string, course: Course): Promise<boolean>
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(course),
+            credentials: 'include', // Send auth cookies
             cache: 'no-store',
         });
+        if (!response.ok) {
+            const text = await response.text();
+            console.error(`❌ Failed to save course ${id}: ${response.status}`, text);
+        } else {
+            console.log(`✅ Course ${id} saved successfully`);
+        }
         return response.ok;
     } catch (error) {
         console.error(`Error updating course ${id}:`, error);

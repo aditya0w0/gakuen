@@ -11,11 +11,6 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import TextAlign from '@tiptap/extension-text-align';
 import Bold from '@tiptap/extension-bold';
-import { Table } from '@tiptap/extension-table';
-import { TableRow } from '@tiptap/extension-table-row';
-import { TableHeader } from '@tiptap/extension-table-header';
-import { TableCell } from '@tiptap/extension-table-cell';
-import { LineHeight } from '@/lib/cms/extensions/LineHeight';
 import {
     useState,
     useEffect,
@@ -318,21 +313,6 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
                 HTMLAttributes: {
                     class: 'text-indigo-400 underline hover:text-indigo-300',
                 },
-            }),
-            // Table extension for tables
-            Table.configure({
-                resizable: true,
-                HTMLAttributes: {
-                    class: 'tiptap-table',
-                },
-            }),
-            TableRow,
-            TableHeader,
-            TableCell,
-            // Line height extension
-            LineHeight.configure({
-                types: ['heading', 'paragraph'],
-                defaultLineHeight: '1.5',
             }),
         ],
         content: initialContent,
