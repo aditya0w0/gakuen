@@ -255,7 +255,37 @@ export function serializeToComponents(doc: TiptapDoc): Component[] {
 
     if (!doc.content) return components;
 
+    // Helper: recursively find all table nodes in a node's content tree
+    function extractTablesFromNode(node: TiptapNode): TiptapNode[] {
+        const tables: TiptapNode[] = [];
+        if (node.content && Array.isArray(node.content)) {
+            for (const child of node.content) {
+                if (child.type === 'table') {
+                    tables.push(child);
+                } else {
+                    tables.push(...extractTablesFromNode(child));
+                }
+            }
+        }
+        return tables;
+    }
+
+    // Process nodes in document order
     for (const node of doc.content) {
+        // Handle table directly at top level
+        if (node.type === 'table') {
+            components.push({
+                id: uuidv4(),
+                type: 'table',
+                tableData: node,
+            } as TableComponent);
+            continue;
+        }
+
+        // For other nodes, first process the node normally
+        // Then check if it contains nested tables and add them after
+        const nestedTables = extractTablesFromNode(node);
+
         switch (node.type) {
             case 'heading': {
                 const level = (node.attrs?.level as number) || 2;
@@ -361,16 +391,16 @@ export function serializeToComponents(doc: TiptapDoc): Component[] {
                 } as DividerComponent);
                 break;
             }
+            // Note: Top-level tables handled before switch, nested tables handled after
+        }
 
-            case 'table': {
-                // Store the entire table node structure as-is
-                components.push({
-                    id: uuidv4(),
-                    type: 'table',
-                    tableData: node,
-                } as TableComponent);
-                break;
-            }
+        // Add any nested tables found in this node (e.g., tables inside bulletList)
+        for (const tableNode of nestedTables) {
+            components.push({
+                id: uuidv4(),
+                type: 'table',
+                tableData: tableNode,
+            } as TableComponent);
         }
     }
 

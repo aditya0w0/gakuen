@@ -363,24 +363,41 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     };
 
 
-    // Handle fluid editor updates - convert Tiptap JSON to components
+    // Handle fluid editor updates - save both tiptapJson (for tables) and components (for backward compat)
     const handleFluidEditorUpdate = (html: string, json: object) => {
         if (editingIndex === null) return;
-        // Convert Tiptap JSON to Component[] format
-        const newComponents = serializeToComponents(json as any);
-        // Only update if components actually changed (avoid infinite loops)
-        if (JSON.stringify(newComponents) !== JSON.stringify(components)) {
-            handleUpdateLesson(editingIndex, { components: newComponents });
+        const currentLesson = lessons[editingIndex];
+
+        // Always save the raw Tiptap JSON for perfect preservation (especially tables)
+        const jsonChanged = JSON.stringify(json) !== JSON.stringify(currentLesson?.tiptapJson);
+
+        if (jsonChanged) {
+            // Also serialize to components for backward compatibility
+            const newComponents = serializeToComponents(json as any);
+            handleUpdateLesson(editingIndex, {
+                tiptapJson: json,  // Primary storage - preserves tables perfectly
+                components: newComponents  // Fallback for old readers
+            });
         }
     };
 
-    // Get initial content for FluidEditor from existing components
+    // Get initial content for FluidEditor - prefer tiptapJson, fall back to components
     const getFluidEditorInitialContent = () => {
+        const currentLesson = editingIndex !== null ? lessons[editingIndex] : null;
+
+        // If we have tiptapJson, use it directly (perfect table preservation)
+        if (currentLesson?.tiptapJson) {
+            const json = currentLesson.tiptapJson as { type?: string; content?: unknown[] };
+            if (json.type === 'doc' && json.content && json.content.length > 0) {
+                console.log('📥 Loading from tiptapJson');
+                return currentLesson.tiptapJson;
+            }
+        }
+
+        // Fallback: deserialize from components (legacy data)
         if (components.length === 0) return '';
-        // Convert Component[] to Tiptap JSON object
-        const doc = deserializeFromComponents(components);
-        // Return as JSON object for Tiptap (not stringified)
-        return doc;
+        console.log('📥 Loading from components (legacy)');
+        return deserializeFromComponents(components);
     };
 
     // Context menu handlers
