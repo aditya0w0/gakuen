@@ -10,15 +10,20 @@ import { useTranslatedLesson } from "@/lib/hooks/useTranslatedCourse";
 import { useTranslatedComponents } from "@/lib/hooks/useTranslatedComponents";
 import { useTranslation } from "@/lib/i18n";
 import DOMPurify from "dompurify";
+import { WatermarkedContent } from "@/lib/watermark/invisible-watermark";
 
 interface MaterialViewerProps {
     lesson: Lesson;
     onComplete: () => void;
     isCompleted: boolean;
+    courseId?: string;
+    courseTitle?: string;
 }
 
-export function MaterialViewer({ lesson, onComplete, isCompleted }: MaterialViewerProps) {
+export function MaterialViewer({ lesson, onComplete, isCompleted, courseId, courseTitle }: MaterialViewerProps) {
     useTimeTracker();
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://gakuen.vercel.app';
+    const sourceUrl = courseId ? `${baseUrl}/browse/${courseId}` : baseUrl;
     const { t } = useTranslation();
 
     // Auto-translate lesson content based on selected language
@@ -121,32 +126,38 @@ export function MaterialViewer({ lesson, onComplete, isCompleted }: MaterialView
                     onScroll={handleScroll}
                     className="h-full overflow-y-auto p-8"
                 >
-                    <div className="max-w-4xl mx-auto space-y-6">
-                        {/* Loading skeleton while translating CMS components */}
-                        {translatedCms.loading ? (
-                            <div className="space-y-6 animate-pulse">
-                                <div className="h-8 bg-neutral-700 rounded w-2/3" />
-                                <div className="space-y-3">
-                                    <div className="h-4 bg-neutral-700 rounded w-full" />
-                                    <div className="h-4 bg-neutral-700 rounded w-5/6" />
-                                    <div className="h-4 bg-neutral-700 rounded w-4/5" />
+                    <WatermarkedContent
+                        sourceUrl={sourceUrl}
+                        courseId={courseId}
+                        courseTitle={courseTitle}
+                    >
+                        <div className="max-w-4xl mx-auto space-y-6">
+                            {/* Loading skeleton while translating CMS components */}
+                            {translatedCms.loading ? (
+                                <div className="space-y-6 animate-pulse">
+                                    <div className="h-8 bg-neutral-700 rounded w-2/3" />
+                                    <div className="space-y-3">
+                                        <div className="h-4 bg-neutral-700 rounded w-full" />
+                                        <div className="h-4 bg-neutral-700 rounded w-5/6" />
+                                        <div className="h-4 bg-neutral-700 rounded w-4/5" />
+                                    </div>
+                                    <div className="h-6 bg-neutral-700 rounded w-1/2" />
+                                    <div className="space-y-3">
+                                        <div className="h-4 bg-neutral-700 rounded w-full" />
+                                        <div className="h-4 bg-neutral-700 rounded w-3/4" />
+                                    </div>
                                 </div>
-                                <div className="h-6 bg-neutral-700 rounded w-1/2" />
-                                <div className="space-y-3">
-                                    <div className="h-4 bg-neutral-700 rounded w-full" />
-                                    <div className="h-4 bg-neutral-700 rounded w-3/4" />
-                                </div>
-                            </div>
-                        ) : (
-                            translatedCms.components.map((component) => (
-                                <ComponentRenderer
-                                    key={component.id}
-                                    component={component}
-                                    isEditing={false}
-                                />
-                            ))
-                        )}
-                    </div>
+                            ) : (
+                                translatedCms.components.map((component) => (
+                                    <ComponentRenderer
+                                        key={component.id}
+                                        component={component}
+                                        isEditing={false}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    </WatermarkedContent>
                 </div>
             </div>
         );

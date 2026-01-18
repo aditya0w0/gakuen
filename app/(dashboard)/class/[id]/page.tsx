@@ -195,6 +195,8 @@ export default function ClassPage() {
                         lesson={activeLesson}
                         isCompleted={isCompleted(activeLesson.id)}
                         onComplete={handleComplete}
+                        courseId={courseId}
+                        courseTitle={course.title}
                     />
                 ) : (
                     <div className="h-full flex items-center justify-center text-neutral-500">

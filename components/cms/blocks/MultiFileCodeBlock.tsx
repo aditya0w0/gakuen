@@ -4,32 +4,46 @@ import { MultiFileCodeComponent, CodeFile } from "@/lib/cms/types";
 import { useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Plus, X, FileCode } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
-// Language icons/labels
-const LANGUAGES = [
-    { value: 'javascript', label: 'JavaScript', ext: '.js' },
-    { value: 'typescript', label: 'TypeScript', ext: '.ts' },
-    { value: 'python', label: 'Python', ext: '.py' },
-    { value: 'java', label: 'Java', ext: '.java' },
-    { value: 'kotlin', label: 'Kotlin', ext: '.kt' },
-    { value: 'dart', label: 'Dart', ext: '.dart' },
-    { value: 'jsx', label: 'React/JSX', ext: '.jsx' },
-    { value: 'tsx', label: 'React/TSX', ext: '.tsx' },
-    { value: 'swift', label: 'Swift', ext: '.swift' },
-    { value: 'html', label: 'HTML', ext: '.html' },
-    { value: 'css', label: 'CSS', ext: '.css' },
-    { value: 'scss', label: 'SCSS', ext: '.scss' },
-    { value: 'json', label: 'JSON', ext: '.json' },
-    { value: 'go', label: 'Go', ext: '.go' },
-    { value: 'rust', label: 'Rust', ext: '.rs' },
-    { value: 'php', label: 'PHP', ext: '.php' },
-    { value: 'ruby', label: 'Ruby', ext: '.rb' },
-    { value: 'sql', label: 'SQL', ext: '.sql' },
-    { value: 'bash', label: 'Bash', ext: '.sh' },
-    { value: 'yaml', label: 'YAML', ext: '.yaml' },
-];
+// Language mapping from file extension
+const EXTENSION_TO_LANGUAGE: Record<string, string> = {
+    'js': 'javascript',
+    'jsx': 'jsx',
+    'ts': 'typescript',
+    'tsx': 'tsx',
+    'py': 'python',
+    'java': 'java',
+    'kt': 'kotlin',
+    'dart': 'dart',
+    'swift': 'swift',
+    'html': 'html',
+    'css': 'css',
+    'scss': 'scss',
+    'json': 'json',
+    'go': 'go',
+    'rs': 'rust',
+    'php': 'php',
+    'rb': 'ruby',
+    'sql': 'sql',
+    'sh': 'bash',
+    'bash': 'bash',
+    'yaml': 'yaml',
+    'yml': 'yaml',
+    'xml': 'xml',
+    'md': 'markdown',
+    'c': 'c',
+    'cpp': 'cpp',
+    'h': 'c',
+    'hpp': 'cpp',
+};
+
+// Auto-detect language from filename
+const detectLanguage = (filename: string): string => {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    return EXTENSION_TO_LANGUAGE[ext] || 'javascript';
+};
 
 interface MultiFileCodeBlockProps {
     component: MultiFileCodeComponent;
@@ -88,6 +102,10 @@ export function MultiFileCodeBlock({
 
     const handleUpdateFile = (fileId: string, updates: Partial<CodeFile>) => {
         if (!onUpdate) return;
+        // Auto-detect language when filename changes
+        if (updates.filename) {
+            updates.language = detectLanguage(updates.filename);
+        }
         const newFiles = component.files.map(f =>
             f.id === fileId ? { ...f, ...updates } : f
         );
@@ -172,29 +190,12 @@ export function MultiFileCodeBlock({
                     </button>
                 </div>
 
-                {/* Language Selector */}
-                {activeFile && (
-                    <div className="bg-zinc-900 px-3 py-1.5 border-b border-zinc-700 flex items-center gap-2">
-                        <span className="text-[10px] text-zinc-500 uppercase">Language:</span>
-                        <select
-                            value={activeFile.language}
-                            onChange={(e) => handleUpdateFile(activeFile.id, { language: e.target.value })}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-zinc-800 border border-zinc-600 text-white text-xs rounded px-2 py-1 focus:outline-none focus:border-indigo-500"
-                        >
-                            {LANGUAGES.map(lang => (
-                                <option key={lang.value} value={lang.value}>{lang.label}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
-
                 {/* Code Editor with Syntax Highlighting */}
                 {activeFile && (
                     <div className="relative min-h-[200px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                         {/* Syntax highlighted background */}
                         <SyntaxHighlighter
-                            language={activeFile.language || 'javascript'}
+                            language={detectLanguage(activeFile.filename)}
                             style={vscDarkPlus}
                             showLineNumbers={false}
                             wrapLines={false}
@@ -247,34 +248,55 @@ export function MultiFileCodeBlock({
 
     // Student/Preview view
     return (
-        <div style={containerStyle} className="rounded-lg overflow-hidden border border-zinc-800">
-            {/* Tabs Bar */}
-            <div className="flex items-center bg-zinc-900 border-b border-zinc-700 overflow-x-auto">
-                {component.files.map((file) => (
-                    <button
-                        key={file.id}
-                        onClick={() => setActiveTab(file.id)}
-                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-r border-zinc-700 transition-colors ${activeTab === file.id
-                            ? 'bg-zinc-800 text-white'
-                            : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-                            }`}
-                    >
-                        <FileCode size={12} className="text-indigo-400" />
-                        {file.filename}
-                    </button>
-                ))}
+        <div style={containerStyle} className="rounded-xl overflow-hidden border border-zinc-700/50">
+            {/* macOS-style Title Bar for Student View */}
+            <div
+                className="px-4 py-2.5 flex items-center gap-2"
+                style={{ backgroundColor: '#3C3C3C' }}
+            >
+                {/* Traffic Light Buttons (decorative) */}
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FF5F56' }} />
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FFBD2E' }} />
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#27C93F' }} />
+                </div>
+
+                {/* File Tabs */}
+                <div className="flex-1 flex items-center gap-0.5 mx-2 overflow-x-auto">
+                    {component.files.map((file) => (
+                        <button
+                            key={file.id}
+                            onClick={() => setActiveTab(file.id)}
+                            className={`px-3 py-1 rounded-md text-xs transition-all ${activeTab === file.id
+                                ? 'bg-zinc-700/80 text-white'
+                                : 'text-zinc-400 hover:text-white hover:bg-zinc-700/40'
+                                }`}
+                        >
+                            {file.filename}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Syntax Highlighted Code */}
             {activeFile && (
                 <SyntaxHighlighter
-                    language={activeFile.language || "javascript"}
+                    language={detectLanguage(activeFile.filename)}
                     style={vscDarkPlus}
                     showLineNumbers={component.showLineNumbers}
+                    lineNumberStyle={{
+                        minWidth: '2.5em',
+                        paddingRight: '1em',
+                        color: '#4a4a4a',
+                        borderRight: '1px solid #333',
+                        marginRight: '1em',
+                    }}
                     customStyle={{
                         margin: 0,
                         borderRadius: 0,
-                        fontSize: component.fontSize ? `${component.fontSize}px` : '14px',
+                        background: '#1a1a1a',
+                        padding: '12px 0',
+                        fontSize: component.fontSize ? `${component.fontSize}px` : '13px',
                     }}
                 >
                     {activeFile.code}

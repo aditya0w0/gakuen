@@ -5,25 +5,46 @@ import { ReactNodeViewRenderer } from '@tiptap/react';
 import { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Plus, X, FileCode, Trash2 } from 'lucide-react';
+import { Plus, X, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
-// Language options
-const LANGUAGES = [
-    { value: 'javascript', label: 'JavaScript' },
-    { value: 'typescript', label: 'TypeScript' },
-    { value: 'python', label: 'Python' },
-    { value: 'java', label: 'Java' },
-    { value: 'kotlin', label: 'Kotlin' },
-    { value: 'dart', label: 'Dart' },
-    { value: 'jsx', label: 'React/JSX' },
-    { value: 'tsx', label: 'React/TSX' },
-    { value: 'html', label: 'HTML' },
-    { value: 'css', label: 'CSS' },
-    { value: 'json', label: 'JSON' },
-    { value: 'bash', label: 'Bash' },
-    { value: 'sql', label: 'SQL' },
-];
+// Language mapping from file extension
+const EXTENSION_TO_LANGUAGE: Record<string, string> = {
+    'js': 'javascript',
+    'jsx': 'jsx',
+    'ts': 'typescript',
+    'tsx': 'tsx',
+    'py': 'python',
+    'java': 'java',
+    'kt': 'kotlin',
+    'dart': 'dart',
+    'swift': 'swift',
+    'html': 'html',
+    'css': 'css',
+    'scss': 'scss',
+    'json': 'json',
+    'go': 'go',
+    'rs': 'rust',
+    'php': 'php',
+    'rb': 'ruby',
+    'sql': 'sql',
+    'sh': 'bash',
+    'bash': 'bash',
+    'yaml': 'yaml',
+    'yml': 'yaml',
+    'xml': 'xml',
+    'md': 'markdown',
+    'c': 'c',
+    'cpp': 'cpp',
+    'h': 'c',
+    'hpp': 'cpp',
+};
+
+// Auto-detect language from filename
+const detectLanguage = (filename: string): string => {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    return EXTENSION_TO_LANGUAGE[ext] || 'javascript';
+};
 
 interface CodeFile {
     id: string;
@@ -49,9 +70,9 @@ function MultiFileCodeNodeView({ node, updateAttributes, deleteNode, selected }:
     const handleAddFile = () => {
         const newFile: CodeFile = {
             id: uuidv4(),
-            filename: `file${files.length + 1}.js`,
+            filename: `untitled${files.length + 1}.js`,
             language: 'javascript',
-            code: '// New file\n',
+            code: '',
         };
         updateFiles([...files, newFile]);
         setActiveTab(newFile.id);
@@ -70,6 +91,10 @@ function MultiFileCodeNodeView({ node, updateAttributes, deleteNode, selected }:
     };
 
     const handleUpdateFile = (fileId: string, updates: Partial<CodeFile>) => {
+        // Auto-detect language when filename changes
+        if (updates.filename) {
+            updates.language = detectLanguage(updates.filename);
+        }
         const newFiles = files.map(f =>
             f.id === fileId ? { ...f, ...updates } : f
         );
@@ -78,96 +103,92 @@ function MultiFileCodeNodeView({ node, updateAttributes, deleteNode, selected }:
 
     return (
         <NodeViewWrapper className="my-4">
-            <div className={`rounded-lg overflow-hidden border transition-all ${selected
-                ? 'ring-2 ring-indigo-500 border-indigo-500/50'
-                : 'border-zinc-700 hover:border-zinc-600'
+            {/* macOS-style Window */}
+            <div className={`rounded-xl overflow-hidden transition-all border border-zinc-700/50 ${selected
+                ? 'ring-2 ring-blue-500/50'
+                : ''
                 }`}>
-                {/* Tabs Bar */}
-                <div className="flex items-center bg-zinc-900 border-b border-zinc-700 overflow-x-auto">
-                    {files.map((file) => (
-                        <div
-                            key={file.id}
-                            onClick={() => {
-                                setActiveTab(file.id);
-                                updateAttributes({ activeFileId: file.id });
-                            }}
-                            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-r border-zinc-700 cursor-pointer transition-colors ${activeTab === file.id
-                                ? 'bg-zinc-800 text-white'
-                                : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-                                }`}
+                {/* Title Bar - Modern macOS Style */}
+                <div
+                    className="px-4 py-2.5 flex items-center gap-2"
+                    style={{ backgroundColor: '#3C3C3C' }}
+                >
+                    {/* Traffic Light Buttons - Modern macOS */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => deleteNode()}
+                            className="w-3 h-3 rounded-full transition-all group flex items-center justify-center"
+                            style={{ backgroundColor: '#FF5F56' }}
+                            title="Delete"
                         >
-                            <FileCode size={12} className="text-indigo-400 shrink-0" />
-                            {editingFilename === file.id ? (
-                                <input
-                                    type="text"
-                                    value={file.filename}
-                                    onChange={(e) => handleUpdateFile(file.id, { filename: e.target.value })}
-                                    onBlur={() => setEditingFilename(null)}
-                                    onKeyDown={(e) => e.key === 'Enter' && setEditingFilename(null)}
-                                    autoFocus
-                                    className="bg-zinc-700 text-white text-xs px-1 py-0.5 rounded w-20 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                />
-                            ) : (
-                                <span
-                                    onDoubleClick={() => setEditingFilename(file.id)}
-                                    title="Double-click to rename"
-                                >
-                                    {file.filename}
-                                </span>
-                            )}
-                            {files.length > 1 && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRemoveFile(file.id);
-                                    }}
-                                    className="ml-1 text-zinc-500 hover:text-red-400 transition-colors"
-                                >
-                                    <X size={12} />
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                    <button
-                        onClick={handleAddFile}
-                        className="px-3 py-2 text-zinc-500 hover:text-indigo-400 hover:bg-zinc-800/50 transition-colors"
-                        title="Add file"
-                    >
-                        <Plus size={14} />
-                    </button>
+                            <X size={7} className="text-red-900/80 opacity-0 group-hover:opacity-100" />
+                        </button>
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FFBD2E' }} />
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#27C93F' }} />
+                    </div>
 
-                    {/* Delete Block Button */}
-                    <button
-                        onClick={() => deleteNode()}
-                        className="ml-auto px-3 py-2 text-zinc-500 hover:text-red-400 transition-colors"
-                        title="Delete block"
-                    >
-                        <Trash2 size={14} />
-                    </button>
+                    {/* File Tabs */}
+                    <div className="flex-1 flex items-center gap-0.5 mx-2 overflow-x-auto">
+                        {files.map((file) => (
+                            <div
+                                key={file.id}
+                                onClick={() => {
+                                    setActiveTab(file.id);
+                                    updateAttributes({ activeFileId: file.id });
+                                }}
+                                className={`group flex items-center gap-1.5 px-3 py-1 rounded-md text-xs cursor-pointer transition-all ${activeTab === file.id
+                                    ? 'bg-zinc-700/80 text-white'
+                                    : 'text-zinc-400 hover:text-white hover:bg-zinc-700/40'
+                                    }`}
+                            >
+                                {editingFilename === file.id ? (
+                                    <input
+                                        type="text"
+                                        value={file.filename}
+                                        onChange={(e) => handleUpdateFile(file.id, { filename: e.target.value })}
+                                        onBlur={() => setEditingFilename(null)}
+                                        onKeyDown={(e) => e.key === 'Enter' && setEditingFilename(null)}
+                                        autoFocus
+                                        className="bg-zinc-600 text-white text-xs px-1.5 py-0.5 rounded w-24 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                ) : (
+                                    <span
+                                        onDoubleClick={() => setEditingFilename(file.id)}
+                                        className="truncate max-w-[120px]"
+                                        title={file.filename}
+                                    >
+                                        {file.filename}
+                                    </span>
+                                )}
+                                {files.length > 1 && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveFile(file.id);
+                                        }}
+                                        className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-white transition-all ml-0.5"
+                                    >
+                                        <X size={10} />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button
+                            onClick={handleAddFile}
+                            className="p-1 text-zinc-500 hover:text-white hover:bg-zinc-700/40 rounded transition-all"
+                            title="New file"
+                        >
+                            <Plus size={12} />
+                        </button>
+                    </div>
                 </div>
 
-                {/* Language Selector */}
+                {/* Code Editor */}
                 {activeFile && (
-                    <div className="bg-zinc-900 px-3 py-1.5 border-b border-zinc-700 flex items-center gap-2">
-                        <span className="text-[10px] text-zinc-500 uppercase">Language:</span>
-                        <select
-                            value={activeFile.language}
-                            onChange={(e) => handleUpdateFile(activeFile.id, { language: e.target.value })}
-                            className="bg-zinc-800 border border-zinc-600 text-white text-xs rounded px-2 py-1 focus:outline-none focus:border-indigo-500"
-                        >
-                            {LANGUAGES.map(lang => (
-                                <option key={lang.value} value={lang.value}>{lang.label}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
-
-                {/* Code Editor with Syntax Highlighting */}
-                {activeFile && (
-                    <div className="relative min-h-[200px] overflow-hidden">
-                        {/* Syntax highlighted background - pointer-events: none so clicks pass through */}
+                    <div className="relative min-h-[180px] overflow-hidden bg-[#1a1a1a]">
+                        {/* Syntax highlighted background */}
                         <SyntaxHighlighter
-                            language={activeFile.language || 'javascript'}
+                            language={detectLanguage(activeFile.filename)}
                             style={vscDarkPlus}
                             showLineNumbers={false}
                             wrapLines={false}
@@ -175,11 +196,11 @@ function MultiFileCodeNodeView({ node, updateAttributes, deleteNode, selected }:
                             customStyle={{
                                 margin: 0,
                                 padding: '16px',
-                                background: '#1e1e1e',
-                                minHeight: '200px',
-                                fontSize: '14px',
-                                lineHeight: '21px',
-                                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                                background: 'transparent',
+                                minHeight: '180px',
+                                fontSize: '13px',
+                                lineHeight: '20px',
+                                fontFamily: 'SF Mono, Menlo, Monaco, Consolas, monospace',
                                 pointerEvents: 'none',
                                 whiteSpace: 'pre',
                                 overflowX: 'auto',
@@ -201,14 +222,14 @@ function MultiFileCodeNodeView({ node, updateAttributes, deleteNode, selected }:
                             className="absolute inset-0 w-full h-full bg-transparent text-transparent caret-white focus:outline-none resize-none"
                             style={{
                                 padding: '16px',
-                                fontSize: '14px',
-                                lineHeight: '21px',
-                                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                                fontSize: '13px',
+                                lineHeight: '20px',
+                                fontFamily: 'SF Mono, Menlo, Monaco, Consolas, monospace',
                                 whiteSpace: 'pre',
                                 overflowWrap: 'normal',
                                 wordWrap: 'normal',
                             }}
-                            placeholder="// Write your code here..."
+                            placeholder="// Start typing..."
                             spellCheck={false}
                         />
                     </div>
