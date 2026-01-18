@@ -114,12 +114,22 @@ export function deserializeFromComponents(components: Component[]): TiptapDoc {
                 }
 
                 // For regular text, preserve basic structure
+                // Use align from component (like header does), not just from HTML
+                const componentAlign = text.align;
                 // Extract paragraphs while keeping content for marks
-                const paragraphMatches = htmlContent.match(/<p>([\s\S]*?)<\/p>/g);
+                const paragraphMatches = htmlContent.match(/<p[^>]*>[\s\S]*?<\/p>/g);
 
                 if (paragraphMatches && paragraphMatches.length > 0) {
                     for (const pMatch of paragraphMatches) {
-                        const innerContent = pMatch.replace(/<\/?p>/g, '');
+                        // Extract textAlign from style attribute (if present)
+                        const styleMatch = pMatch.match(/style=["']([^"']*)["']/);
+                        let textAlign: string | undefined;
+                        if (styleMatch) {
+                            const alignMatch = styleMatch[1].match(/text-align:\s*([^;]+)/);
+                            if (alignMatch) textAlign = alignMatch[1].trim();
+                        }
+
+                        const innerContent = pMatch.replace(/<\/?p[^>]*>/g, '');
 
                         // Skip placeholder text for custom blocks (legacy data)
                         const placeholderMatch = innerContent.match(/^\[([A-Z]+) BLOCK - ID: [^\]]+\]$/);
@@ -129,8 +139,11 @@ export function deserializeFromComponents(components: Component[]): TiptapDoc {
 
                         // Parse inline marks (bold, italic, etc.)
                         const parsedContent = parseInlineMarks(innerContent);
+                        // Use componentAlign (like header.align) or fallback to inline style
+                        const finalAlign = componentAlign || textAlign;
                         content.push({
                             type: 'paragraph',
+                            ...(finalAlign && finalAlign !== 'left' ? { attrs: { textAlign: finalAlign } } : {}),
                             content: parsedContent,
                         });
                     }
@@ -141,6 +154,7 @@ export function deserializeFromComponents(components: Component[]): TiptapDoc {
                     if (cleanText && !placeholderMatch) {
                         content.push({
                             type: 'paragraph',
+                            ...(componentAlign && componentAlign !== 'left' ? { attrs: { textAlign: componentAlign } } : {}),
                             content: [{ type: 'text', text: cleanText }],
                         });
                     }
@@ -253,6 +267,7 @@ export function serializeToComponents(doc: TiptapDoc): Component[] {
             case 'paragraph': {
                 // Serialize paragraph with marks to HTML
                 const html = serializeNodeToHtml(node);
+                const textAlign = node.attrs?.textAlign as string | undefined;
                 if (html.trim()) {
                     // Check if it's a placeholder for a custom block
                     const plainText = extractText(node);
@@ -262,10 +277,12 @@ export function serializeToComponents(doc: TiptapDoc): Component[] {
                         continue;
                     }
 
+                    // Use align property like HeaderComponent does
                     components.push({
                         id: uuidv4(),
                         type: 'text',
                         content: `<p>${html}</p>`,
+                        ...(textAlign && textAlign !== 'left' ? { align: textAlign as 'left' | 'center' | 'right' | 'justify' } : {}),
                     } as TextComponent);
                 }
                 break;

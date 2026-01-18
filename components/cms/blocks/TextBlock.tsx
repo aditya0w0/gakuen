@@ -6,10 +6,30 @@ import { useState, useMemo } from "react";
 import { Sparkles, Wand2, Loader2 } from "lucide-react";
 import DOMPurify from "dompurify";
 
+// Decode HTML entities that might be escaped in legacy content
+const decodeHTMLEntities = (html: string): string => {
+    if (typeof window === 'undefined') return html;
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = html;
+    return textarea.value;
+};
+
+// Strip legacy inline CSS tags that appear as raw text
+const stripLegacyInlineCSS = (html: string): string => {
+    // Remove raw <span style="..."> tags that appear as text
+    return html
+        .replace(/<span\s+style="[^"]*">/gi, '')
+        .replace(/<\/span>/gi, '');
+};
+
 // Configure DOMPurify to allow style attributes for inline formatting
 const sanitizeHTML = (html: string) => {
     if (typeof window === 'undefined') return html;
-    return DOMPurify.sanitize(html, {
+    // First decode any escaped HTML entities from legacy content
+    const decoded = decodeHTMLEntities(html);
+    // Strip legacy inline CSS tags that show as raw text
+    const cleaned = stripLegacyInlineCSS(decoded);
+    return DOMPurify.sanitize(cleaned, {
         ADD_ATTR: ['style'],  // Allow style attribute for inline colors/fontSize/textAlign
         ALLOWED_TAGS: ['p', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'code', 'span', 'a', 'br', 'blockquote', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
     });

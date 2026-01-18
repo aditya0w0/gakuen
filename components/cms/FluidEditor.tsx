@@ -249,6 +249,12 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
+            // TextAlign MUST come before StarterKit so it can add attributes to paragraph/heading
+            TextAlign.configure({
+                types: ['heading', 'paragraph'],
+                alignments: ['left', 'center', 'right', 'justify'],
+                defaultAlignment: 'left',
+            }),
             StarterKit.configure({
                 heading: {
                     levels: [1, 2, 3],
@@ -302,11 +308,6 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
                 },
             }),
             Color,
-            TextAlign.configure({
-                types: ['heading', 'paragraph'],
-                alignments: ['left', 'center', 'right', 'justify'],
-                defaultAlignment: 'left',
-            }),
             Link.configure({
                 openOnClick: false,
                 HTMLAttributes: {
