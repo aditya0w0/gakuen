@@ -133,8 +133,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     const [draggedComponentId, setDraggedComponentId] = useState<string | null>(null);
     const [addMenuOpen, setAddMenuOpen] = useState(false);
     const [lessonDropdownOpen, setLessonDropdownOpen] = useState(false);
-    const [inlineTyping, setInlineTyping] = useState(false);
-    const [editorMode, setEditorMode] = useState<'classic' | 'fluid'>('fluid'); // Default to fluid for Notion-like experience
+    const [inlineTyping, setInlineTyping] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
     const [fluidEditor, setFluidEditor] = useState<import('@tiptap/react').Editor | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false); // Hidden on mobile by default
     const inlineInputRef = useRef<HTMLTextAreaElement>(null);
@@ -613,255 +612,21 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                 </div>
                             )}
 
-                            {/* Editor Mode Toggle */}
-                            {!previewMode && (
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2 text-xs text-zinc-500">
-                                        <span>Editor Mode:</span>
-                                        <div className="flex bg-zinc-800/50 rounded-lg p-0.5 border border-zinc-700/50">
-                                            <button
-                                                onClick={() => setEditorMode('fluid')}
-                                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${editorMode === 'fluid'
-                                                    ? 'bg-indigo-600 text-white'
-                                                    : 'text-zinc-400 hover:text-white'
-                                                    }`}
-                                            >
-                                                Fluid
-                                            </button>
-                                            <button
-                                                onClick={() => setEditorMode('classic')}
-                                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${editorMode === 'classic'
-                                                    ? 'bg-zinc-700 text-white'
-                                                    : 'text-zinc-400 hover:text-white'
-                                                    }`}
-                                            >
-                                                Classic
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Components Canvas - Conditional based on editor mode */}
-                            {editorMode === 'fluid' ? (
-                                /* Fluid Editor Mode - Notion-like experience */
-                                <div className="min-h-[300px]">
-                                    <FluidEditor
-                                        ref={fluidEditorRef}
-                                        key={editingIndex} // Re-mount when switching lessons
-                                        initialContent={getFluidEditorInitialContent()}
-                                        onUpdate={handleFluidEditorUpdate}
-                                        onEditorReady={setFluidEditor}
-                                        placeholder="Type '/' for commands, or just start writing..."
-                                        editable={!previewMode}
-                                        className="min-h-[300px]"
-                                    />
-                                    {/* Mobile Inline Toolbar */}
-                                    <MobileEditorToolbar editor={fluidEditor} />
-                                </div>
-                            ) : (
-                                /* Classic Editor Mode - Block-based with drag-drop */
-                                <div className="space-y-4">
-                                    {components.length === 0 ? (
-                                        <div className="min-h-[200px] p-4 border border-zinc-800/50 rounded-lg bg-zinc-900/10 transition-colors">
-                                            {inlineTyping ? (
-                                                <textarea
-                                                    ref={inlineInputRef}
-                                                    autoFocus
-                                                    placeholder="Type something... (press Escape to cancel)"
-                                                    className="w-full min-h-[120px] bg-transparent text-white text-base resize-none focus:outline-none placeholder:text-zinc-600"
-                                                    onBlur={(e) => {
-                                                        const text = e.target.value.trim();
-                                                        if (text) {
-                                                            const textBlock = createComponent("text");
-                                                            (textBlock as any).content = `<p>${text}</p>`;
-                                                            handleAddComponent(textBlock);
-                                                        }
-                                                        setInlineTyping(false);
-                                                    }}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Escape') {
-                                                            setInlineTyping(false);
-                                                        }
-                                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                                            e.preventDefault();
-                                                            const text = (e.target as HTMLTextAreaElement).value.trim();
-                                                            if (text) {
-                                                                const textBlock = createComponent("text");
-                                                                (textBlock as any).content = `<p>${text}</p>`;
-                                                                handleAddComponent(textBlock);
-                                                            }
-                                                            setInlineTyping(false);
-                                                        }
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div
-                                                    className="cursor-text"
-                                                    onClick={() => !previewMode && setInlineTyping(true)}
-                                                >
-                                                    <div className="text-zinc-600 text-base">
-                                                        Click here to start typing...
-                                                    </div>
-                                                    <div className="flex items-center gap-3 mt-4 text-zinc-700 text-sm">
-                                                        <span>Type <kbd className="px-1.5 py-0.5 bg-zinc-800/50 rounded text-xs">/</kbd> for commands</span>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className="mt-4 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                                <ComponentPalette onAddComponent={handleAddComponent} />
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <DragDropContext
-                                            onDragStart={(start) => {
-                                                setIsDragging(true);
-                                                setDraggedComponentId(start.draggableId);
-                                            }}
-                                            onDragEnd={(result) => {
-                                                setIsDragging(false);
-                                                setDraggedComponentId(null);
-
-                                                // Check if dropped in trash zone
-                                                if (result.destination?.droppableId === 'trash') {
-                                                    if (editingIndex === null) return;
-                                                    const newComponents = components.filter(c => c.id !== result.draggableId);
-                                                    handleUpdateLesson(editingIndex, { components: newComponents });
-                                                    setSelectedComponentId(null);
-                                                    return;
-                                                }
-
-                                                if (!result.destination || editingIndex === null) return;
-                                                const newComponents = Array.from(components);
-                                                const [removed] = newComponents.splice(result.source.index, 1);
-                                                newComponents.splice(result.destination.index, 0, removed);
-                                                handleUpdateLesson(editingIndex, { components: newComponents });
-                                            }}>
-                                            <Droppable droppableId="components">
-                                                {(provided) => (
-                                                    <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-4">
-                                                        {components.map((component, index) => (
-                                                            <Draggable key={component.id} draggableId={component.id} index={index}>
-                                                                {(dragProvided, snapshot) => (
-                                                                    <div
-                                                                        ref={dragProvided.innerRef}
-                                                                        {...dragProvided.draggableProps}
-                                                                        className={`group relative flex items-center gap-2 ${snapshot.isDragging ? 'opacity-75 z-50' : ''}`}
-                                                                    >
-                                                                        {/* VISIBLE Drag Handle */}
-                                                                        <div
-                                                                            {...dragProvided.dragHandleProps}
-                                                                            className="p-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-700 cursor-grab active:cursor-grabbing transition-all shrink-0 flex items-center justify-center"
-                                                                            title="Drag to reorder or drop in trash"
-                                                                        >
-                                                                            <GripVertical size={20} />
-                                                                        </div>
-                                                                        <div
-                                                                            className="flex-1 min-w-0"
-                                                                            data-component-wrapper
-                                                                            onContextMenu={(e) => {
-                                                                                e.preventDefault();
-                                                                                e.stopPropagation();
-                                                                                console.log('🎯 Context menu triggered for:', component.id);
-                                                                                setSelectedComponentId(component.id);
-                                                                                setContextMenu({ x: e.clientX, y: e.clientY, componentId: component.id });
-                                                                            }}
-                                                                        >
-                                                                            <ComponentRenderer
-                                                                                component={component}
-                                                                                isEditing={!previewMode}
-                                                                                isSelected={selectedComponentId === component.id}
-                                                                                onUpdate={handleUpdateComponent}
-                                                                                onSelect={() => setSelectedComponentId(component.id)}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </Draggable>
-                                                        ))}
-                                                        {provided.placeholder}
-                                                    </div>
-                                                )}
-                                            </Droppable>
-
-                                            {/* Trash Zone - fixed overlay during drag */}
-                                            <Droppable droppableId="trash">
-                                                {(trashProvided, trashSnapshot) => (
-                                                    <div
-                                                        ref={trashProvided.innerRef}
-                                                        {...trashProvided.droppableProps}
-                                                        className={`fixed bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 rounded-xl border-2 border-dashed transition-all z-[100] flex items-center gap-3 ${!isDragging ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'
-                                                            } ${trashSnapshot.isDraggingOver
-                                                                ? 'bg-red-500/40 border-red-500 scale-110'
-                                                                : 'bg-zinc-900/95 border-zinc-500 backdrop-blur-md shadow-2xl'
-                                                            }`}
-                                                    >
-                                                        <Trash2 size={24} className={trashSnapshot.isDraggingOver ? 'text-red-400' : 'text-zinc-300'} />
-                                                        <span className={`text-sm font-semibold ${trashSnapshot.isDraggingOver ? 'text-red-300' : 'text-zinc-300'}`}>
-                                                            {trashSnapshot.isDraggingOver ? 'Release to delete!' : 'Drop here to delete'}
-                                                        </span>
-                                                        <div style={{ display: 'none' }}>{trashProvided.placeholder}</div>
-                                                    </div>
-                                                )}
-                                            </Droppable>
-                                        </DragDropContext>
-                                    )}
-
-                                    {!previewMode && components.length > 0 && (
-                                        <div className="mt-2 space-y-2">
-                                            {/* Inline typing area */}
-                                            {inlineTyping ? (
-                                                <div className="p-3 border border-zinc-700 rounded-lg bg-zinc-900/50">
-                                                    <textarea
-                                                        ref={inlineInputRef}
-                                                        autoFocus
-                                                        placeholder="Continue typing... (Enter to save, Escape to cancel)"
-                                                        className="w-full min-h-[80px] bg-transparent text-white text-base resize-none focus:outline-none placeholder:text-zinc-600"
-                                                        onBlur={(e) => {
-                                                            const text = e.target.value.trim();
-                                                            if (text) {
-                                                                const textBlock = createComponent("text");
-                                                                (textBlock as any).content = `<p>${text}</p>`;
-                                                                handleAddComponent(textBlock);
-                                                            }
-                                                            setInlineTyping(false);
-                                                        }}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Escape') {
-                                                                setInlineTyping(false);
-                                                            }
-                                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                                e.preventDefault();
-                                                                const text = (e.target as HTMLTextAreaElement).value.trim();
-                                                                if (text) {
-                                                                    const textBlock = createComponent("text");
-                                                                    (textBlock as any).content = `<p>${text}</p>`;
-                                                                    handleAddComponent(textBlock);
-                                                                }
-                                                                setInlineTyping(false);
-                                                            }
-                                                        }}
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div
-                                                    onClick={() => setInlineTyping(true)}
-                                                    className="py-3 px-4 text-zinc-600 text-sm cursor-text hover:bg-zinc-900/30 rounded-lg transition-colors"
-                                                >
-                                                    Click to continue writing, or use{' '}
-                                                    <kbd className="px-1.5 py-0.5 bg-zinc-800/50 rounded text-xs mx-1">/</kbd>{' '}
-                                                    for commands
-                                                </div>
-                                            )}
-
-                                            {/* Add block button */}
-                                            <div className="flex justify-center pt-2">
-                                                <ComponentPalette onAddComponent={handleAddComponent} />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                            {/* Fluid Editor - Primary editing experience */}
+                            <div className="min-h-[300px]">
+                                <FluidEditor
+                                    ref={fluidEditorRef}
+                                    key={editingIndex} // Re-mount when switching lessons
+                                    initialContent={getFluidEditorInitialContent()}
+                                    onUpdate={handleFluidEditorUpdate}
+                                    onEditorReady={setFluidEditor}
+                                    placeholder="Type '/' for commands, or just start writing..."
+                                    editable={!previewMode}
+                                    className="min-h-[300px]"
+                                />
+                                {/* Mobile Inline Toolbar */}
+                                <MobileEditorToolbar editor={fluidEditor} />
+                            </div>
                         </div>
                     ) : activeView === 'settings' ? (
                         <CourseSettings
@@ -1011,7 +776,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
 
                 {/* Right Panel - Desktop only (mobile uses inline toolbar) */}
                 <aside className="hidden md:block w-80 shrink-0">
-                    {activeView === 'content' && editorMode === 'fluid' ? (
+                    {activeView === 'content' ? (
                         <FluidEditorSidebar
                             editor={fluidEditor}
                             onInsertComponent={handleAddComponent}

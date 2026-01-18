@@ -55,15 +55,19 @@ export async function POST(request: Request) {
             // PERSONA MODE: Keep the persona's style instruction as the main prompt
             prompt = `${style}
 
+CRITICAL STRUCTURE RULE: Preserve paragraph breaks. If the input has multiple paragraphs, output must also have multiple paragraphs separated by TWO newlines (blank line between paragraphs). Never merge paragraphs into one block.
+
 ---
 TEXT TO REWRITE:
 ${text}
 ---
 
-REWRITTEN TEXT (same language as input, casual tone):`;
+REWRITTEN TEXT (same language as input, casual tone, preserve paragraph structure):`;
         } else if (style && typeof style === 'string' && style.trim()) {
             // CUSTOM INSTRUCTION MODE: User has full control - can translate, restyle, anything
             prompt = `You are a helpful text assistant. Follow the user's instruction exactly.
+
+CRITICAL: Preserve paragraph structure. If input has multiple paragraphs, keep them separate with blank lines between them.
 
 USER INSTRUCTION: "${style}"
 
@@ -72,11 +76,12 @@ TEXT TO PROCESS:
 ${text}
 ---
 
-OUTPUT (follow the instruction above, return ONLY the result text, no explanations):`;
+OUTPUT (follow the instruction above, return ONLY the result text, no explanations, preserve paragraph breaks):`;
         } else {
             // DEFAULT MODE: Simple paraphrase preserving language
             prompt = `Rewrite this text naturally while keeping the same language and meaning.
 Return ONLY the rewritten text, no explanations.
+CRITICAL: Preserve paragraph structure - if there are multiple paragraphs, keep them as separate paragraphs with blank lines between them.
 
 TEXT:
 ${text}

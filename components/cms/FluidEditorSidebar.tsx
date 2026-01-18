@@ -211,11 +211,18 @@ export function FluidEditorSidebar({ editor, onInsertComponent }: FluidEditorSid
 
         if (!editor) return;
 
-        // Replace the selection with new text
+        // Convert text with newlines to HTML paragraphs so they don't inherit current block type
+        // Split by double newlines (paragraph breaks) and wrap each in <p> tags
+        const htmlContent = text
+            .split(/\n\n+/)
+            .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+            .join('');
+
+        // Replace the selection with new HTML content (not plain text)
         editor.chain().focus()
             .setTextSelection({ from, to })
             .deleteSelection()
-            .insertContent(text)
+            .insertContent(htmlContent, { parseOptions: { preserveWhitespace: false } })
             .run();
 
         // Calculate the new selection range (where we just inserted)
@@ -277,14 +284,70 @@ export function FluidEditorSidebar({ editor, onInsertComponent }: FluidEditorSid
             editor.chain().focus().run();
         }
 
-        if (type === 'paragraph') {
-            editor.chain().focus().clearNodes().run();
-        } else if (type === 'h1') {
-            editor.chain().focus().toggleHeading({ level: 1 }).run();
-        } else if (type === 'h2') {
-            editor.chain().focus().toggleHeading({ level: 2 }).run();
-        } else if (type === 'h3') {
-            editor.chain().focus().toggleHeading({ level: 3 }).run();
+        const { $from, $to, from, to } = editor.state.selection;
+        const node = $from.parent;
+
+        // Check if partial selection within a node (not the whole node)
+        const nodeStart = $from.start();
+        const nodeEnd = $from.end();
+        const isPartialSelection = from > nodeStart || to < nodeEnd;
+
+        // If partial selection AND changing to a heading type (not paragraph), auto-split
+        if (isPartialSelection && type !== 'paragraph' && type.startsWith('h')) {
+            const headingLevel = parseInt(type.replace('h', '')) as 1 | 2 | 3;
+
+            // Get the text before, selected, and after
+            const fullText = node.textContent;
+            const beforeOffset = from - nodeStart;
+            const afterOffset = to - nodeStart;
+
+            const beforeText = fullText.slice(0, beforeOffset);
+            const selectedText = fullText.slice(beforeOffset, afterOffset);
+            const afterText = fullText.slice(afterOffset);
+
+            // Build new content: up to 3 nodes
+            const newContent: { type: string; attrs?: Record<string, unknown>; content?: { type: string; text: string }[] }[] = [];
+
+            if (beforeText.trim()) {
+                newContent.push({
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: beforeText }]
+                });
+            }
+
+            if (selectedText.trim()) {
+                newContent.push({
+                    type: 'heading',
+                    attrs: { level: headingLevel },
+                    content: [{ type: 'text', text: selectedText }]
+                });
+            }
+
+            if (afterText.trim()) {
+                newContent.push({
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: afterText }]
+                });
+            }
+
+            // Replace current node with the new nodes
+            editor.chain()
+                .focus()
+                .setTextSelection({ from: nodeStart, to: nodeEnd })
+                .deleteSelection()
+                .insertContent(newContent)
+                .run();
+        } else {
+            // Normal behavior - apply to whole block
+            if (type === 'paragraph') {
+                editor.chain().focus().clearNodes().run();
+            } else if (type === 'h1') {
+                editor.chain().focus().toggleHeading({ level: 1 }).run();
+            } else if (type === 'h2') {
+                editor.chain().focus().toggleHeading({ level: 2 }).run();
+            } else if (type === 'h3') {
+                editor.chain().focus().toggleHeading({ level: 3 }).run();
+            }
         }
         closeAllDropdowns();
     };
