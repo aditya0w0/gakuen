@@ -1014,6 +1014,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                     {activeView === 'content' && editorMode === 'fluid' ? (
                         <FluidEditorSidebar
                             editor={fluidEditor}
+                            onInsertComponent={handleAddComponent}
                         />
                     ) : (
                         <DesignControls

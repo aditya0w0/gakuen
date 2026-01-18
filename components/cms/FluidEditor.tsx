@@ -4,10 +4,13 @@ import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { CustomImage } from '@/lib/cms/extensions/CustomImage';
+import { CustomMultiFileCode } from '@/lib/cms/extensions/CustomMultiFileCode';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
+import TextAlign from '@tiptap/extension-text-align';
+import Bold from '@tiptap/extension-bold';
 import {
     useState,
     useEffect,
@@ -252,12 +255,34 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
                 },
                 // Disable Link - we configure it separately below
                 link: false,
+                // Disable default Bold - we configure custom one below for b tag support
+                bold: false,
+            }),
+            // Custom Bold that recognizes both <strong> and <b> tags, plus CSS font-weight
+            Bold.extend({
+                parseHTML() {
+                    return [
+                        { tag: 'strong' },
+                        { tag: 'b' },
+                        {
+                            style: 'font-weight',
+                            getAttrs: value => {
+                                const weight = typeof value === 'string' ? parseInt(value, 10) : value;
+                                if (weight >= 600 || value === 'bold' || value === 'bolder') {
+                                    return {};
+                                }
+                                return false;
+                            }
+                        },
+                    ];
+                },
             }),
             Placeholder.configure({
                 placeholder,
                 emptyEditorClass: 'is-editor-empty',
             }),
             CustomImage,
+            CustomMultiFileCode,
             Underline,
             TextStyle.configure({
                 HTMLAttributes: {},
@@ -277,6 +302,11 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
                 },
             }),
             Color,
+            TextAlign.configure({
+                types: ['heading', 'paragraph'],
+                alignments: ['left', 'center', 'right', 'justify'],
+                defaultAlignment: 'left',
+            }),
             Link.configure({
                 openOnClick: false,
                 HTMLAttributes: {
@@ -290,6 +320,14 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
             attributes: {
                 class: 'prose prose-invert max-w-none focus:outline-none min-h-[200px] px-6 py-5',
             },
+        },
+        onBlur: ({ editor }) => {
+            // Store selection on blur for sidebar to use
+            const { from, to } = editor.state.selection;
+            const text = editor.state.doc.textBetween(from, to);
+            if (text.trim() && typeof window !== 'undefined') {
+                (window as unknown as Record<string, unknown>).__tiptapSavedSelection = { from, to, text };
+            }
         },
         onUpdate: ({ editor }) => {
             onUpdate?.(editor.getHTML(), editor.getJSON());
@@ -368,21 +406,21 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
                 .ProseMirror h1 {
                     font-size: 2.25rem;
                     font-weight: 700;
-                    margin: 1.5rem 0 0.75rem;
+                    margin: 0.5em 0 0.25em;
                     color: white;
                     line-height: 1.2;
                 }
                 .ProseMirror h2 {
                     font-size: 1.75rem;
                     font-weight: 600;
-                    margin: 1.25rem 0 0.625rem;
+                    margin: 0.5em 0 0.25em;
                     color: white;
                     line-height: 1.3;
                 }
                 .ProseMirror h3 {
                     font-size: 1.375rem;
                     font-weight: 600;
-                    margin: 1rem 0 0.5rem;
+                    margin: 0.5em 0 0.25em;
                     color: #f4f4f5;
                     line-height: 1.4;
                 }

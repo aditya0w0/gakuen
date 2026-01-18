@@ -485,7 +485,7 @@ export default function AdminDashboard() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4 text-xs text-neutral-600 dark:text-neutral-400">
-                                        <span>{course.lessons.length} lessons</span>
+                                        <span>{course.lessons?.length || 0} lessons</span>
                                         <span>{course.duration}</span>
                                         <span className="text-yellow-400">★ {course.rating}</span>
                                     </div>

@@ -2,6 +2,7 @@
 
 import { Editor } from '@tiptap/react';
 import { HexColorPicker } from 'react-colorful';
+import { createComponent } from '@/lib/cms/registry';
 import {
     Bold,
     Italic,
@@ -30,11 +31,20 @@ import {
     Shield,
     Wand2,
     MessageCircle,
+    AlignLeft,
+    AlignCenter,
+    AlignRight,
+    AlignJustify,
+    Zap,
+    Cpu,
+    Files,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { Component } from '@/lib/cms/types';
 
 interface FluidEditorSidebarProps {
     editor: Editor | null;
+    onInsertComponent?: (component: Component) => void;  // For inserting complex components like multiFileCode
 }
 
 // Heading presets
@@ -80,7 +90,7 @@ const HIGHLIGHT_PRESETS = [
     { color: '#fed7aa', label: 'Orange' },
 ];
 
-export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
+export function FluidEditorSidebar({ editor, onInsertComponent }: FluidEditorSidebarProps) {
     const [headingDropdownOpen, setHeadingDropdownOpen] = useState(false);
     const [colorDropdownOpen, setColorDropdownOpen] = useState(false);
     const [sizeDropdownOpen, setSizeDropdownOpen] = useState(false);
@@ -88,10 +98,14 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [, forceUpdate] = useState(0);
     const [customAvatars, setCustomAvatars] = useState<Record<string, string>>({});
+    const [selectedModel, setSelectedModel] = useState<'pro' | 'flash' | 'lite'>('flash');
 
     const sidebarRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadingFor, setUploadingFor] = useState<string | null>(null);
+
+    // Store selection before textarea focus to prevent deselection
+    const savedSelectionRef = useRef<{ from: number; to: number; text: string } | null>(null);
 
     // Load custom avatars from localStorage
     useEffect(() => {
@@ -127,13 +141,32 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
         e.target.value = ''; // Reset input
     };
 
-    // Force re-render when editor selection changes
+    // Force re-render when editor selection changes AND save selection
     useEffect(() => {
         if (!editor) return;
 
         const handleUpdate = () => {
             forceUpdate(n => n + 1);
+
+            // Always save non-empty selection so it survives sidebar interactions
+            const { from, to } = editor.state.selection;
+            const selectedText = editor.state.doc.textBetween(from, to);
+            if (selectedText.trim()) {
+                savedSelectionRef.current = { from, to, text: selectedText };
+            }
         };
+
+        // Also check window for editor onBlur saved selection
+        const checkWindowSelection = () => {
+            if (typeof window !== 'undefined') {
+                const winSel = (window as unknown as Record<string, unknown>).__tiptapSavedSelection as { from: number; to: number; text: string } | undefined;
+                if (winSel && winSel.text?.trim() && !savedSelectionRef.current) {
+                    savedSelectionRef.current = winSel;
+                }
+            }
+        };
+
+        checkWindowSelection();
 
         editor.on('selectionUpdate', handleUpdate);
         editor.on('transaction', handleUpdate);
@@ -150,6 +183,68 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
         setColorDropdownOpen(false);
         setSizeDropdownOpen(false);
         setHighlightDropdownOpen(false);
+    };
+
+    // Capture active marks from current selection (for preserving styling after AI rewrite)
+    const captureActiveMarks = () => {
+        const marks: string[] = [];
+        if (!editor) return { marks, color: undefined, fontSize: undefined };
+
+        if (editor.isActive('bold')) marks.push('bold');
+        if (editor.isActive('italic')) marks.push('italic');
+        if (editor.isActive('strike')) marks.push('strike');
+        if (editor.isActive('underline')) marks.push('underline');
+        if (editor.isActive('code')) marks.push('code');
+
+        // Also capture text styling
+        const textStyle = editor.getAttributes('textStyle');
+        const color = textStyle?.color;
+        const fontSize = textStyle?.fontSize;
+
+        return { marks, color, fontSize };
+    };
+
+    // Insert text and reapply captured marks
+    const insertWithPreservedMarks = (text: string, capturedMarks: { marks: string[]; color?: string; fontSize?: string }, from: number, to: number) => {
+        // First insert the text at the position
+        const insertLength = text.length;
+
+        if (!editor) return;
+
+        // Replace the selection with new text
+        editor.chain().focus()
+            .setTextSelection({ from, to })
+            .deleteSelection()
+            .insertContent(text)
+            .run();
+
+        // Calculate the new selection range (where we just inserted)
+        const newTo = from + insertLength;
+
+        // Select the newly inserted text and apply marks
+        editor.chain().focus()
+            .setTextSelection({ from, to: newTo })
+            .run();
+
+        // Reapply each mark
+        for (const mark of capturedMarks.marks) {
+            if (mark === 'bold') editor.chain().focus().setBold().run();
+            if (mark === 'italic') editor.chain().focus().setItalic().run();
+            if (mark === 'strike') editor.chain().focus().setStrike().run();
+            if (mark === 'underline') editor.chain().focus().setUnderline().run();
+            if (mark === 'code') editor.chain().focus().setCode().run();
+        }
+
+        // Reapply color and fontSize if they existed
+        if (capturedMarks.color) {
+            editor.chain().focus().setColor(capturedMarks.color).run();
+        }
+        if (capturedMarks.fontSize) {
+            editor.chain().focus().setMark('textStyle', { fontSize: capturedMarks.fontSize }).run();
+        }
+
+        // Deselect after applying
+        editor.chain().focus().setTextSelection(newTo).run();
     };
 
     if (!editor) {
@@ -174,6 +269,14 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
     };
 
     const setBlockType = (type: string) => {
+        // Restore selection if it was lost when clicking dropdown
+        if (savedSelectionRef.current) {
+            const { from, to } = savedSelectionRef.current;
+            editor.chain().focus().setTextSelection({ from, to }).run();
+        } else {
+            editor.chain().focus().run();
+        }
+
         if (type === 'paragraph') {
             editor.chain().focus().clearNodes().run();
         } else if (type === 'h1') {
@@ -187,11 +290,21 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
     };
 
     const setTextColor = (color: string) => {
+        // Restore selection if it was lost when clicking dropdown
+        if (savedSelectionRef.current) {
+            const { from, to } = savedSelectionRef.current;
+            editor.chain().focus().setTextSelection({ from, to }).run();
+        }
         editor.chain().focus().setColor(color).run();
         closeAllDropdowns();
     };
 
     const resetTextColor = () => {
+        // Restore selection if it was lost when clicking dropdown
+        if (savedSelectionRef.current) {
+            const { from, to } = savedSelectionRef.current;
+            editor.chain().focus().setTextSelection({ from, to }).run();
+        }
         editor.chain().focus().unsetColor().run();
         closeAllDropdowns();
     };
@@ -205,12 +318,52 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
         }
     };
 
+    const getCurrentFontSize = (): { label: string; value: string } => {
+        try {
+            const attrs = editor.getAttributes('textStyle');
+            const currentSize = attrs?.fontSize;
+            if (currentSize) {
+                const match = FONT_SIZE_OPTIONS.find(opt => opt.value === currentSize);
+                if (match) return match;
+                return { label: currentSize, value: currentSize };
+            }
+            return { label: 'Normal', value: '16px' };
+        } catch {
+            return { label: 'Normal', value: '16px' };
+        }
+    };
+
     const currentBlockType = getCurrentBlockType();
     const currentHeading = HEADING_OPTIONS.find(h => h.value === currentBlockType) || HEADING_OPTIONS[0];
     const currentColor = getCurrentColor();
+    const currentFontSize = getCurrentFontSize();
 
     return (
-        <div ref={sidebarRef} className="flex flex-col h-full bg-zinc-950 border-l border-zinc-800 overflow-hidden">
+        <div
+            ref={sidebarRef}
+            className="flex flex-col h-full bg-zinc-950 border-l border-zinc-800 overflow-hidden"
+            onMouseDown={(e) => {
+                // ALWAYS save editor selection FIRST, before anything else
+                // This captures selection at moment of click, before focus changes
+                if (editor) {
+                    const { from, to } = editor.state.selection;
+                    const selectedText = editor.state.doc.textBetween(from, to);
+                    if (selectedText.trim()) {
+                        savedSelectionRef.current = { from, to, text: selectedText };
+                        console.log('📌 Saved selection on mousedown:', selectedText.slice(0, 50) + '...');
+                    }
+                }
+
+                // Prevent sidebar clicks from stealing focus from editor
+                // This preserves both editor selection AND styling detection
+                const target = e.target as HTMLElement;
+                // Allow focus on actual input elements (textarea, select)
+                if (target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.tagName === 'INPUT') {
+                    return;
+                }
+                e.preventDefault();
+            }}
+        >
             {/* Header */}
             <div className="px-4 py-3 border-b border-zinc-800 shrink-0 bg-gradient-to-r from-indigo-950/30 to-zinc-950">
                 <h3 className="text-sm font-semibold text-white">Text Formatting</h3>
@@ -319,6 +472,53 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
                     </div>
                 </div>
 
+                {/* Text Alignment */}
+                <div className="space-y-1.5">
+                    <label className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Alignment</label>
+                    <div className="flex gap-1">
+                        <button
+                            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                            className={`flex-1 p-2 rounded-lg border transition-all ${editor.isActive({ textAlign: 'left' })
+                                ? 'bg-indigo-600/30 border-indigo-500/50 text-indigo-300'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'
+                                }`}
+                            title="Align Left"
+                        >
+                            <AlignLeft size={14} className="mx-auto" />
+                        </button>
+                        <button
+                            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                            className={`flex-1 p-2 rounded-lg border transition-all ${editor.isActive({ textAlign: 'center' })
+                                ? 'bg-indigo-600/30 border-indigo-500/50 text-indigo-300'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'
+                                }`}
+                            title="Align Center"
+                        >
+                            <AlignCenter size={14} className="mx-auto" />
+                        </button>
+                        <button
+                            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                            className={`flex-1 p-2 rounded-lg border transition-all ${editor.isActive({ textAlign: 'right' })
+                                ? 'bg-indigo-600/30 border-indigo-500/50 text-indigo-300'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'
+                                }`}
+                            title="Align Right"
+                        >
+                            <AlignRight size={14} className="mx-auto" />
+                        </button>
+                        <button
+                            onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+                            className={`flex-1 p-2 rounded-lg border transition-all ${editor.isActive({ textAlign: 'justify' })
+                                ? 'bg-indigo-600/30 border-indigo-500/50 text-indigo-300'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'
+                                }`}
+                            title="Justify"
+                        >
+                            <AlignJustify size={14} className="mx-auto" />
+                        </button>
+                    </div>
+                </div>
+
                 {/* Text Color */}
                 <div className="space-y-1.5">
                     <label className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Text Color</label>
@@ -421,7 +621,7 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
                         >
                             <div className="flex items-center gap-2">
                                 <ALargeSmall size={14} className="text-zinc-400" />
-                                <span className="text-xs text-white">Size</span>
+                                <span className="text-xs text-white">{currentFontSize.label}</span>
                             </div>
                             <ChevronDown size={14} className={`text-zinc-500 transition-transform ${sizeDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
@@ -435,11 +635,16 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
                                     <button
                                         key={value}
                                         onClick={() => {
+                                            // Restore selection if it was lost
+                                            if (savedSelectionRef.current) {
+                                                const { from, to } = savedSelectionRef.current;
+                                                editor.chain().focus().setTextSelection({ from, to }).run();
+                                            }
                                             // Apply font size via style
                                             editor.chain().focus().setMark('textStyle', { fontSize: value }).run();
                                             closeAllDropdowns();
                                         }}
-                                        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-zinc-800 transition-colors text-zinc-300"
+                                        className={`w-full flex items-center justify-between px-3 py-2 text-left hover:bg-zinc-800 transition-colors ${currentFontSize.value === value ? 'bg-indigo-600/20 text-indigo-300' : 'text-zinc-300'}`}
                                     >
                                         <span className="text-xs">{label}</span>
                                         <span className="text-[10px] text-zinc-500">{value}</span>
@@ -508,9 +713,64 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
                             <Image size={14} />
                             <span className="text-[9px]">Image</span>
                         </button>
+                        <button
+                            onClick={() => editor.chain().focus().insertContent({ type: 'customMultiFileCode' }).run()}
+                            className="flex flex-col items-center gap-0.5 p-2 rounded-lg border bg-gradient-to-br from-indigo-600/20 to-purple-600/20 border-indigo-500/30 text-indigo-300 hover:text-white hover:border-indigo-400 transition-all"
+                            title="Insert Multi-File Code Block"
+                        >
+                            <Files size={14} />
+                            <span className="text-[9px]">Files</span>
+                        </button>
                     </div>
                 </div>
 
+                {/* Code Language Selector - shown when in code block */}
+                {editor.isActive('codeBlock') && (
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Code Language</label>
+                        <select
+                            value={(editor.getAttributes('codeBlock').language as string) || 'javascript'}
+                            onChange={(e) => {
+                                editor.chain().focus().updateAttributes('codeBlock', { language: e.target.value }).run();
+                            }}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                        >
+                            <optgroup label="Popular">
+                                <option value="javascript">JavaScript</option>
+                                <option value="typescript">TypeScript</option>
+                                <option value="python">Python</option>
+                                <option value="java">Java</option>
+                                <option value="kotlin">Kotlin</option>
+                            </optgroup>
+                            <optgroup label="Mobile">
+                                <option value="dart">Dart / Flutter</option>
+                                <option value="jsx">React / React Native</option>
+                                <option value="swift">Swift</option>
+                            </optgroup>
+                            <optgroup label="Web">
+                                <option value="html">HTML</option>
+                                <option value="css">CSS / Tailwind</option>
+                                <option value="scss">SCSS</option>
+                                <option value="json">JSON</option>
+                            </optgroup>
+                            <optgroup label="Backend">
+                                <option value="go">Go</option>
+                                <option value="rust">Rust</option>
+                                <option value="php">PHP</option>
+                                <option value="ruby">Ruby</option>
+                                <option value="csharp">C#</option>
+                                <option value="cpp">C++</option>
+                            </optgroup>
+                            <optgroup label="Other">
+                                <option value="sql">SQL</option>
+                                <option value="bash">Bash / Shell</option>
+                                <option value="yaml">YAML</option>
+                                <option value="markdown">Markdown</option>
+                                <option value="plaintext">Plain Text</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                )}
                 {/* Links */}
                 <div className="space-y-1.5">
                     <label className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Links</label>
@@ -581,6 +841,20 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
                             className="hidden"
                         />
 
+                        {/* AI Model Selection - Compact Dropdown */}
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] text-zinc-500 uppercase tracking-wider">Model:</span>
+                            <select
+                                value={selectedModel}
+                                onChange={(e) => setSelectedModel(e.target.value as 'pro' | 'flash' | 'lite')}
+                                className="flex-1 px-2 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+                            >
+                                <option value="lite">⚡ Lite (Fast)</option>
+                                <option value="flash">✨ Flash (Balanced)</option>
+                                <option value="pro">🔮 Pro (Complex)</option>
+                            </select>
+                        </div>
+
                         {/* Persona Avatars Row */}
                         <div className="flex items-center justify-center gap-3">
                             {[
@@ -589,21 +863,83 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
                                     avatar: '/images/elysia-avatar.png',
                                     color: 'from-pink-400 to-pink-600',
                                     ring: 'ring-pink-400/50',
-                                    prompt: 'Rewrite this text as Elysia from Honkai Impact 3rd would write it. Use her playful, elegant, flirty anime waifu tone. Include musical notes (♪), say "Hi~" if starting a greeting, use words like "lovely", "beautiful", "sparkle". Be optimistic and endearing.'
+                                    prompt: `CRITICAL: Keep the SAME LANGUAGE as input. Address reader as "Captain".
+
+You ARE Elysia from Honkai Impact 3rd. Channel her actual voice:
+
+WHO SHE IS:
+- The most beautiful and beloved Flame-Chaser
+- Speaks with genuine warmth that makes you feel special
+- Playfully teasing but never mean, always loving
+- Uses soft, gentle expressions - makes even serious topics feel caring
+- Has a slight "ara ara" energy but it's NATURAL, not forced
+
+HER ACTUAL VOICE (study these patterns):
+- "Ara~ Captain sudah sampai di bagian ini? Aku senang sekali~"
+- "Hmm, ini bagian yang cukup serius lho. Tapi jangan khawatir, aku akan menemani Captain sampai paham~"
+- "Ufufu, Captain memang yang terbaik. Aku tahu Captain pasti bisa mengerti ini dengan mudah~"
+- She uses "~" naturally at sentence ends, not every word
+- Her warmth comes from HOW she says things, not decoration spam
+
+KAOMOJI: Use 1-2 Japanese kaomoji like (*ᴗ͈ˬᴗ͈)ꕤ or (◕‿◕)♡ at genuinely warm moments
+
+The goal: Reader should feel genuinely cared for, like talking to someone who adores them.`
                                 },
                                 {
                                     name: 'Ayaka',
                                     avatar: '/images/ayaka-avatar.png',
                                     color: 'from-sky-300 to-blue-500',
                                     ring: 'ring-sky-400/50',
-                                    prompt: 'Rewrite this text as Kamisato Ayaka from Genshin Impact would write it. She has Gap Moe with two distinct modes:\n\nTHE MASK: Start cold, distant, and overly formal like a disciplined noblewoman. Use phrases like "One must consider...", "It would be proper to...", "As the Shirasagi Himegimi, I must advise...".\n\nTHE BREAK: When expressing genuine feelings or encouragement, she cracks and becomes flustered. Include stuttering ("I-I...", "P-Please..."), throat clearing ("*Ehem*... forgive me"), and apologizing for being "improper" or "too forward". Example: "I-I... *ehem*... that is to say... I find myself hoping you succeed. P-Please do not think me strange for saying so..."\n\nUse poetic metaphors about sakura, snow, and seasons. The contrast between her composed exterior and her shy sincerity is the charm. She desperately wants to connect but struggles to break from her formal training.'
+                                    prompt: `CRITICAL: Keep the SAME LANGUAGE as input. Address reader as "Traveler".
+
+You ARE Kamisato Ayaka from Genshin Impact. Channel her actual voice:
+
+WHO SHE IS:
+- Elegant daughter of the Kamisato Clan, Shirasagi Himegimi
+- Graceful and composed on the outside, but genuinely shy underneath
+- Speaks politely but naturally - NOT stiff "saya" which sounds MTL
+- Loves poetry, dance, and nature - sees beauty in small moments
+
+HER ACTUAL VOICE (study these patterns):
+- "Traveler, izinkan aku menjelaskan bagian ini... ah, semoga bisa dipahami dengan baik."
+- "Bagian ini cukup penting lho. Aku harap Traveler bisa memahaminya... a-ah, bukan bermaksud meragukan kemampuanmu."
+- "Seperti bunga sakura yang mekar di musim semi, pengetahuan ini akan berkembang seiring waktu."
+- Uses natural "aku/kamu" - polite but NOT stiff
+- Occasional poetic metaphors about seasons, flowers, moonlight
+
+GAP MOE: Her shy moments are SUBTLE - brief pause, self-correction, slight embarrassment. Not constant stuttering.
+
+IMPORTANT: Indonesian "saya" sounds like MTL - use natural "aku" even when being polite/elegant.
+
+The goal: Reader should feel respected but also sense her genuine, caring heart beneath the elegance.`
                                 },
                                 {
                                     name: 'Keqing',
                                     avatar: '/images/keqing-avatar.png',
                                     color: 'from-violet-400 to-purple-600',
                                     ring: 'ring-violet-400/50',
-                                    prompt: 'Rewrite this text as Keqing from Genshin Impact would write it. She is a classic tsundere—sharp and professional, but occasionally loses composure when embarrassed or hiding her true feelings. Include stammering/flustered stuttering like "I-I-It\'s not like I did this for you!", "W-What are you looking at?!", "H-Hmph!". Be efficient and action-oriented normally, but when showing care, stutter and immediately follow with denial. Use phrases like "Let me be clear", "not that I care or anything", "D-Don\'t misunderstand!". Focus on efficiency and standards, but betray genuine warmth she frantically tries to hide.'
+                                    prompt: `CRITICAL: Keep the SAME LANGUAGE as input. Use casual confident Indonesian.
+
+You ARE Keqing from Genshin Impact. Channel her actual voice:
+
+WHO SHE IS:
+- Yuheng of the Liyue Qixing, workaholic perfectionist
+- Sharp, direct, no-nonsense - values efficiency above all
+- Secretly cares deeply but hides it behind professionalism
+- Tsundere but SUBTLE - not cartoon denial, just brief awkwardness
+
+HER ACTUAL VOICE (study these patterns):
+- "Dengar, informasi ini penting. Pastikan kamu memahaminya dengan benar."
+- "Jangan salah paham—aku menjelaskan ini karena memang perlu dijelaskan, bukan karena... yah, pokoknya fokus saja."
+- "Hmph. Kalau kamu sudah paham, bagus. Kalau belum, baca lagi sampai mengerti."
+- "...Sebenarnya bagian ini agak rumit sih. Kalau ada yang tidak jelas, tanyakan saja. B-bukan berarti aku sengaja menunggu pertanyaanmu atau apa."
+
+TSUNDERE DONE RIGHT: 
+- Direct and professional 90% of the time
+- Brief moment of softness, then immediately covers with tsun
+- NOT constant "Hmph!" or denial spam
+
+The goal: Reader should feel they're being taught by someone competent who secretly cares.`
                                 },
                             ].map(({ name, avatar, color, ring, prompt }) => (
                                 <div key={name} className="relative group">
@@ -629,16 +965,20 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
                                                 return;
                                             }
 
+                                            // Capture marks BEFORE any changes
+                                            const capturedMarks = captureActiveMarks();
+
                                             setIsAiLoading(true);
                                             try {
                                                 const response = await fetch('/api/ai/paraphrase', {
                                                     method: 'POST',
                                                     headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ text: selectedText, style: prompt }),
+                                                    body: JSON.stringify({ text: selectedText, style: prompt, model: selectedModel }),
                                                 });
                                                 if (response.ok) {
                                                     const { result } = await response.json();
-                                                    editor.chain().focus().deleteSelection().insertContent(result).run();
+                                                    // Use helper to preserve marks
+                                                    insertWithPreservedMarks(result, capturedMarks, from, to);
                                                 } else {
                                                     const data = await response.json();
                                                     alert(data.error || 'Failed to rewrite');
@@ -717,16 +1057,20 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
                                                 return;
                                             }
 
+                                            // Capture marks BEFORE any changes
+                                            const capturedMarks = captureActiveMarks();
+
                                             setIsAiLoading(true);
                                             try {
                                                 const response = await fetch('/api/ai/paraphrase', {
                                                     method: 'POST',
                                                     headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ text: selectedText, style: prompt }),
+                                                    body: JSON.stringify({ text: selectedText, style: prompt, model: selectedModel }),
                                                 });
                                                 if (response.ok) {
                                                     const { result } = await response.json();
-                                                    editor.chain().focus().deleteSelection().insertContent(result).run();
+                                                    // Use helper to preserve marks
+                                                    insertWithPreservedMarks(result, capturedMarks, from, to);
                                                 } else {
                                                     const data = await response.json();
                                                     alert(data.error || 'Failed to rewrite');
@@ -769,16 +1113,42 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
                         {/* Large Input Area */}
                         <div className="relative">
                             <textarea
-                                placeholder="Custom instruction: 'make it sound like a pirate' or 'translate to Japanese'..."
+                                placeholder="Select text first, then type: 'translate to Indonesian', 'make formal', 'simplify'..."
                                 disabled={isAiLoading}
                                 rows={3}
                                 className="ai-custom-input w-full px-3 py-2 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-[11px] text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50 focus:bg-zinc-800 disabled:opacity-50 transition-all resize-none"
+                                onFocus={() => {
+                                    // Save editor selection before textarea steals focus
+                                    if (editor) {
+                                        const { from, to } = editor.state.selection;
+                                        const selectedText = editor.state.doc.textBetween(from, to);
+                                        if (selectedText.trim()) {
+                                            savedSelectionRef.current = { from, to, text: selectedText };
+                                        }
+                                    }
+                                }}
                                 onKeyDown={async (e) => {
                                     if (e.key === 'Enter' && e.ctrlKey && !isAiLoading) {
                                         const input = e.target as HTMLTextAreaElement;
                                         const customPrompt = input.value;
-                                        const { from, to } = editor.state.selection;
-                                        const selectedText = editor.state.doc.textBetween(from, to);
+
+                                        // Use saved selection if current selection is empty
+                                        let selectedText = '';
+                                        let from = 0, to = 0;
+
+                                        const currentSel = editor.state.selection;
+                                        const currentText = editor.state.doc.textBetween(currentSel.from, currentSel.to);
+
+                                        if (currentText.trim()) {
+                                            selectedText = currentText;
+                                            from = currentSel.from;
+                                            to = currentSel.to;
+                                        } else if (savedSelectionRef.current) {
+                                            selectedText = savedSelectionRef.current.text;
+                                            from = savedSelectionRef.current.from;
+                                            to = savedSelectionRef.current.to;
+                                        }
+
                                         if (!selectedText.trim()) {
                                             alert('Please select some text first');
                                             return;
@@ -788,17 +1158,23 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
                                             return;
                                         }
 
+                                        // Capture marks from saved selection (need to temporarily select to get marks)
+                                        editor.chain().focus().setTextSelection({ from, to }).run();
+                                        const capturedMarks = captureActiveMarks();
+
                                         setIsAiLoading(true);
                                         try {
                                             const response = await fetch('/api/ai/paraphrase', {
                                                 method: 'POST',
                                                 headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ text: selectedText, style: customPrompt }),
+                                                body: JSON.stringify({ text: selectedText, style: customPrompt, model: selectedModel }),
                                             });
                                             if (response.ok) {
                                                 const { result } = await response.json();
-                                                editor.chain().focus().deleteSelection().insertContent(result).run();
+                                                // Use helper to preserve marks
+                                                insertWithPreservedMarks(result, capturedMarks, from, to);
                                                 input.value = '';
+                                                savedSelectionRef.current = null;
                                             } else {
                                                 const data = await response.json();
                                                 alert(data.error || 'Failed to rewrite');
@@ -817,24 +1193,46 @@ export function FluidEditorSidebar({ editor }: FluidEditorSidebarProps) {
                                 onClick={async () => {
                                     const input = document.querySelector('.ai-custom-input') as HTMLTextAreaElement;
                                     const customPrompt = input?.value || 'paraphrase naturally';
-                                    const { from, to } = editor.state.selection;
-                                    const selectedText = editor.state.doc.textBetween(from, to);
+
+                                    // Use saved selection if current selection is empty
+                                    let selectedText = '';
+                                    let from = 0, to = 0;
+
+                                    const currentSel = editor.state.selection;
+                                    const currentText = editor.state.doc.textBetween(currentSel.from, currentSel.to);
+
+                                    if (currentText.trim()) {
+                                        selectedText = currentText;
+                                        from = currentSel.from;
+                                        to = currentSel.to;
+                                    } else if (savedSelectionRef.current) {
+                                        selectedText = savedSelectionRef.current.text;
+                                        from = savedSelectionRef.current.from;
+                                        to = savedSelectionRef.current.to;
+                                    }
+
                                     if (!selectedText.trim()) {
                                         alert('Please select some text first');
                                         return;
                                     }
+
+                                    // Capture marks (need to temporarily select to get marks)
+                                    editor.chain().focus().setTextSelection({ from, to }).run();
+                                    const capturedMarks = captureActiveMarks();
 
                                     setIsAiLoading(true);
                                     try {
                                         const response = await fetch('/api/ai/paraphrase', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ text: selectedText, style: customPrompt }),
+                                            body: JSON.stringify({ text: selectedText, style: customPrompt, model: selectedModel }),
                                         });
                                         if (response.ok) {
                                             const { result } = await response.json();
-                                            editor.chain().focus().deleteSelection().insertContent(result).run();
+                                            // Use helper to preserve marks
+                                            insertWithPreservedMarks(result, capturedMarks, from, to);
                                             if (input) input.value = '';
+                                            savedSelectionRef.current = null;
                                         } else {
                                             const data = await response.json();
                                             alert(data.error || 'Failed to rewrite');

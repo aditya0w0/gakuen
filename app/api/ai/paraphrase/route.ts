@@ -3,41 +3,25 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const API_KEY = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(API_KEY);
-const PRIMARY_MODEL = process.env.GEMINI_FLASH_MODEL || 'gemini-2.5-flash-lite';
-const FALLBACK_MODEL = 'gemini-3-flash-preview';
 
-async function generateWithFallback(prompt: string): Promise<string> {
-    // Race both models concurrently - first successful response wins
-    // This way user doesn't wait for primary to fail before trying fallback
+// Available models with their use cases
+const MODELS = {
+    'pro': process.env.GEMINI_PRO_MODEL || 'gemini-3-pro-preview',
+    'flash': process.env.GEMINI_FLASH_MODEL || 'gemini-3-flash-preview',
+    'lite': 'gemini-2.5-flash-lite',
+} as const;
 
-    const primaryModel = genAI.getGenerativeModel({ model: PRIMARY_MODEL });
-    const fallbackModel = genAI.getGenerativeModel({ model: FALLBACK_MODEL });
+type ModelType = keyof typeof MODELS;
 
-    // Create promise for each model
-    const tryModel = async (model: ReturnType<typeof genAI.getGenerativeModel>, name: string): Promise<{ result: string; model: string }> => {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return { result: response.text(), model: name };
-    };
+async function generateWithModel(prompt: string, modelType: ModelType = 'flash'): Promise<string> {
+    const modelName = MODELS[modelType] || MODELS.flash;
+    const model = genAI.getGenerativeModel({ model: modelName });
 
-    // Race both models - first to succeed wins
-    try {
-        console.log(`🔄 Racing models: ${PRIMARY_MODEL} vs ${FALLBACK_MODEL}`);
+    console.log(`🔄 Using model: ${modelName}`);
 
-        const result = await Promise.any([
-            tryModel(primaryModel, PRIMARY_MODEL),
-            tryModel(fallbackModel, FALLBACK_MODEL),
-        ]);
-
-        console.log(`✅ Winner: ${result.model}`);
-        return result.result;
-    } catch (aggregateError) {
-        // All models failed - throw the first error
-        if (aggregateError instanceof AggregateError && aggregateError.errors.length > 0) {
-            throw aggregateError.errors[0];
-        }
-        throw aggregateError;
-    }
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
 }
 
 export async function POST(request: Request) {
@@ -47,7 +31,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'AI service not configured' }, { status: 503 });
         }
 
-        const { text, style } = await request.json();
+        const { text, style, model: requestedModel } = await request.json();
 
         if (!text || typeof text !== 'string') {
             return NextResponse.json({ error: 'Text is required' }, { status: 400 });
@@ -57,26 +41,59 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Text too long (max 5000 characters)' }, { status: 400 });
         }
 
-        // Build prompt based on style
-        let styleInstruction = 'Paraphrase the following text while maintaining its original meaning.';
-        if (style && typeof style === 'string' && style.trim()) {
-            styleInstruction = `Rewrite the following text with this instruction: "${style}". Maintain the core meaning.`;
+        // Determine which model to use
+        const modelType: ModelType = ['pro', 'flash', 'lite'].includes(requestedModel)
+            ? requestedModel as ModelType
+            : 'flash';
+
+        // Check if this is a persona prompt (contains CRITICAL: Keep)
+        const isPersonaPrompt = style && style.includes('CRITICAL: Keep the SAME LANGUAGE');
+
+        let prompt: string;
+
+        if (isPersonaPrompt) {
+            // PERSONA MODE: Keep the persona's style instruction as the main prompt
+            prompt = `${style}
+
+---
+TEXT TO REWRITE:
+${text}
+---
+
+REWRITTEN TEXT (same language as input, casual tone):`;
+        } else if (style && typeof style === 'string' && style.trim()) {
+            // CUSTOM INSTRUCTION MODE: User has full control - can translate, restyle, anything
+            prompt = `You are a helpful text assistant. Follow the user's instruction exactly.
+
+USER INSTRUCTION: "${style}"
+
+---
+TEXT TO PROCESS:
+${text}
+---
+
+OUTPUT (follow the instruction above, return ONLY the result text, no explanations):`;
+        } else {
+            // DEFAULT MODE: Simple paraphrase preserving language
+            prompt = `Rewrite this text naturally while keeping the same language and meaning.
+Return ONLY the rewritten text, no explanations.
+
+TEXT:
+${text}
+
+REWRITTEN:`;
         }
 
-        const prompt = `${styleInstruction}
-Keep it academic and professional. Do not add any explanations, markdown formatting, or comments - just return the rewritten text directly.
-Maintain approximately the same length unless instructed otherwise.
+        console.log(`🔄 Paraphrasing with model: ${modelType}, style: ${style || 'default'}`);
 
-Text to rewrite:
-${text}`;
+        const rewrittenText = await generateWithModel(prompt, modelType);
 
-        console.log(`🔄 Paraphrasing with style: ${style || 'default'}`);
+        console.log(`✅ Paraphrase complete using ${MODELS[modelType]}`);
 
-        const rewrittenText = await generateWithFallback(prompt);
-
-        console.log(`✅ Paraphrase complete`);
-
-        return NextResponse.json({ result: rewrittenText.trim() });
+        return NextResponse.json({
+            result: rewrittenText.trim(),
+            model: MODELS[modelType]
+        });
     } catch (error) {
         console.error('Paraphrase API error:', error);
         const message = error instanceof Error ? error.message : 'Unknown error';
@@ -86,3 +103,4 @@ ${text}`;
         );
     }
 }
+

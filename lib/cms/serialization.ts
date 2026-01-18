@@ -1,7 +1,7 @@
 // Serialization utilities for converting between Tiptap JSON and Component[] format
 // This ensures backward compatibility with existing course data
 
-import { Component, HeaderComponent, TextComponent, ImageComponent, CodeComponent, DividerComponent } from './types';
+import { Component, HeaderComponent, TextComponent, ImageComponent, CodeComponent, DividerComponent, MultiFileCodeComponent } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Tiptap node types
@@ -28,41 +28,122 @@ export function deserializeFromComponents(components: Component[]): TiptapDoc {
         switch (comp.type) {
             case 'header': {
                 const header = comp as HeaderComponent;
+                // Parse text for potential inline marks
+                const contentNodes = header.text ? parseInlineMarks(header.text) : [{ type: 'text', text: '' }];
                 content.push({
                     type: 'heading',
-                    attrs: { level: header.level || 2 },
-                    content: [{ type: 'text', text: header.text || '' }],
+                    attrs: {
+                        level: header.level || 2,
+                        ...(header.align && header.align !== 'left' ? { textAlign: header.align } : {}),
+                    },
+                    content: contentNodes.length > 0 ? contentNodes : [{ type: 'text', text: '' }],
                 });
                 break;
             }
 
             case 'text': {
                 const text = comp as TextComponent;
-                // Parse HTML to extract paragraphs
+                // Preserve the HTML content as-is for Tiptap to parse
+                // Tiptap will handle parsing bold, italic, blockquotes, etc.
                 const htmlContent = text.content || '';
-                // Simple parsing - treat each content as a paragraph
-                // For more complex HTML, we'd need a proper parser
-                const cleanText = htmlContent
-                    .replace(/<p>/gi, '')
-                    .replace(/<\/p>/gi, '\n')
-                    .replace(/<br\s*\/?>/gi, '\n')
-                    .replace(/<[^>]+>/g, '') // Strip remaining HTML
-                    .trim();
 
-                const paragraphs = cleanText.split('\n').filter(p => p.trim());
+                // If content contains blockquote, handle it
+                if (htmlContent.includes('<blockquote>')) {
+                    const blockquoteMatch = htmlContent.match(/<blockquote>([\s\S]*?)<\/blockquote>/);
+                    if (blockquoteMatch) {
+                        const innerContent = blockquoteMatch[1];
+                        // Parse paragraphs within blockquote, preserving their attributes
+                        const paragraphMatches = innerContent.match(/<p([^>]*)>([\s\S]*?)<\/p>/g);
+                        const blockquoteContent: TiptapNode[] = [];
 
-                for (const para of paragraphs) {
-                    content.push({
-                        type: 'paragraph',
-                        content: [{ type: 'text', text: para }],
-                    });
+                        if (paragraphMatches) {
+                            for (const pMatch of paragraphMatches) {
+                                // Extract textAlign from style
+                                const styleMatch = pMatch.match(/style=["']([^"']*)["']/);
+                                let textAlign: string | undefined;
+                                if (styleMatch) {
+                                    const alignMatch = styleMatch[1].match(/text-align:\s*([^;]+)/);
+                                    if (alignMatch) textAlign = alignMatch[1].trim();
+                                }
+
+                                // Get inner content
+                                const innerMatch = pMatch.match(/<p[^>]*>([\s\S]*?)<\/p>/);
+                                const innerText = innerMatch ? innerMatch[1] : '';
+                                const parsedContent = parseInlineMarks(innerText);
+
+                                blockquoteContent.push({
+                                    type: 'paragraph',
+                                    ...(textAlign ? { attrs: { textAlign } } : {}),
+                                    content: parsedContent.length > 0 ? parsedContent : [{ type: 'text', text: innerText.replace(/<[^>]+>/g, '') }],
+                                });
+                            }
+                        } else {
+                            // No paragraph tags, treat as single paragraph
+                            const parsedContent = parseInlineMarks(innerContent);
+                            blockquoteContent.push({
+                                type: 'paragraph',
+                                content: parsedContent.length > 0 ? parsedContent : [{ type: 'text', text: innerContent.replace(/<[^>]+>/g, '') }],
+                            });
+                        }
+
+                        content.push({
+                            type: 'blockquote',
+                            content: blockquoteContent,
+                        });
+                        break;
+                    }
                 }
 
-                if (paragraphs.length === 0) {
-                    content.push({
-                        type: 'paragraph',
-                        content: [{ type: 'text', text: cleanText || '' }],
-                    });
+                // If content contains lists, handle them
+                if (htmlContent.includes('<ul>') || htmlContent.includes('<ol>')) {
+                    const listType = htmlContent.includes('<ul>') ? 'bulletList' : 'orderedList';
+                    const listItemMatches = htmlContent.match(/<li>([\s\S]*?)<\/li>/g);
+                    if (listItemMatches) {
+                        content.push({
+                            type: listType,
+                            content: listItemMatches.map(li => ({
+                                type: 'listItem',
+                                content: [{
+                                    type: 'paragraph',
+                                    content: [{ type: 'text', text: li.replace(/<\/?li>/g, '').replace(/<[^>]+>/g, '') }],
+                                }],
+                            })),
+                        });
+                        break;
+                    }
+                }
+
+                // For regular text, preserve basic structure
+                // Extract paragraphs while keeping content for marks
+                const paragraphMatches = htmlContent.match(/<p>([\s\S]*?)<\/p>/g);
+
+                if (paragraphMatches && paragraphMatches.length > 0) {
+                    for (const pMatch of paragraphMatches) {
+                        const innerContent = pMatch.replace(/<\/?p>/g, '');
+
+                        // Skip placeholder text for custom blocks (legacy data)
+                        const placeholderMatch = innerContent.match(/^\[([A-Z]+) BLOCK - ID: [^\]]+\]$/);
+                        if (placeholderMatch) {
+                            continue; // Skip placeholder paragraphs
+                        }
+
+                        // Parse inline marks (bold, italic, etc.)
+                        const parsedContent = parseInlineMarks(innerContent);
+                        content.push({
+                            type: 'paragraph',
+                            content: parsedContent,
+                        });
+                    }
+                } else {
+                    // Fallback: plain text - also check for placeholder
+                    const cleanText = htmlContent.replace(/<[^>]+>/g, '').trim();
+                    const placeholderMatch = cleanText.match(/^\[([A-Z]+) BLOCK - ID: [^\]]+\]$/);
+                    if (cleanText && !placeholderMatch) {
+                        content.push({
+                            type: 'paragraph',
+                            content: [{ type: 'text', text: cleanText }],
+                        });
+                    }
                 }
                 break;
             }
@@ -93,6 +174,20 @@ export function deserializeFromComponents(components: Component[]): TiptapDoc {
             case 'divider': {
                 content.push({
                     type: 'horizontalRule',
+                });
+                break;
+            }
+
+            case 'multiFileCode': {
+                // Create customMultiFileCode Tiptap node
+                const multiCode = comp as MultiFileCodeComponent;
+                content.push({
+                    type: 'customMultiFileCode',
+                    attrs: {
+                        files: multiCode.files || [],
+                        activeFileId: multiCode.activeFileId || multiCode.files?.[0]?.id || '',
+                        showLineNumbers: multiCode.showLineNumbers ?? true,
+                    },
                 });
                 break;
             }
@@ -141,22 +236,27 @@ export function serializeToComponents(doc: TiptapDoc): Component[] {
         switch (node.type) {
             case 'heading': {
                 const level = (node.attrs?.level as number) || 2;
-                const text = extractText(node);
+                const textAlign = node.attrs?.textAlign as string | undefined;
+                // Serialize heading content with marks to HTML
+                const html = serializeNodeToHtml(node);
 
                 components.push({
                     id: uuidv4(),
                     type: 'header',
                     level: level as 1 | 2 | 3 | 4 | 5 | 6,
-                    text,
+                    text: html, // Store HTML with marks
+                    ...(textAlign && textAlign !== 'left' ? { align: textAlign as 'left' | 'center' | 'right' } : {}),
                 } as HeaderComponent);
                 break;
             }
 
             case 'paragraph': {
-                const text = extractText(node);
-                if (text.trim()) {
+                // Serialize paragraph with marks to HTML
+                const html = serializeNodeToHtml(node);
+                if (html.trim()) {
                     // Check if it's a placeholder for a custom block
-                    const blockMatch = text.match(/^\[([A-Z]+) BLOCK - ID: ([^\]]+)\]$/);
+                    const plainText = extractText(node);
+                    const blockMatch = plainText.match(/^\[([A-Z]+) BLOCK - ID: ([^\]]+)\]$/);
                     if (blockMatch) {
                         // Skip - this would be handled by re-injecting the original component
                         continue;
@@ -165,7 +265,7 @@ export function serializeToComponents(doc: TiptapDoc): Component[] {
                     components.push({
                         id: uuidv4(),
                         type: 'text',
-                        content: `<p>${text}</p>`,
+                        content: `<p>${html}</p>`,
                     } as TextComponent);
                 }
                 break;
@@ -183,11 +283,12 @@ export function serializeToComponents(doc: TiptapDoc): Component[] {
             }
 
             case 'blockquote': {
-                const text = extractText(node);
+                // Serialize blockquote preserving paragraph attrs and inner marks
+                const html = serializeBlockquoteToHtml(node);
                 components.push({
                     id: uuidv4(),
                     type: 'text',
-                    content: `<blockquote>${text}</blockquote>`,
+                    content: `<blockquote>${html}</blockquote>`,
                 } as TextComponent);
                 break;
             }
@@ -215,6 +316,17 @@ export function serializeToComponents(doc: TiptapDoc): Component[] {
                 break;
             }
 
+            case 'customMultiFileCode': {
+                components.push({
+                    id: uuidv4(),
+                    type: 'multiFileCode',
+                    files: node.attrs?.files || [],
+                    activeFileId: node.attrs?.activeFileId || '',
+                    showLineNumbers: node.attrs?.showLineNumbers ?? true,
+                } as MultiFileCodeComponent);
+                break;
+            }
+
             case 'horizontalRule': {
                 components.push({
                     id: uuidv4(),
@@ -227,6 +339,191 @@ export function serializeToComponents(doc: TiptapDoc): Component[] {
     }
 
     return components;
+}
+
+/**
+ * Parse HTML inline marks (bold, italic, underline, etc.) to Tiptap format
+ */
+function parseInlineMarks(html: string): TiptapNode[] {
+    const nodes: TiptapNode[] = [];
+
+    // Simple regex-based parsing for inline marks
+    // This handles common cases: <strong>, <em>, <u>, <s>, <span style="...">
+
+    // If no HTML tags, return plain text
+    if (!/<[^>]+>/.test(html)) {
+        if (html.trim()) {
+            nodes.push({ type: 'text', text: html });
+        }
+        return nodes;
+    }
+
+    // Process text with potential marks
+    // For simplicity, we'll extract text and basic marks
+    // A full implementation would use a proper HTML parser
+
+    let remaining = html;
+    let currentText = '';
+    let currentMarks: { type: string; attrs?: Record<string, unknown> }[] = [];
+
+    // Process character by character with tag detection
+    let i = 0;
+    while (i < remaining.length) {
+        if (remaining[i] === '<') {
+            // Found a tag - first flush current text
+            if (currentText) {
+                nodes.push({
+                    type: 'text',
+                    text: currentText,
+                    ...(currentMarks.length > 0 ? { marks: [...currentMarks] } : {}),
+                });
+                currentText = '';
+            }
+
+            // Find end of tag
+            const tagEnd = remaining.indexOf('>', i);
+            if (tagEnd === -1) break;
+
+            const tag = remaining.slice(i, tagEnd + 1);
+            const tagLower = tag.toLowerCase();
+
+            // Handle opening/closing tags
+            if (tagLower === '<strong>' || tagLower === '<b>') {
+                currentMarks.push({ type: 'bold' });
+            } else if (tagLower === '</strong>' || tagLower === '</b>') {
+                currentMarks = currentMarks.filter(m => m.type !== 'bold');
+            } else if (tagLower === '<em>' || tagLower === '<i>') {
+                currentMarks.push({ type: 'italic' });
+            } else if (tagLower === '</em>' || tagLower === '</i>') {
+                currentMarks = currentMarks.filter(m => m.type !== 'italic');
+            } else if (tagLower === '<u>') {
+                currentMarks.push({ type: 'underline' });
+            } else if (tagLower === '</u>') {
+                currentMarks = currentMarks.filter(m => m.type !== 'underline');
+            } else if (tagLower === '<s>' || tagLower === '<strike>') {
+                currentMarks.push({ type: 'strike' });
+            } else if (tagLower === '</s>' || tagLower === '</strike>') {
+                currentMarks = currentMarks.filter(m => m.type !== 'strike');
+            } else if (tagLower === '<code>') {
+                currentMarks.push({ type: 'code' });
+            } else if (tagLower === '</code>') {
+                currentMarks = currentMarks.filter(m => m.type !== 'code');
+            } else if (tagLower.startsWith('<span')) {
+                // Parse span style for color and fontSize
+                const styleMatch = tag.match(/style=["']([^"']*)["']/i);
+                if (styleMatch) {
+                    const style = styleMatch[1];
+                    const colorMatch = style.match(/color:\s*([^;]+)/i);
+                    const fontSizeMatch = style.match(/font-size:\s*([^;]+)/i);
+
+                    if (colorMatch || fontSizeMatch) {
+                        const attrs: Record<string, unknown> = {};
+                        if (colorMatch) attrs.color = colorMatch[1].trim();
+                        if (fontSizeMatch) attrs.fontSize = fontSizeMatch[1].trim();
+                        currentMarks.push({ type: 'textStyle', attrs });
+                    }
+                }
+            } else if (tagLower === '</span>') {
+                currentMarks = currentMarks.filter(m => m.type !== 'textStyle');
+            }
+            // Skip <br>, <p>, </p> etc.
+
+            i = tagEnd + 1;
+        } else {
+            currentText += remaining[i];
+            i++;
+        }
+    }
+
+    // Flush remaining text
+    if (currentText) {
+        nodes.push({
+            type: 'text',
+            text: currentText,
+            ...(currentMarks.length > 0 ? { marks: [...currentMarks] } : {}),
+        });
+    }
+
+    // If nothing parsed, return plain text
+    if (nodes.length === 0 && html.trim()) {
+        nodes.push({ type: 'text', text: html.replace(/<[^>]+>/g, '') });
+    }
+
+    return nodes;
+}
+
+/**
+ * Serialize a Tiptap node (with marks) to HTML
+ */
+function serializeNodeToHtml(node: TiptapNode): string {
+    if (!node.content) return '';
+
+    return node.content.map(child => {
+        if (child.type === 'text') {
+            let text = child.text || '';
+
+            // Apply marks
+            if (child.marks && child.marks.length > 0) {
+                for (const mark of child.marks) {
+                    switch (mark.type) {
+                        case 'bold':
+                            text = `<strong>${text}</strong>`;
+                            break;
+                        case 'italic':
+                            text = `<em>${text}</em>`;
+                            break;
+                        case 'underline':
+                            text = `<u>${text}</u>`;
+                            break;
+                        case 'strike':
+                            text = `<s>${text}</s>`;
+                            break;
+                        case 'code':
+                            text = `<code>${text}</code>`;
+                            break;
+                        case 'textStyle': {
+                            const styles: string[] = [];
+                            if (mark.attrs?.color) styles.push(`color: ${mark.attrs.color}`);
+                            if (mark.attrs?.fontSize) styles.push(`font-size: ${mark.attrs.fontSize}`);
+                            if (styles.length > 0) {
+                                text = `<span style="${styles.join('; ')}">${text}</span>`;
+                            }
+                            break;
+                        }
+                        case 'link':
+                            text = `<a href="${mark.attrs?.href || '#'}">${text}</a>`;
+                            break;
+                    }
+                }
+            }
+
+            return text;
+        }
+
+        // Recurse for other node types
+        return serializeNodeToHtml(child);
+    }).join('');
+}
+
+/**
+ * Serialize a blockquote node to HTML preserving paragraph textAlign and inline marks
+ */
+function serializeBlockquoteToHtml(node: TiptapNode): string {
+    if (!node.content) return '';
+
+    return node.content.map(child => {
+        if (child.type === 'paragraph') {
+            const innerHtml = serializeNodeToHtml(child);
+
+            // Apply textAlign if present
+            const textAlign = child.attrs?.textAlign;
+            if (textAlign && textAlign !== 'left') {
+                return `<p style="text-align: ${textAlign}">${innerHtml}</p>`;
+            }
+            return `<p>${innerHtml}</p>`;
+        }
+        return '';
+    }).join('');
 }
 
 /**

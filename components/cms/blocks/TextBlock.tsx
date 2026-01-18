@@ -2,9 +2,18 @@
 
 import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
 import { TextComponent } from "@/lib/cms/types";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Sparkles, Wand2, Loader2 } from "lucide-react";
 import DOMPurify from "dompurify";
+
+// Configure DOMPurify to allow style attributes for inline formatting
+const sanitizeHTML = (html: string) => {
+    if (typeof window === 'undefined') return html;
+    return DOMPurify.sanitize(html, {
+        ADD_ATTR: ['style'],  // Allow style attribute for inline colors/fontSize/textAlign
+        ALLOWED_TAGS: ['p', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'code', 'span', 'a', 'br', 'blockquote', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+    });
+};
 
 interface TextBlockProps {
     component: TextComponent;
@@ -34,6 +43,9 @@ export function TextBlock({
         marginBottom: component.margin?.bottom ? `${component.margin.bottom}px` : undefined,
         marginLeft: component.margin?.left ? `${component.margin.left}px` : undefined,
     };
+
+    // Memoize sanitized HTML for performance
+    const sanitizedContent = useMemo(() => sanitizeHTML(component.content), [component.content]);
 
     const handleAIImprovement = async (action: 'fix-typos' | 'paraphrase') => {
         if (!component.content || !onUpdate) return;
@@ -126,7 +138,7 @@ export function TextBlock({
                             onUpdate({ ...component, content: e.currentTarget.innerHTML });
                         }
                     }}
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(component.content) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizedContent }}
                     style={style}
                     className="focus:outline-none px-2 py-1"
                 />
@@ -134,6 +146,6 @@ export function TextBlock({
         );
     }
 
-    return <div style={style} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(component.content) }} />;
+    return <div style={style} dangerouslySetInnerHTML={{ __html: sanitizedContent }} />;
 }
 

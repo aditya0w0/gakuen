@@ -22,6 +22,7 @@ export type ComponentType =
     | "image"
     | "video"
     | "code"
+    | "multiFileCode"
     | "cta"
     | "divider"
     | "spacer"
@@ -83,6 +84,25 @@ export interface CodeComponent extends BaseComponent {
     type: "code";
     code: string;
     language?: string;
+    showLineNumbers?: boolean;
+    theme?: "dark" | "light";
+    fontSize?: number;
+    margin?: Spacing;
+}
+
+// Code File (for multi-file code blocks)
+export interface CodeFile {
+    id: string;
+    filename: string;
+    language: string;
+    code: string;
+}
+
+// Multi-File Code Component (tabbed code block)
+export interface MultiFileCodeComponent extends BaseComponent {
+    type: "multiFileCode";
+    files: CodeFile[];
+    activeFileId: string;  // Default tab to show
     showLineNumbers?: boolean;
     theme?: "dark" | "light";
     fontSize?: number;

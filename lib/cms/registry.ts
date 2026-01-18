@@ -77,6 +77,24 @@ export const COMPONENT_REGISTRY: ComponentMeta[] = [
         },
     },
     {
+        type: "multiFileCode",
+        name: "Multi-File Code",
+        icon: "Files",
+        description: "Tabbed code block with multiple files",
+        category: "content",
+        defaultProps: {
+            type: "multiFileCode",
+            files: [
+                { id: "file-1", filename: "main.js", language: "javascript", code: "// Main file\nconsole.log('Hello!');" },
+                { id: "file-2", filename: "styles.css", language: "css", code: "/* Styles */\nbody {\n  margin: 0;\n}" },
+            ],
+            activeFileId: "file-1",
+            showLineNumbers: true,
+            theme: "dark",
+            fontSize: 14,
+        },
+    },
+    {
         type: "cta",
         name: "Button",
         icon: "MousePointerClick",

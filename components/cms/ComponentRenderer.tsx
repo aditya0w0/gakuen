@@ -4,6 +4,7 @@ import { TextBlock } from "./blocks/TextBlock";
 import { ImageBlock } from "./blocks/ImageBlock";
 import { VideoBlock } from "./blocks/VideoBlock";
 import { CodeBlock } from "./blocks/CodeBlock";
+import { MultiFileCodeBlock } from "./blocks/MultiFileCodeBlock";
 import { CTABlock } from "./blocks/CTABlock";
 import { DividerBlock } from "./blocks/DividerBlock";
 import { SpacerBlock } from "./blocks/SpacerBlock";
@@ -43,6 +44,8 @@ export function ComponentRenderer({
             return <VideoBlock {...props} component={component} />;
         case "code":
             return <CodeBlock {...props} component={component} />;
+        case "multiFileCode":
+            return <MultiFileCodeBlock {...props} component={component} />;
         case "cta":
             return <CTABlock {...props} component={component} />;
         case "divider":
@@ -55,3 +58,4 @@ export function ComponentRenderer({
             return <div className="text-red-400">Unknown component type</div>;
     }
 }
+
