@@ -140,7 +140,6 @@ export function MultiFileCodeBlock({
                                 : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800/50'
                                 }`}
                         >
-                            <FileCode size={12} className="text-indigo-400 shrink-0" />
                             {editingFilename === file.id ? (
                                 <input
                                     type="text"
