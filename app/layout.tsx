@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import { ModernBackground } from "@/components/animations/ModernBackground";
 import { AuthProvider } from "@/components/auth/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -165,6 +166,7 @@ export default function RootLayout({
                   </main>
                   <CookieConsent />
                   <SpeedInsights />
+                  <Analytics />
                 </div>
               </ErrorBoundary>
             </AuthProvider>
