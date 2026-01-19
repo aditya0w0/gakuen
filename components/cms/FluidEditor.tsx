@@ -268,6 +268,8 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
                 link: false,
                 // Disable default Bold - we configure custom one below for b tag support
                 bold: false,
+                // Disable Underline - it may be duplicated otherwise  
+                underline: false,
             }),
             // Custom Bold that recognizes both <strong> and <b> tags, plus CSS font-weight
             Bold.extend({
@@ -294,7 +296,7 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
             }),
             CustomImage,
             CustomMultiFileCode,
-            Underline,
+            Underline,  // Added explicitly since disabled in StarterKit
             TextStyle.configure({
                 HTMLAttributes: {},
             }).extend({

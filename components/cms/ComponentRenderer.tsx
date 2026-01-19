@@ -9,6 +9,7 @@ import { CTABlock } from "./blocks/CTABlock";
 import { DividerBlock } from "./blocks/DividerBlock";
 import { SpacerBlock } from "./blocks/SpacerBlock";
 import { SyllabusBlock } from "./blocks/SyllabusBlock";
+import { TableBlock } from "./blocks/TableBlock";
 
 interface ComponentRendererProps {
     component: Component;
@@ -54,8 +55,10 @@ export function ComponentRenderer({
             return <SpacerBlock {...props} component={component} />;
         case "syllabus":
             return <SyllabusBlock {...props} component={component} />;
+        case "table":
+            return <TableBlock {...props} component={component} />;
         default:
-            return <div className="text-red-400">Unknown component type</div>;
+            return <div className="text-red-400">Unknown component type: {(component as { type: string }).type}</div>;
     }
 }
 

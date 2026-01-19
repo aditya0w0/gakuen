@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { animate } from "@/components/animations/useAnime";
 import { ComponentRenderer } from "@/components/cms/ComponentRenderer";
+import { TiptapHtmlRenderer } from "@/components/cms/TiptapHtmlRenderer";
 import { useTimeTracker } from "@/lib/hooks/useTimeTracker";
 import { useTranslatedLesson } from "@/lib/hooks/useTranslatedCourse";
 import { useTranslatedComponents } from "@/lib/hooks/useTranslatedComponents";
@@ -115,7 +116,34 @@ export function MaterialViewer({ lesson, onComplete, isCompleted, courseId, cour
         type: lesson.type,
         hasComponents: !!(lesson.components && lesson.components.length > 0),
         componentsCount: lesson.components?.length || 0,
+        hasTiptapJson: !!lesson.tiptapJson,
     });
+
+    // Render from tiptapJson (used when tables are present - perfect preservation)
+    if (lesson.tiptapJson) {
+        const json = lesson.tiptapJson as { type?: string; content?: unknown[] };
+        if (json.type === 'doc' && json.content && json.content.length > 0) {
+            return (
+                <div className="flex-1 relative">
+                    <div
+                        ref={contentRef}
+                        onScroll={handleScroll}
+                        className="h-full overflow-y-auto p-8"
+                    >
+                        <WatermarkedContent
+                            sourceUrl={sourceUrl}
+                            courseId={courseId}
+                            courseTitle={courseTitle}
+                        >
+                            <div className="max-w-4xl mx-auto">
+                                <TiptapHtmlRenderer content={json as Parameters<typeof TiptapHtmlRenderer>[0]['content']} />
+                            </div>
+                        </WatermarkedContent>
+                    </div>
+                </div>
+            );
+        }
+    }
 
     // Render component-based lessons with translation
     if (lesson.components && lesson.components.length > 0) {
