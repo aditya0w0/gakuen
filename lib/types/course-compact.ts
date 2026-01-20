@@ -41,6 +41,11 @@ export interface BlockCompact {
     src?: string;         // For images/videos: URL
     alt?: string;         // For images: alt text
     lang?: string;        // For code: language
+    quiz?: {              // For quiz blocks
+        q: string;        // Question
+        o: string[];      // Options
+        a: number;        // Correct answer index
+    };
 }
 
 // Lesson (references blocks by ID)
