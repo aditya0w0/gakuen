@@ -303,9 +303,9 @@ export default function CoursesManagementPage() {
                                 </td>
                                 <td className="px-6 py-4">
                                     <span
-                                        className={`px-2 py-1 rounded text-xs font-medium ${course.level === "Beginner"
+                                        className={`px-2 py-1 rounded text-xs font-medium ${course.level === "beginner"
                                             ? "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400"
-                                            : course.level === "Intermediate"
+                                            : course.level === "intermediate"
                                                 ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400"
                                                 : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400"
                                             }`}
@@ -351,9 +351,9 @@ export default function CoursesManagementPage() {
                                             {course.lessons?.length || 0} lessons
                                         </span>
                                         <span
-                                            className={`px-2 py-0.5 rounded text-[10px] font-medium ${course.level === "Beginner"
+                                            className={`px-2 py-0.5 rounded text-[10px] font-medium ${course.level === "beginner"
                                                 ? "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400"
-                                                : course.level === "Intermediate"
+                                                : course.level === "intermediate"
                                                     ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400"
                                                     : "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400"
                                                 }`}
