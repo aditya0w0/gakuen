@@ -18,8 +18,21 @@ export default function DashboardLayout({
         // Wait for auth to load
         if (isLoading) return;
 
-        // If no user, redirect to login
+        // If no user, check localStorage before redirecting
+        // This prevents race conditions during navigation
         if (!user) {
+            // Double-check localStorage in case Firebase is slow
+            const cachedUser = typeof window !== 'undefined'
+                ? localStorage.getItem('gakuen_user')
+                : null;
+
+            if (cachedUser) {
+                // User exists in cache, wait for Firebase to catch up
+                console.log('⏳ [Dashboard] User in cache, waiting for Firebase...');
+                return;
+            }
+
+            // No user anywhere, redirect to login
             router.replace("/login");
             return;
         }
