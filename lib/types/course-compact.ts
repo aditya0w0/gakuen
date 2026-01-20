@@ -21,6 +21,7 @@ export type BlockType =
     | 'div'   // divider
     | 'video' // video embed
     | 'embed' // generic embed
+    | 'quiz'  // quiz block
 
 // Style overrides (only non-defaults stored)
 export interface StyleOverrides {
