@@ -170,14 +170,7 @@ export default function AdminDashboard() {
         }
     };
 
-    if (!user || user.role !== "admin") {
-        return (
-            <div className="flex items-center justify-center h-[50vh]">
-                <div className="text-neutral-400">Access denied. Admin only.</div>
-            </div>
-        );
-    }
-
+    // Layout already handles auth - just show loading state if needed
     if (isLoading) {
         return <div className="text-neutral-400">Loading dashboard...</div>;
     }
