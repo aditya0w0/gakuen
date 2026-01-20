@@ -85,13 +85,17 @@ export async function POST(request: NextRequest) {
 
         const title = courseData.title.slice(0, 200); // Limit title length
 
-        // Generate unique ID from title + timestamp to prevent collisions
+        // Generate clean slug from title
         const slug = title
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '')
             .slice(0, 50);
-        const id = `${slug}-${Date.now()}`;
+
+        // Only add timestamp for "untitled" courses to avoid collisions
+        // Named courses get clean IDs like "javascript-fundamentals"
+        const isUntitled = slug === 'untitled-course' || slug === 'untitled' || !slug;
+        const id = isUntitled ? `course-${Date.now()}` : slug;
 
         // Create course with initial lesson
         const newCourse = {

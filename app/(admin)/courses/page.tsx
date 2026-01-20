@@ -108,13 +108,17 @@ export default function CoursesManagementPage() {
     }
 
     const handleCreateCourse = async () => {
+        // Prompt for course title first
+        const title = prompt('Enter course title:')?.trim();
+        if (!title) return; // Cancelled or empty
+
         setIsCreating(true);
         try {
             const response = await fetch('/api/courses', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    title: 'Untitled Course',
+                    title,
                     description: 'Start building your course...',
                 }),
             });
