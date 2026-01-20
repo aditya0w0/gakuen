@@ -70,7 +70,7 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
 
         // Step 2: Build base user from JWT claims ONLY (works even with Firestore quota exhausted)
         // JWT claims include: uid, email, name, role (set during login via custom claims)
-        const jwtRole = decodedUser.role || decodedUser.admin ? 'admin' : 'student';
+        const jwtRole = (decodedUser.role || (decodedUser as any).admin) ? 'admin' : 'student';
         let user: User = {
             id: decodedUser.uid,
             name: decodedUser.name || decodedUser.email?.split('@')[0] || 'User',

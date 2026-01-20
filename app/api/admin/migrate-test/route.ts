@@ -1,15 +1,25 @@
 /**
- * Test Migration API - NO AUTH (for debugging only)
+ * Test Migration API - ADMIN ONLY
  * 
  * POST /api/admin/migrate-test?courseId=xxx
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/api/auth-guard';
 import { initAdmin } from '@/lib/auth/firebase-admin';
 import { uploadCourseBlob, isTelegramEnabled, getBlobStats } from '@/lib/storage/telegram-storage';
 import { courseToBlob } from '@/lib/storage/course-converter';
 
 export async function POST(request: NextRequest) {
+    // Auth check
+    const authResult = await requireAuth(request);
+    if (!authResult.authenticated) {
+        return authResult.response;
+    }
+    if (authResult.user.role !== 'admin') {
+        return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
     if (!isTelegramEnabled()) {
         return NextResponse.json({ error: 'Telegram not configured' }, { status: 500 });
     }
