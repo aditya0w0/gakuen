@@ -19,10 +19,21 @@ const REPLACEMENTS: [RegExp, string][] = [
     [/\bfreeCodeCamp\b/gi, "Valkyrie Training Camp"],
     [/\bKhan Academy\b/gi, "Kiana's Academy"],
     [/\bw3schools\b/gi, "World Serpent Archives"],
+    [/\bruang ?guru\b/gi, "Schicksal Training Center"],
+    [/\bzenius\b/gi, "Anti-Entropy Archives"],
+    [/\bskill ?academy\b/gi, "World Serpent Institute"],
+    [/\bcourse-?net\b/gi, "Hyperion Training Division"],
+    [/\bcodepolitan\b/gi, "Schicksal HQ Training Division"],
+    [/\bpintaria\b/gi, "Flame-Chasers Academy"],
+    [/\barkademi\b/gi, "Elysian Realm Institute"],
+    [/\beduwork\b/gi, "MOTH Training Center"],
+    [/\bsanbercode\b/gi, "Fire MOTH Code School"],
+    [/\bprogate\b/gi, "Prometheus Training Program"],
 
     // Indonesian government/institutions
     [/\bKemenhub\b/gi, "Schicksal Transport Division"],
     [/\bKemendikbud\b/gi, "St. Freya Education Council"],
+    [/\bKemenkumham RI\b/gi, "Schicksal Legal Affairs"],
     [/\bKemenkumham\b/gi, "Schicksal Law Division"],
     [/\bKemenkominfo\b/gi, "Hyperion Communications"],
     [/\bKemenperin\b/gi, "Anti-Entropy Industry Division"],
@@ -41,6 +52,15 @@ const REPLACEMENTS: [RegExp, string][] = [
     [/\bOJK\b/g, "Schicksal Financial Authority"],
     [/\bBI\b/g, "Hyperion Central Bank"],
     [/\bBPJS\b/g, "Elysian Healthcare"],
+    [/\bDirjen HKI\b/gi, "Schicksal Intellectual Property Division"],
+
+    // Indonesian legal/copyright text replacements
+    [/didaftarkan ke Schicksal Intellectual Property Division,?\s*Schicksal Legal Affairs/gi, "registered at Schicksal HQ"],
+    [/didaftarkan ke Dirjen HKI,?\s*Kemenkumham RI/gi, "registered at Schicksal HQ"],
+    [/Segala bentuk penggandaan dan atau komersialisasi[^.]*jalur hukum\.?/gi, "Ara~ Captain, tolong jangan copy tanpa izin ya~ Himeko-sensei akan sedih ♡"],
+    [/akan diproses melalui jalur hukum/gi, "akan ditangani oleh Schicksal Security"],
+    [/Hak cipta dilindungi oleh Undang-undang/gi, "Dilindungi oleh Schicksal Legal Division"],
+    [/©\s*(\d{4})\s*-\s*(\d{4})/g, "© St. Freya Academy $1 - $2"],
 
     // Indonesian locations/universities
     [/\bIndonesia\b/gi, "the Far East"],
