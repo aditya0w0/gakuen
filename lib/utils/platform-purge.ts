@@ -1,80 +1,112 @@
 /**
- * Platform Text Purge Utility
- * Removes specific platform names from text content while preserving links
- * Supports Indonesian text and copyright notices
+ * Platform Text Replace Utility
+ * Replaces specific platform names with Honkai Impact 3 themed equivalents
+ * Preserves links - only modifies plain text, not URLs
  */
 
-// Platform names to purge (case-insensitive)
-const PLATFORM_PATTERNS = [
-    // Platform names
-    'dicoding',
-    'ruang guru',
-    'ruangguru',
-    'zenius',
-    'skill academy',
-    'skillacademy',
-    'Course-Net',
-    'coursenet',
-    'codepolitan',
-    'belajar koding',
-    'pintaria',
-    'arkademi',
-    'eduwork',
-    'maubelajarapa',
-    'sanbercode',
-    'progate',
+// Platform name replacements (case-insensitive matching)
+const PLATFORM_REPLACEMENTS: Record<string, string> = {
+    // Education platforms → HI3 Organizations
+    'dicoding': 'St. Freya Academy',
+    'ruang guru': 'Schicksal Training Center',
+    'ruangguru': 'Schicksal Training Center',
+    'zenius': 'Anti-Entropy Archives',
+    'skill academy': 'World Serpent Institute',
+    'skillacademy': 'World Serpent Institute',
+    'coursera': 'Anti-Entropy Archives',
+    'course-net': 'Hyperion Training Division',
+    'coursenet': 'Hyperion Training Division',
+    'codepolitan': 'Schicksal HQ Training Division',
+    'udemy': 'World Serpent Database',
+    'pintaria': 'Flame-Chasers Academy',
+    'arkademi': 'Elysian Realm Institute',
+    'eduwork': 'MOTH Training Center',
+    'sanbercode': 'Fire MOTH Code School',
+    'progate': 'Prometheus Training Program',
 
-    // Add more platforms as needed
-];
+    // Tech companies → HI3 entities
+    'youtube': 'Hyperion Broadcast System',
+    'google': "Ai-Chan's Knowledge Base",
+    'microsoft': 'Schicksal Technologies',
+    'github': 'Anti-Entropy Code Vault',
+    'stackoverflow': 'Valkyrie Help Desk',
+};
 
-// Common Indonesian copyright/legal phrases to detect and remove entirely
-const LEGAL_BLOCK_PATTERNS = [
-    // Copyright blocks containing registration/trademark notices
-    /(?:Hak cipta|Copyright)[^\n]*©[^\n]*/gi,
-    /Modul kelas[^.]*Dirjen HKI[^.]*\./gi,
-    /Segala bentuk penggandaan[^.]*jalur hukum\./gi,
-    /Hak cipta dilindungi[^.]*Undang-undang[^.]*\./gi,
-    /[^\n]*didaftarkan ke Dirjen HKI[^\n]*/gi,
-    /[^\n]*Kemenkumham RI[^\n]*/gi,
-    /©[^©\n]*20\d{2}[^\n]*/gi,  // Copyright notices with years
+// Indonesian legal phrases → HI3 themed replacements
+const LEGAL_REPLACEMENTS: Array<{ pattern: RegExp; replacement: string }> = [
+    // Copyright registration → HI3 style
+    {
+        pattern: /(?:sudah )?(?:di)?daftarkan ke Dirjen HKI,? Kemenkumham RI/gi,
+        replacement: 'resmi terdaftar di Schicksal Intellectual Property Division'
+    },
+    {
+        pattern: /Dirjen HKI,? Kemenkumham RI/gi,
+        replacement: 'Schicksal IP Division'
+    },
+    {
+        pattern: /Kemenkumham RI/gi,
+        replacement: 'Schicksal Legal Affairs'
+    },
+    // Legal threats → Playful HI3 version
+    {
+        pattern: /(?:Segala bentuk )?penggandaan dan atau komersialisasi[^.]*jalur hukum\.?/gi,
+        replacement: 'Penggandaan tanpa izin akan membuat Himeko-sensei sangat sedih, dan Captain tidak mau itu terjadi kan? (◕‿◕)'
+    },
+    {
+        pattern: /akan diproses melalui jalur hukum/gi,
+        replacement: 'akan ditangani oleh Schicksal Security Division'
+    },
+    // Copyright notices → HI3 style
+    {
+        pattern: /Hak cipta dilindungi oleh Undang-undang\s*©\s*Dicoding\s*(\d{4})\s*-\s*(\d{4})/gi,
+        replacement: 'Ara~ Dilindungi oleh St. Freya Academy © $1 - $2 ♡'
+    },
+    {
+        pattern: /©\s*Dicoding\s*(\d{4})\s*-\s*(\d{4})/gi,
+        replacement: '© St. Freya Academy $1 - $2'
+    },
+    {
+        pattern: /Hak cipta dilindungi oleh Undang-undang/gi,
+        replacement: 'Dilindungi oleh Schicksal Legal Division'
+    },
+    // Generic copyright patterns
+    {
+        pattern: /©\s*(\w+)\s*(\d{4})\s*-\s*(\d{4})/gi,
+        replacement: '© St. Freya Academy $2 - $3'
+    },
 ];
 
 // Feature toggle
-let isPurgeEnabled = true;
+let isReplaceEnabled = true;
 
 /**
- * Enable or disable the purge feature
+ * Enable or disable the replacement feature
  */
-export function setPurgeEnabled(enabled: boolean): void {
-    isPurgeEnabled = enabled;
-    console.log(`🔧 Platform purge ${enabled ? 'enabled' : 'disabled'}`);
+export function setReplaceEnabled(enabled: boolean): void {
+    isReplaceEnabled = enabled;
+    console.log(`🔧 Platform replacement ${enabled ? 'enabled' : 'disabled'}`);
 }
 
 /**
- * Check if purge is enabled
+ * Check if replacement is enabled
  */
-export function isPurgeActive(): boolean {
-    return isPurgeEnabled;
+export function isReplaceActive(): boolean {
+    return isReplaceEnabled;
 }
 
 /**
- * Purge platform names from text content
+ * Replace platform names with HI3-themed equivalents
  * PRESERVES links - only modifies plain text, not URLs
  * 
- * @param content - Text or HTML content to sanitize
- * @returns Sanitized content with platform names removed
+ * @param content - Text or HTML content to process
+ * @returns Content with platform names replaced
  */
-export function purgePlatformNames(content: string): string {
-    if (!isPurgeEnabled || !content) return content;
+export function replacePlatformNames(content: string): string {
+    if (!isReplaceEnabled || !content) return content;
 
     let result = content;
 
-    // Step 1: Remove entire legal/copyright blocks (Indonesian)
-    for (const pattern of LEGAL_BLOCK_PATTERNS) {
-        result = result.replace(pattern, '');
-    }
-
-    // Step 2: Protect links - temporarily replace them with placeholders
+    // Step 1: Protect links - temporarily replace them with placeholders
     const links: string[] = [];
     const linkPlaceholder = '___LINK_PLACEHOLDER___';
 
@@ -90,13 +122,17 @@ export function purgePlatformNames(content: string): string {
         return `${linkPlaceholder}${links.length - 1}${linkPlaceholder}`;
     });
 
-    // Step 3: Remove platform names from plain text (case-insensitive)
-    for (const platform of PLATFORM_PATTERNS) {
+    // Step 2: Apply legal phrase replacements first (longer patterns)
+    for (const { pattern, replacement } of LEGAL_REPLACEMENTS) {
+        result = result.replace(pattern, replacement);
+    }
+
+    // Step 3: Replace platform names (case-insensitive)
+    for (const [platform, replacement] of Object.entries(PLATFORM_REPLACEMENTS)) {
         // Create regex that matches the platform name with word boundaries
-        // Also matches common variations (with spaces, hyphens, etc.)
         const escapedPlatform = platform.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(`\\b${escapedPlatform}\\b`, 'gi');
-        result = result.replace(regex, '');
+        result = result.replace(regex, replacement);
     }
 
     // Step 4: Restore protected links
@@ -104,45 +140,46 @@ export function purgePlatformNames(content: string): string {
         result = result.replace(`${linkPlaceholder}${i}${linkPlaceholder}`, links[i]);
     }
 
-    // Step 5: Clean up extra whitespace and empty lines
-    result = result
-        .replace(/\s{3,}/g, '  ')           // Collapse multiple spaces
-        .replace(/^\s*[\r\n]+/gm, '\n')     // Remove empty lines
-        .replace(/\n{3,}/g, '\n\n')         // Max 2 consecutive newlines
-        .trim();
-
     return result;
 }
 
 /**
- * Add a custom platform name to the purge list
+ * Add a custom platform replacement
  */
-export function addPurgePlatform(name: string): void {
-    if (!PLATFORM_PATTERNS.includes(name.toLowerCase())) {
-        PLATFORM_PATTERNS.push(name.toLowerCase());
-        console.log(`✅ Added "${name}" to purge list`);
-    }
+export function addReplacement(platform: string, replacement: string): void {
+    PLATFORM_REPLACEMENTS[platform.toLowerCase()] = replacement;
+    console.log(`✅ Added replacement: "${platform}" → "${replacement}"`);
 }
 
 /**
- * Get current list of platforms being purged
+ * Get current replacement mappings
  */
-export function getPurgePlatforms(): string[] {
-    return [...PLATFORM_PATTERNS];
+export function getReplacements(): Record<string, string> {
+    return { ...PLATFORM_REPLACEMENTS };
 }
 
 /**
- * Batch purge multiple content strings
+ * Batch replace in multiple content strings
  */
-export function purgeBatch(contents: string[]): string[] {
-    return contents.map(c => purgePlatformNames(c));
+export function replaceBatch(contents: string[]): string[] {
+    return contents.map(c => replacePlatformNames(c));
 }
+
+// Legacy aliases for backwards compatibility
+export const purgePlatformNames = replacePlatformNames;
+export const setPurgeEnabled = setReplaceEnabled;
+export const isPurgeActive = isReplaceActive;
+export const addPurgePlatform = (name: string) => addReplacement(name, 'St. Freya Academy');
 
 export default {
+    replacePlatformNames,
+    setReplaceEnabled,
+    isReplaceActive,
+    addReplacement,
+    getReplacements,
+    replaceBatch,
+    // Legacy
     purgePlatformNames,
     setPurgeEnabled,
     isPurgeActive,
-    addPurgePlatform,
-    getPurgePlatforms,
-    purgeBatch,
 };
