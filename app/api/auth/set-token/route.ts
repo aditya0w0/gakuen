@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
             value: sessionCookie,
             httpOnly: true,  // Prevents XSS access to token
             secure: process.env.NODE_ENV === 'production', // HTTPS only in prod
-            sameSite: 'strict',  // CSRF protection (stricter than 'lax')
+            sameSite: 'lax',  // Allow cookies on same-site navigation (strict blocks too aggressively)
             path: '/',
             maxAge: 60 * 60 * 24 * 5, // 5 days
         });
