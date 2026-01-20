@@ -24,6 +24,7 @@ function DashboardThumbnail({ src, alt }: { src?: string; alt: string }) {
     }
 
     return (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
             src={src}
             alt={alt}
@@ -61,7 +62,7 @@ interface RecentUser {
 }
 
 export default function AdminDashboard() {
-    const { user } = useAuth();
+    useAuth(); // Keep auth hook for session validation
     const [courses, setCourses] = useState<Course[]>(() =>
         dashboardCache.getCached<Course[]>(CACHE_KEYS.COURSES) || []
     );
@@ -79,7 +80,8 @@ export default function AdminDashboard() {
     const hasCachedData = courses.length > 0 || stats !== null || recentUsers.length > 0;
     const [isLoading, setIsLoading] = useState(!hasCachedData);
     const [isTogglingFeature, setIsTogglingFeature] = useState<string | null>(null);
-    const [isRefreshing, setIsRefreshing] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_isRefreshing, setIsRefreshing] = useState(false);
     const isMounted = useRef(true);
 
     // Fetchers for each data type

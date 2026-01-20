@@ -26,7 +26,7 @@ export interface LocalCourseEntry {
 }
 
 // In-memory registry
-let localRegistry = new Map<string, LocalCourseEntry>();
+const localRegistry = new Map<string, LocalCourseEntry>();
 let loaded = false;
 let saveInProgress = false;
 

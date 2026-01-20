@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import { SimpleModal } from "@/components/ui/SimpleModal";
+import { Course } from "@/lib/types";
 
 // Thumbnail component with error handling and fallback
 function ThumbnailImage({ src, alt }: { src?: string; alt: string }) {
@@ -40,6 +41,7 @@ function ThumbnailImage({ src, alt }: { src?: string; alt: string }) {
     }
 
     return (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
             src={`${src}${retryCount > 0 ? `?retry=${retryCount}` : ''}`}
             alt={alt}
@@ -53,7 +55,7 @@ export default function CoursesManagementPage() {
     const router = useRouter();
     const { isAdmin, isLoading: authLoading } = useRequireAdmin();
     const [isCreating, setIsCreating] = useState(false);
-    const [courses, setCourses] = useState<any[]>([]);
+    const [courses, setCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);

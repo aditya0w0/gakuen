@@ -123,6 +123,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     const [courseAuthor, setCourseAuthor] = useState('');
     const [isPublished, setIsPublished] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [draggedComponentId, setDraggedComponentId] = useState<string | null>(null);
     const [addMenuOpen, setAddMenuOpen] = useState(false);
     const [inlineTyping, setInlineTyping] = useState(false);
@@ -486,6 +487,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                                     const text = e.target.value.trim();
                                                     if (text) {
                                                         const textBlock = createComponent("text");
+                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                         (textBlock as any).content = `<p>${text}</p>`;
                                                         handleAddComponent(textBlock);
                                                     }
@@ -500,6 +502,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                                         const text = (e.target as HTMLTextAreaElement).value.trim();
                                                         if (text) {
                                                             const textBlock = createComponent("text");
+                                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                             (textBlock as any).content = `<p>${text}</p>`;
                                                             handleAddComponent(textBlock);
                                                         }
@@ -633,6 +636,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                                         const text = e.target.value.trim();
                                                         if (text) {
                                                             const textBlock = createComponent("text");
+                                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                             (textBlock as any).content = `<p>${text}</p>`;
                                                             handleAddComponent(textBlock);
                                                         }
@@ -647,6 +651,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                                             const text = (e.target as HTMLTextAreaElement).value.trim();
                                                             if (text) {
                                                                 const textBlock = createComponent("text");
+                                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                                 (textBlock as any).content = `<p>${text}</p>`;
                                                                 handleAddComponent(textBlock);
                                                             }

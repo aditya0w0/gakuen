@@ -428,7 +428,7 @@ function parseInlineMarks(html: string): TiptapNode[] {
     // For simplicity, we'll extract text and basic marks
     // A full implementation would use a proper HTML parser
 
-    let remaining = html;
+    const remaining = html;
     let currentText = '';
     let currentMarks: { type: string; attrs?: Record<string, unknown> }[] = [];
 
