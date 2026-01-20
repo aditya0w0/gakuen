@@ -93,6 +93,21 @@ function renderNodeToHtml(node: TiptapNode): string {
             return `<th class="border border-neutral-600 bg-neutral-800 px-3 py-2 text-left font-semibold">${children}</th>`;
         case 'tableCell':
             return `<td class="border border-neutral-600 px-3 py-2">${children}</td>`;
+        case 'customYoutube':
+            const videoId = node.attrs?.videoId as string;
+            if (videoId) {
+                return `<div class="relative pt-[56.25%] my-4 rounded-xl overflow-hidden bg-black">
+                    <iframe 
+                        class="absolute inset-0 w-full h-full"
+                        src="https://www.youtube.com/embed/${videoId}?rel=0" 
+                        title="${node.attrs?.title || 'YouTube Video'}"
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                </div>`;
+            }
+            return '';
         default:
             return children;
     }

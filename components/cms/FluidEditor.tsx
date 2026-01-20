@@ -6,6 +6,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { CustomImage } from '@/lib/cms/extensions/CustomImage';
 import { CustomMultiFileCode } from '@/lib/cms/extensions/CustomMultiFileCode';
 import { CustomQuiz } from '@/lib/cms/extensions/CustomQuiz';
+import { CustomYouTube, isYouTubeUrl, extractYouTubeId } from '@/lib/cms/extensions/CustomYouTube';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -41,6 +42,7 @@ import {
     List,
     ListOrdered,
     HelpCircle,
+    Youtube,
 } from 'lucide-react';
 
 // Slash command items
@@ -120,6 +122,14 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
         icon: <HelpCircle size={18} />,
         command: (editor) => {
             editor.chain().focus().insertContent({ type: 'customQuiz', attrs: {} }).run();
+        },
+    },
+    {
+        title: 'YouTube',
+        description: 'Embed a YouTube video',
+        icon: <Youtube size={18} />,
+        command: (editor) => {
+            editor.chain().focus().insertContent({ type: 'customYoutube', attrs: { videoId: '', title: '' } }).run();
         },
     },
 ];
@@ -329,6 +339,7 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
             CustomImage,
             CustomMultiFileCode,
             CustomQuiz,
+            CustomYouTube,
             Underline,  // Added explicitly since disabled in StarterKit
             TextStyle.configure({
                 HTMLAttributes: {},
@@ -376,18 +387,28 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
             attributes: {
                 class: 'prose prose-invert max-w-none focus:outline-none min-h-[200px] px-6 py-5',
             },
-            // Smart paste handler - handles image files from clipboard
-            // Let Tiptap handle HTML/text natively (it will parse images from HTML)
+            // Smart paste handler - handles images and YouTube URLs
             handlePaste: (view, event) => {
                 const clipboardData = event.clipboardData;
                 if (!clipboardData) return false;
 
-                // Only intercept for clipboard image FILES (screenshots, copied file images)
+                // Check for plain text first - detect YouTube URLs
+                const text = clipboardData.getData('text/plain');
+                if (text && isYouTubeUrl(text)) {
+                    const videoId = extractYouTubeId(text);
+                    if (videoId) {
+                        view.dispatch(view.state.tr.replaceSelectionWith(
+                            view.state.schema.nodes.customYoutube.create({ videoId, title: 'YouTube Video' })
+                        ));
+                        return true; // Handled
+                    }
+                }
+
+                // Handle clipboard image FILES (screenshots, copied file images)
                 const files = clipboardData.files;
                 if (files && files.length > 0) {
                     const imageFile = Array.from(files).find(f => f.type.startsWith('image/'));
                     if (imageFile) {
-                        // Convert image to base64 and insert
                         const reader = new FileReader();
                         reader.onload = (e) => {
                             const base64 = e.target?.result as string;
@@ -396,11 +417,11 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
                             ));
                         };
                         reader.readAsDataURL(imageFile);
-                        return true; // Handled - prevent default
+                        return true;
                     }
                 }
 
-                // Let Tiptap handle all other pastes (HTML, text, etc.) natively
+                // Let Tiptap handle all other pastes
                 return false;
             },
         },
