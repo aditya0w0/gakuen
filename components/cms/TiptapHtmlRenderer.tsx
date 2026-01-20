@@ -38,7 +38,7 @@ function renderNodeToHtml(node: TiptapNode): string {
                         text = `<s>${text}</s>`;
                         break;
                     case 'link':
-                        text = `<a href="${mark.attrs?.href || '#'}" target="_blank" class="text-indigo-400 underline">${text}</a>`;
+                        text = `<a href="${mark.attrs?.href || '#'}" target="_blank" class="text-teal-600 dark:text-indigo-400 underline">${text}</a>`;
                         break;
                     case 'textStyle':
                         const styles: string[] = [];
@@ -77,11 +77,11 @@ function renderNodeToHtml(node: TiptapNode): string {
         case 'listItem':
             return `<li>${children}</li>`;
         case 'blockquote':
-            return `<blockquote class="border-l-4 border-neutral-600 pl-4 italic text-neutral-300">${children}</blockquote>`;
+            return `<blockquote class="border-l-4 border-neutral-300 dark:border-neutral-600 pl-4 italic text-neutral-600 dark:text-neutral-300">${children}</blockquote>`;
         case 'codeBlock':
-            return `<pre class="bg-neutral-800 p-4 rounded-lg overflow-x-auto"><code>${children}</code></pre>`;
+            return `<pre class="bg-neutral-100 dark:bg-neutral-800 p-4 rounded-lg overflow-x-auto"><code>${children}</code></pre>`;
         case 'horizontalRule':
-            return '<hr class="border-neutral-700 my-6">';
+            return '<hr class="border-neutral-300 dark:border-neutral-700 my-6">';;
         case 'image':
         case 'customImage':
             return `<img src="${node.attrs?.src}" alt="${node.attrs?.alt || ''}" class="max-w-full rounded-lg my-4">`;
@@ -90,9 +90,9 @@ function renderNodeToHtml(node: TiptapNode): string {
         case 'tableRow':
             return `<tr>${children}</tr>`;
         case 'tableHeader':
-            return `<th class="border border-neutral-600 bg-neutral-800 px-3 py-2 text-left font-semibold">${children}</th>`;
+            return `<th class="border border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 px-3 py-2 text-left font-semibold">${children}</th>`;
         case 'tableCell':
-            return `<td class="border border-neutral-600 px-3 py-2">${children}</td>`;
+            return `<td class="border border-neutral-300 dark:border-neutral-600 px-3 py-2">${children}</td>`;
         case 'customYoutube':
             const videoId = node.attrs?.videoId as string;
             if (videoId) {
@@ -168,7 +168,7 @@ export function TiptapHtmlRenderer({ content, courseId, quizzes }: TiptapHtmlRen
     const segments = segmentContent(content.content);
 
     return (
-        <div className="ProseMirror prose prose-invert max-w-none">
+        <div className="ProseMirror prose dark:prose-invert max-w-none">
             {segments.map((segment, index) => {
                 if (segment.type === 'html') {
                     return (

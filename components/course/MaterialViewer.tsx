@@ -160,7 +160,7 @@ export function MaterialViewer({ lesson, onComplete, isCompleted, courseId, cour
                         courseId={courseId}
                         courseTitle={courseTitle}
                     >
-                        <div className="max-w-4xl mx-auto space-y-6 ProseMirror prose prose-invert"
+                        <div className="max-w-4xl mx-auto space-y-6 ProseMirror prose dark:prose-invert"
                             style={{ maxWidth: '100%' }}>
                             {/* Show content immediately - translation happens in background */}
                             {/* Use translated components if ready, otherwise show originals */}
