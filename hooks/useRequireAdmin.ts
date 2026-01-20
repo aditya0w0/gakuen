@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
 
@@ -12,7 +12,7 @@ export function useRequireAdmin() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
     const [isResolved, setIsResolved] = useState(false);
-    const redirectedRef = useRef(false);
+    const [hasRedirected, setHasRedirected] = useState(false);
 
     useEffect(() => {
         // Still loading - don't do anything yet
@@ -22,12 +22,12 @@ export function useRequireAdmin() {
         }
 
         // Already redirected - don't check again
-        if (redirectedRef.current) return;
+        if (hasRedirected) return;
 
         // No user at all - redirect to login
         if (!user) {
             console.warn('❌ No user, redirecting to login');
-            redirectedRef.current = true;
+            setHasRedirected(true);
             router.replace("/login");
             return;
         }
@@ -44,17 +44,18 @@ export function useRequireAdmin() {
 
         if (user.role !== "admin") {
             console.warn(`❌ Access denied: ${user.email} is ${user.role}, not admin`);
-            redirectedRef.current = true;
+            setHasRedirected(true);
             router.replace("/user");
         } else {
             console.log(`✅ Admin access granted for ${user.email}`);
             setIsResolved(true);
         }
-    }, [user, user?.role, isLoading, router]);
+    }, [user, user?.role, isLoading, router, hasRedirected]);
 
     // Only return isAdmin=true when we've definitively verified admin role
     return {
         isAdmin: isResolved && user?.role === "admin",
-        isLoading: isLoading || (!isResolved && !redirectedRef.current)
+        isLoading: isLoading || (!isResolved && !hasRedirected)
     };
 }
+
