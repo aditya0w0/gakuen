@@ -76,10 +76,12 @@ export async function getCourse(id: string): Promise<Course | null> {
         const docSnap = await docRef.get();
 
         if (!docSnap.exists) {
+            console.log(`📭 [getCourse] ${id} not found in Firestore`);
             return null;
         }
 
         const data = docSnap.data() as any;
+        console.log(`📦 [getCourse] ${id}: hasTg=${!!data.published?.tg_file_id || !!data.draft_snapshot?.tg_file_id}, hasLessons=${!!data.lessons}, subcoll=${!!data._lessonsInSubcollection}`);
 
         // Prefer draft_snapshot for CMS editing, fall back to published for students
         const tgFileId = data.draft_snapshot?.tg_file_id || data.published?.tg_file_id;
@@ -120,9 +122,14 @@ export async function getCourse(id: string): Promise<Course | null> {
             return await getCourseFromGDrive(id);
         }
 
+        console.warn(`⚠️ [getCourse] ${id} exists but has no retrievable content`);
         return null;
-    } catch (error) {
-        console.error(`Error getting course ${id}:`, error);
+    } catch (error: any) {
+        if (error?.code === 8 || error?.message?.includes('RESOURCE_EXHAUSTED')) {
+            console.error(`❌ [getCourse] Quota exhausted for ${id}`);
+        } else {
+            console.error(`Error getting course ${id}:`, error);
+        }
         return null;
     }
 }
