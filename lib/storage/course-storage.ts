@@ -367,6 +367,7 @@ export async function listCourses(): Promise<Course[]> {
                     lessons: [],
                     isPublished: data.status === 'published' || data.isPublished,
                 } as Course);
+                seenIds.add(doc.id);  // Track this ID to prevent duplicates
             });
 
             console.log(`📋 Listed ${courses.length} courses (${localCourses.length} local + ${courses.length - localCourses.length} Firestore)`);
@@ -378,8 +379,12 @@ export async function listCourses(): Promise<Course[]> {
             }
         }
     }
+    // Final deduplication by ID (safety net)
+    const uniqueCourses = courses.filter((course, index, self) =>
+        index === self.findIndex((c) => c.id === course.id)
+    );
 
-    return courses;
+    return uniqueCourses;
 }
 
 /**
