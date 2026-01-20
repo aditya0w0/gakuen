@@ -122,7 +122,29 @@ export async function getCourse(id: string): Promise<Course | null> {
             return await getCourseFromGDrive(id);
         }
 
-        console.warn(`⚠️ [getCourse] ${id} exists but has no retrievable content`);
+        // Last resort: Return a minimal course from meta if we have it
+        // This prevents "course not found" for newly created courses before first save
+        if (data.meta?.title) {
+            console.warn(`⚠️ [getCourse] ${id} has no content, returning shell from meta`);
+            return {
+                id,
+                title: data.meta.title || '',
+                description: data.meta.description || '',
+                thumbnail: data.meta.thumbnail || '',
+                instructor: data.meta.instructor || '',
+                category: data.meta.category || '',
+                level: data.meta.level || 'beginner',
+                duration: data.meta.duration || '',
+                lessonsCount: 0,
+                enrolledCount: 0,
+                rating: 0,
+                price: 0,
+                lessons: [],
+                createdAt: data.createdAt,
+            } as Course;
+        }
+
+        console.warn(`⚠️ [getCourse] ${id} exists but has no retrievable content or meta`);
         return null;
     } catch (error: any) {
         if (error?.code === 8 || error?.message?.includes('RESOURCE_EXHAUSTED')) {
