@@ -140,7 +140,7 @@ export async function POST(
 
         // Update pointer cache with new published version
         try {
-            updatePointerCache(id, {
+            updatePointerCache(id, 'published', {
                 tg_file_id: file_id,
                 version: version,
                 hash,
