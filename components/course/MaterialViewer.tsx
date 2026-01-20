@@ -160,7 +160,7 @@ export function MaterialViewer({ lesson, onComplete, isCompleted, courseId, cour
                         courseId={courseId}
                         courseTitle={courseTitle}
                     >
-                        <div className="max-w-4xl mx-auto space-y-4 ProseMirror prose prose-neutral dark:prose-invert text-neutral-800 dark:text-neutral-200"
+                        <div className="max-w-4xl mx-auto space-y-4 ProseMirror prose prose-neutral dark:prose-invert text-neutral-900 dark:text-neutral-100"
                             style={{ maxWidth: '100%' }}>
                             {/* Show content immediately - translation happens in background */}
                             {/* Use translated components if ready, otherwise show originals */}
@@ -187,7 +187,7 @@ export function MaterialViewer({ lesson, onComplete, isCompleted, courseId, cour
                     onScroll={handleScroll}
                     className="h-full overflow-y-auto p-8"
                 >
-                    <div className="max-w-3xl mx-auto prose prose-neutral dark:prose-invert text-neutral-800 dark:text-neutral-200">
+                    <div className="max-w-3xl mx-auto prose prose-neutral dark:prose-invert text-neutral-900 dark:text-neutral-100">
                         {/* Loading skeleton while translating */}
                         {translated.loading ? (
                             <div className="space-y-4 animate-pulse">

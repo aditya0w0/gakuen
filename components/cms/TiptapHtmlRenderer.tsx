@@ -190,7 +190,7 @@ export function TiptapHtmlRenderer({ content, courseId, quizzes }: TiptapHtmlRen
     const segments = segmentContent(content.content);
 
     return (
-        <div className="ProseMirror prose prose-neutral dark:prose-invert max-w-none text-neutral-800 dark:text-neutral-200">
+        <div className="ProseMirror prose prose-neutral dark:prose-invert max-w-none text-neutral-900 dark:text-neutral-100">
             {segments.map((segment, index) => {
                 if (segment.type === 'html') {
                     return (
