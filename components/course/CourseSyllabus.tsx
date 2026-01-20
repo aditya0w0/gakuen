@@ -66,9 +66,24 @@ export function CourseSyllabus({
         );
     }
 
+    // SAFEGUARD: Ensure each lesson only appears in ONE section
+    // If a lesson appears in multiple sections (data corruption), only show in first
+    const seenLessonIds = new Set<string>();
+    const dedupedSections = course.sections.map(section => {
+        const uniqueLessonIds = section.lessonIds.filter(id => {
+            if (seenLessonIds.has(id)) {
+                console.warn(`⚠️ Duplicate lesson ${id} found in section ${section.title}, skipping`);
+                return false;
+            }
+            seenLessonIds.add(id);
+            return true;
+        });
+        return { ...section, lessonIds: uniqueLessonIds };
+    });
+
     return (
         <div className="space-y-2 w-full overflow-hidden">
-            {course.sections.map((section) => {
+            {dedupedSections.map((section) => {
                 const isExpanded = expandedSections.has(section.id);
                 const { completed, total } = getSectionProgress(section);
                 const sectionComplete = isSectionComplete(section);
