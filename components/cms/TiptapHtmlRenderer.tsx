@@ -45,7 +45,27 @@ function renderNodeToHtml(node: TiptapNode): string {
                         const color = mark.attrs?.color as string;
                         const fontSize = mark.attrs?.fontSize as string;
                         const fontFamily = mark.attrs?.fontFamily as string;
-                        if (color) styles.push(`color: ${color}`);
+
+                        // Skip colors that are clearly dark-mode specific (light grays/whites)
+                        // These would be invisible on white backgrounds
+                        if (color) {
+                            const lowerColor = color.toLowerCase();
+                            const isDarkModeColor =
+                                lowerColor === '#d4d4d8' ||  // zinc-300
+                                lowerColor === '#e4e4e7' ||  // zinc-200
+                                lowerColor === '#f4f4f5' ||  // zinc-100
+                                lowerColor === '#ffffff' ||  // white
+                                lowerColor === '#fafafa' ||  // zinc-50
+                                lowerColor === '#a1a1aa' ||  // zinc-400
+                                lowerColor.startsWith('rgb(212') ||  // rgb version of zinc-300
+                                lowerColor.startsWith('rgb(244') ||  // rgb version of zinc-100
+                                lowerColor.startsWith('rgb(255');    // white
+
+                            // Only apply non-dark-mode colors
+                            if (!isDarkModeColor) {
+                                styles.push(`color: ${color}`);
+                            }
+                        }
                         if (fontSize) styles.push(`font-size: ${fontSize}`);
                         if (fontFamily) styles.push(`font-family: ${fontFamily}`);
                         if (styles.length > 0) {
