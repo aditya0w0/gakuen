@@ -254,7 +254,13 @@ export function blobToCourse(
 
     return {
         id,
-        ...meta,
+        title: meta.title || '',
+        description: meta.description || '',
+        thumbnail: meta.thumbnail || '',
+        instructor: meta.instructor || '',
+        category: meta.category || '',
+        level: meta.level || 'beginner',
+        duration: meta.duration || '',
         lessonsCount: lessons.length,
         enrolledCount: 0,
         rating: 0,

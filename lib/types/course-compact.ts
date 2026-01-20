@@ -66,13 +66,13 @@ export interface SectionCompact {
 // Course metadata (stored in Firestore, not blob)
 export interface CourseMeta {
     title: string;
-    description: string;
-    thumbnail: string;
-    instructor: string;
+    description?: string;
+    thumbnail?: string;
+    instructor?: string;
     instructorAvatar?: string;
-    category: string;
-    level: 'beginner' | 'intermediate' | 'advanced';
-    duration: string;
+    category?: string;
+    level?: 'beginner' | 'intermediate' | 'advanced';
+    duration?: string;
 }
 
 // Course blob (stored in Telegram)

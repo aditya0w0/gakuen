@@ -16,12 +16,12 @@ export interface PointerEntry {
     hash?: string;
     // Include meta so we don't need Firestore for reads
     meta?: {
-        title?: string;
+        title: string;
         description?: string;
         thumbnail?: string;
         instructor?: string;
         category?: string;
-        level?: string;
+        level?: 'beginner' | 'intermediate' | 'advanced';
     };
     sections?: { id: string; t: string; l: string[] }[];
 }

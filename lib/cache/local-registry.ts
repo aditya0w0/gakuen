@@ -18,7 +18,7 @@ export interface LocalCourseEntry {
         thumbnail?: string;
         instructor?: string;
         category?: string;
-        level?: string;
+        level?: 'beginner' | 'intermediate' | 'advanced';
     };
     sections: any[];
     createdAt: string;
