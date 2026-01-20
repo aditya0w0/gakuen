@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth-guard';
 import { initAdmin } from '@/lib/auth/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export async function POST(request: NextRequest) {
     // Require authentication
@@ -42,10 +43,25 @@ export async function POST(request: NextRequest) {
         // Add course to enrolled list
         const updatedEnrolled = [...currentEnrolled, courseId];
 
+        // Update user's enrolled courses
         await userRef.update({
             enrolledCourses: updatedEnrolled,
             updatedAt: new Date().toISOString(),
         });
+
+        // 🔥 INCREMENT course enrollment count (pre-aggregated stats!)
+        // This avoids scanning entire enrollments collection on /browse
+        try {
+            const courseStatsRef = db.collection('course_stats').doc(courseId);
+            await courseStatsRef.set({
+                enrolledCount: FieldValue.increment(1),
+                lastEnrollment: new Date().toISOString(),
+            }, { merge: true });
+            console.log(`📊 [Stats] Incremented enrolledCount for ${courseId}`);
+        } catch (statsError) {
+            // Non-critical - don't fail enrollment if stats update fails
+            console.warn(`⚠️ [Stats] Failed to update course stats:`, statsError);
+        }
 
         return NextResponse.json({
             success: true,

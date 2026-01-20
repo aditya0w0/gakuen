@@ -93,65 +93,107 @@ export async function createAdminUserProfile(user: User): Promise<User> {
 }
 
 /**
- * Get aggregated course stats (enrollments, ratings) using Admin SDK
- * CACHED: Aggregates are cached for 10 minutes to avoid reading entire collections!
+ * Get aggregated course stats (enrollments, ratings)
+ * 
+ * OPTIMIZED: Reads from pre-aggregated course_stats collection
+ * instead of scanning entire enrollments/reviews collections!
+ * 
+ * Stats are updated on:
+ * - enrollment (incrementCourseEnrollCount)
+ * - review submission (incrementCourseRating)
  */
 
-// Cache for course stats (10 minute TTL)
+// Cache for course stats with jittered TTL
 let statsCache: {
     data: { enrollmentCounts: Record<string, number>; courseRatings: Record<string, { sum: number; count: number }> } | null;
     timestamp: number;
-} = { data: null, timestamp: 0 };
+    ttl: number; // Jittered to prevent synchronized expiry
+} = { data: null, timestamp: 0, ttl: 0 };
 
-const STATS_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+// Stampede protection
+let inFlightFetch: Promise<{ enrollmentCounts: Record<string, number>; courseRatings: Record<string, { sum: number; count: number }> }> | null = null;
+
+// Base TTL: 10 minutes + random jitter (0-3 min) to prevent synchronized expiry
+function getJitteredTTL() {
+    return 10 * 60 * 1000 + Math.random() * 3 * 60 * 1000;
+}
 
 export async function getCourseStats() {
-    // Check cache first
     const now = Date.now();
-    if (statsCache.data && (now - statsCache.timestamp) < STATS_CACHE_TTL) {
-        console.log(`📊 [Stats] Using cached stats (${Math.round((now - statsCache.timestamp) / 1000)}s old)`);
+
+    // Check cache first
+    if (statsCache.data && (now - statsCache.timestamp) < statsCache.ttl) {
         return statsCache.data;
+    }
+
+    // Stampede protection: if already fetching, wait for that result
+    if (inFlightFetch) {
+        console.log(`📊 [Stats] Waiting for in-flight fetch...`);
+        return inFlightFetch;
     }
 
     const { firestore } = initAdmin();
     const db = firestore();
 
-    try {
-        console.log(`📊 [Stats] Fetching fresh stats from Firestore...`);
-        const [enrollmentsSnap, reviewsSnap] = await Promise.all([
-            db.collection("enrollments").get(),
-            db.collection("reviews").get()
-        ]);
+    // Set in-flight to prevent stampede
+    inFlightFetch = (async () => {
+        try {
+            console.log(`📊 [Stats] Fetching from course_stats collection...`);
 
-        const enrollmentCounts: Record<string, number> = {};
-        enrollmentsSnap.forEach(doc => {
-            const data = doc.data();
-            if (data.courseId) {
-                enrollmentCounts[data.courseId] = (enrollmentCounts[data.courseId] || 0) + 1;
-            }
-        });
+            // Read pre-aggregated stats (1 doc per course, NOT entire collections!)
+            const statsSnap = await db.collection('course_stats').get();
 
-        const courseRatings: Record<string, { sum: number; count: number }> = {};
-        reviewsSnap.forEach(doc => {
-            const data = doc.data();
-            const { courseId, rating } = data;
-            if (courseId && typeof rating === 'number') {
-                if (!courseRatings[courseId]) {
-                    courseRatings[courseId] = { sum: 0, count: 0 };
+            const enrollmentCounts: Record<string, number> = {};
+            const courseRatings: Record<string, { sum: number; count: number }> = {};
+
+            statsSnap.forEach(doc => {
+                const data = doc.data();
+                const courseId = doc.id;
+
+                if (data.enrolledCount) {
+                    enrollmentCounts[courseId] = data.enrolledCount;
                 }
-                courseRatings[courseId].sum += rating;
-                courseRatings[courseId].count += 1;
-            }
-        });
+                if (data.ratingSum !== undefined && data.ratingCount) {
+                    courseRatings[courseId] = {
+                        sum: data.ratingSum,
+                        count: data.ratingCount
+                    };
+                }
+            });
 
-        // Cache the result
-        const result = { enrollmentCounts, courseRatings };
-        statsCache = { data: result, timestamp: now };
-        console.log(`✅ [Stats] Cached (${enrollmentsSnap.size} enrollments, ${reviewsSnap.size} reviews)`);
+            // Cache with jittered TTL
+            const result = { enrollmentCounts, courseRatings };
+            statsCache = { data: result, timestamp: now, ttl: getJitteredTTL() };
+            console.log(`✅ [Stats] Cached (${statsSnap.size} course stats docs)`);
 
-        return result;
+            return result;
+        } catch (error) {
+            console.error("Error fetching course stats:", error);
+            // Return stale cache if available, otherwise empty
+            return statsCache.data || { enrollmentCounts: {}, courseRatings: {} };
+        } finally {
+            inFlightFetch = null;
+        }
+    })();
+
+    return inFlightFetch;
+}
+
+/**
+ * Increment course rating (called on review submission)
+ */
+export async function incrementCourseRating(courseId: string, rating: number) {
+    const { firestore, FieldValue } = initAdmin();
+    const db = firestore();
+
+    try {
+        await db.collection('course_stats').doc(courseId).set({
+            ratingSum: FieldValue.increment(rating),
+            ratingCount: FieldValue.increment(1),
+            lastReview: new Date().toISOString(),
+        }, { merge: true });
+        console.log(`📊 [Stats] Added rating ${rating} to ${courseId}`);
     } catch (error) {
-        console.error("Error fetching course stats:", error);
-        return { enrollmentCounts: {}, courseRatings: {} };
+        console.warn(`⚠️ [Stats] Failed to update rating:`, error);
     }
 }

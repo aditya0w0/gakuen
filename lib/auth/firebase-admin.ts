@@ -1,6 +1,6 @@
 import { initializeApp, getApps, cert, ServiceAccount, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 let adminApp: App | null = null;
 
@@ -11,6 +11,7 @@ export function initAdmin() {
             app: adminApp,
             auth: () => getAuth(adminApp!),
             firestore: () => getFirestore(adminApp!),
+            FieldValue,
         };
     }
 
@@ -22,6 +23,7 @@ export function initAdmin() {
             app: adminApp,
             auth: () => getAuth(adminApp!),
             firestore: () => getFirestore(adminApp!),
+            FieldValue,
         };
     }
 
@@ -42,5 +44,6 @@ export function initAdmin() {
         app: adminApp,
         auth: () => getAuth(adminApp!),
         firestore: () => getFirestore(adminApp!),
+        FieldValue,
     };
 }
