@@ -66,10 +66,12 @@ function renderNodeToHtml(node: TiptapNode): string {
         case 'paragraph':
             const align = node.attrs?.textAlign as string;
             const alignStyle = align && align !== 'left' ? ` style="text-align: ${align}"` : '';
-            return `<p${alignStyle}>${children || '<br>'}</p>`;
+            // Add margin-bottom for proper paragraph spacing (prose handles this but just in case)
+            return `<p class="mb-4"${alignStyle}>${children || '<br>'}</p>`;
         case 'heading':
             const level = node.attrs?.level || 1;
-            return `<h${level}>${children}</h${level}>`;
+            // Add proper heading margins
+            return `<h${level} class="mt-6 mb-3">${children}</h${level}>`;
         case 'bulletList':
             return `<ul class="list-disc pl-6 space-y-1">${children}</ul>`;
         case 'orderedList':
@@ -168,7 +170,7 @@ export function TiptapHtmlRenderer({ content, courseId, quizzes }: TiptapHtmlRen
     const segments = segmentContent(content.content);
 
     return (
-        <div className="ProseMirror prose dark:prose-invert max-w-none">
+        <div className="ProseMirror prose prose-neutral dark:prose-invert max-w-none text-neutral-800 dark:text-neutral-200">
             {segments.map((segment, index) => {
                 if (segment.type === 'html') {
                     return (
