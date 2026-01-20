@@ -3,6 +3,7 @@
  * 
  * Uses Telegram as immutable blob storage for course content.
  * Files are uploaded as documents to a private channel/chat.
+ * GZIP compressed for ~70-80% size reduction!
  * 
  * Setup:
  * 1. Create bot via @BotFather
@@ -12,6 +13,7 @@
 
 import { CourseBlob } from '@/lib/types/course-compact';
 import crypto from 'crypto';
+import { gzipSync, gunzipSync } from 'zlib';
 
 // API base URL
 const TG_API = 'https://api.telegram.org/bot';
@@ -29,6 +31,7 @@ export function isTelegramEnabled(): boolean {
 /**
  * Upload course blob to Telegram
  * Returns file_id for later retrieval
+ * Uses GZIP compression for ~70-80% size reduction!
  */
 export async function uploadCourseBlob(
     courseId: string,
@@ -43,18 +46,23 @@ export async function uploadCourseBlob(
 
     // Convert blob to JSON
     const jsonString = JSON.stringify(blob);
-    const jsonBuffer = Buffer.from(jsonString, 'utf-8');
+    const originalSize = Buffer.byteLength(jsonString, 'utf-8');
 
-    // Calculate hash for integrity
+    // Calculate hash for integrity (on uncompressed data)
     const hash = crypto.createHash('md5').update(jsonString).digest('hex');
 
-    // Create form data for file upload
+    // GZIP compress for ~70-80% size reduction!
+    const gzipBuffer = gzipSync(Buffer.from(jsonString, 'utf-8'));
+    const compressedSize = gzipBuffer.length;
+    const compressionRatio = ((1 - compressedSize / originalSize) * 100).toFixed(1);
+
+    // Create form data for file upload (use .json.gz extension)
     const formData = new FormData();
     formData.append('chat_id', chatId);
-    formData.append('document', new Blob([jsonBuffer], { type: 'application/json' }), `${courseId}.json`);
-    formData.append('caption', `Course: ${courseId} | Hash: ${hash.slice(0, 8)}`);
+    formData.append('document', new Blob([gzipBuffer], { type: 'application/gzip' }), `${courseId}.json.gz`);
+    formData.append('caption', `Course: ${courseId} | Hash: ${hash.slice(0, 8)} | Compressed`);
 
-    console.log(`📤 [Telegram] Uploading ${courseId}.json (${(jsonBuffer.length / 1024).toFixed(1)}KB)`);
+    console.log(`📤 [Telegram] Uploading ${courseId}.json.gz (${(originalSize / 1024).toFixed(1)}KB → ${(compressedSize / 1024).toFixed(1)}KB, ${compressionRatio}% smaller)`);
 
     const response = await fetch(`${TG_API}${token}/sendDocument`, {
         method: 'POST',
@@ -82,6 +90,7 @@ export async function uploadCourseBlob(
 
 /**
  * Download course blob from Telegram by file_id
+ * Automatically detects and decompresses gzip files
  */
 export async function downloadCourseBlob(file_id: string): Promise<CourseBlob | null> {
     if (!isTelegramEnabled()) {
@@ -108,7 +117,7 @@ export async function downloadCourseBlob(file_id: string): Promise<CourseBlob | 
     }
 
     // Step 2: Download file content
-    const filePath = fileInfo.result.file_path;
+    const filePath: string = fileInfo.result.file_path;
     const fileUrl = `https://api.telegram.org/file/bot${token}/${filePath}`;
 
     const downloadResponse = await fetch(fileUrl);
@@ -118,14 +127,33 @@ export async function downloadCourseBlob(file_id: string): Promise<CourseBlob | 
         return null;
     }
 
-    const jsonText = await downloadResponse.text();
-
     try {
+        // Get raw bytes
+        const arrayBuffer = await downloadResponse.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        let jsonText: string;
+        let wasCompressed = false;
+
+        // Detect gzip: by extension OR by magic bytes (0x1f, 0x8b)
+        const isGzip = filePath.endsWith('.gz') || (buffer[0] === 0x1f && buffer[1] === 0x8b);
+
+        if (isGzip) {
+            // Decompress gzip
+            const decompressed = gunzipSync(buffer);
+            jsonText = decompressed.toString('utf-8');
+            wasCompressed = true;
+            console.log(`📦 [Telegram] Decompressed (${(buffer.length / 1024).toFixed(1)}KB → ${(jsonText.length / 1024).toFixed(1)}KB)`);
+        } else {
+            // Already plain JSON (legacy files)
+            jsonText = buffer.toString('utf-8');
+        }
+
         const blob = JSON.parse(jsonText) as CourseBlob;
-        console.log(`✅ [Telegram] Downloaded blob (${(jsonText.length / 1024).toFixed(1)}KB)`);
+        console.log(`✅ [Telegram] Downloaded blob (${(jsonText.length / 1024).toFixed(1)}KB${wasCompressed ? ', was compressed' : ''})`);
         return blob;
     } catch (e) {
-        console.error(`❌ [Telegram] Invalid JSON:`, e);
+        console.error(`❌ [Telegram] Failed to parse blob:`, e);
         return null;
     }
 }
