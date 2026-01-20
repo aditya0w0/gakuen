@@ -1,0 +1,67 @@
+[
+  {
+    "id": "untitled-course-1768880419792",
+    "tg_file_id": "BQACAgUAAyEGAATV17OvAAM9aW8F6vSteVUcMIA9-FdvYh-QLwoAAtgZAAIzc3hXo0WS36yijmQ4BA",
+    "meta": {
+      "title": "Back-End Pemula dengan JavaScript",
+      "description": "Start building your course...",
+      "thumbnail": "https://placehold.co/800x400",
+      "instructor": "Ayaka",
+      "instructorAvatar": "",
+      "category": "Web Development",
+      "level": "beginner",
+      "duration": "0 hours"
+    },
+    "sections": [
+      {
+        "id": "S1",
+        "t": "Pendahuluan",
+        "l": [
+          "L1"
+        ]
+      },
+      {
+        "id": "S2",
+        "t": "Pengenalan ke Back-End",
+        "l": []
+      },
+      {
+        "id": "S3",
+        "t": "Dasar-Dasar Node.js",
+        "l": []
+      },
+      {
+        "id": "S4",
+        "t": "Membangun Web Service menggunakan Node.js",
+        "l": []
+      },
+      {
+        "id": "S5",
+        "t": "Deploy Web Services",
+        "l": []
+      },
+      {
+        "id": "S6",
+        "t": " Mengonsumsi dan Menguji RESTful API menggunakan Postman",
+        "l": []
+      },
+      {
+        "id": "S7",
+        "t": " AI di Balik Layar: Integrasi AI di Back-End",
+        "l": []
+      },
+      {
+        "id": "S8",
+        "t": "Penutup",
+        "l": []
+      },
+      {
+        "id": "S9",
+        "t": "Proyek Akhir",
+        "l": []
+      }
+    ],
+    "createdAt": "2026-01-20T04:34:54.990Z",
+    "pending_sync": false
+  }
+]

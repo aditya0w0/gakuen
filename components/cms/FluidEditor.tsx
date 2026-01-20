@@ -5,17 +5,21 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { CustomImage } from '@/lib/cms/extensions/CustomImage';
 import { CustomMultiFileCode } from '@/lib/cms/extensions/CustomMultiFileCode';
+import { CustomQuiz } from '@/lib/cms/extensions/CustomQuiz';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import TextAlign from '@tiptap/extension-text-align';
 import Bold from '@tiptap/extension-bold';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
 import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { LineHeight } from '@/lib/cms/extensions/LineHeight';
+// Per-block saves use dynamic imports to avoid SSR issues
 import {
     useState,
     useEffect,
@@ -36,6 +40,7 @@ import {
     Quote,
     List,
     ListOrdered,
+    HelpCircle,
 } from 'lucide-react';
 
 // Slash command items
@@ -107,6 +112,14 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
         icon: <ImageIcon size={18} />,
         command: (editor) => {
             editor.chain().focus().insertContent({ type: 'customImage', attrs: { src: '', alt: '' } }).run();
+        },
+    },
+    {
+        title: 'Quiz',
+        description: 'Create a multiple choice quiz',
+        icon: <HelpCircle size={18} />,
+        command: (editor) => {
+            editor.chain().focus().insertContent({ type: 'customQuiz', attrs: {} }).run();
         },
     },
 ];
@@ -227,6 +240,9 @@ export interface FluidEditorProps {
     placeholder?: string;
     editable?: boolean;
     className?: string;
+    // Per-block mode (optional - enables native block saves)
+    courseId?: string;
+    lessonId?: string;
 }
 
 export interface FluidEditorRef {
@@ -244,12 +260,18 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
     placeholder = "Type '/' for commands, or just start writing...",
     editable = true,
     className = '',
+    courseId,
+    lessonId,
 }, ref) => {
     const [slashMenu, setSlashMenu] = useState<{
         open: boolean;
         query: string;
         position: { top: number; left: number };
     }>({ open: false, query: '', position: { top: 0, left: 0 } });
+
+    // Per-block native saves status
+    const blockEditorEnabled = !!(courseId && lessonId);
+    const [blockSaving, setBlockSaving] = useState(false);
 
     const editor = useEditor({
         immediatelyRender: false,
@@ -270,6 +292,8 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
                 bold: false,
                 // Disable Underline - it may be duplicated otherwise  
                 underline: false,
+                // Disable default codeBlock - we configure custom one below with enhanced parseHTML
+                codeBlock: false,
             }),
             // Custom Bold that recognizes both <strong> and <b> tags, plus CSS font-weight
             Bold.extend({
@@ -290,12 +314,21 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
                     ];
                 },
             }),
+            // CodeBlockLowlight with syntax highlighting
+            CodeBlockLowlight.configure({
+                lowlight: createLowlight(common),
+                defaultLanguage: 'python',
+                HTMLAttributes: {
+                    class: 'hljs',
+                },
+            }),
             Placeholder.configure({
                 placeholder,
                 emptyEditorClass: 'is-editor-empty',
             }),
             CustomImage,
             CustomMultiFileCode,
+            CustomQuiz,
             Underline,  // Added explicitly since disabled in StarterKit
             TextStyle.configure({
                 HTMLAttributes: {},
@@ -342,6 +375,33 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
         editorProps: {
             attributes: {
                 class: 'prose prose-invert max-w-none focus:outline-none min-h-[200px] px-6 py-5',
+            },
+            // Smart paste handler - handles image files from clipboard
+            // Let Tiptap handle HTML/text natively (it will parse images from HTML)
+            handlePaste: (view, event) => {
+                const clipboardData = event.clipboardData;
+                if (!clipboardData) return false;
+
+                // Only intercept for clipboard image FILES (screenshots, copied file images)
+                const files = clipboardData.files;
+                if (files && files.length > 0) {
+                    const imageFile = Array.from(files).find(f => f.type.startsWith('image/'));
+                    if (imageFile) {
+                        // Convert image to base64 and insert
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const base64 = e.target?.result as string;
+                            view.dispatch(view.state.tr.replaceSelectionWith(
+                                view.state.schema.nodes.customImage.create({ src: base64, alt: '' })
+                            ));
+                        };
+                        reader.readAsDataURL(imageFile);
+                        return true; // Handled - prevent default
+                    }
+                }
+
+                // Let Tiptap handle all other pastes (HTML, text, etc.) natively
+                return false;
             },
         },
         onBlur: ({ editor }) => {
@@ -391,6 +451,58 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
         }
     }, [editor, onEditorReady]);
 
+    // Per-block save effect (when courseId + lessonId provided)
+    useEffect(() => {
+        if (!editor || !blockEditorEnabled || !courseId || !lessonId) return;
+
+        let saveTimeout: NodeJS.Timeout | null = null;
+        const prevBlocks: Record<string, any> = {};
+        let blockIds: string[] = [];
+
+        const handleUpdate = async () => {
+            if (saveTimeout) clearTimeout(saveTimeout);
+
+            saveTimeout = setTimeout(async () => {
+                setBlockSaving(true);
+                try {
+                    // Dynamic import to avoid SSR issues
+                    const { tiptapToBlocks, blocksDiffer } = await import('@/lib/cms/tiptap-to-blocks');
+                    const { saveBlock, saveLessonStructure } = await import('@/lib/cache/block-cache');
+
+                    const doc = editor.getJSON();
+                    const result = tiptapToBlocks(doc, courseId, blockIds);
+
+                    let savedCount = 0;
+                    for (const block of result.blocks) {
+                        if (!prevBlocks[block.id] || blocksDiffer(prevBlocks[block.id], block)) {
+                            await saveBlock(courseId, block.id, block);
+                            prevBlocks[block.id] = block;
+                            savedCount++;
+                        }
+                    }
+
+                    if (JSON.stringify(result.blockIds) !== JSON.stringify(blockIds)) {
+                        await saveLessonStructure(courseId, lessonId, '', result.blockIds);
+                        blockIds = result.blockIds;
+                    }
+
+                    if (savedCount > 0) {
+                        console.log(`💾 [Blocks] Saved ${savedCount} block(s)`);
+                    }
+                } catch (err) {
+                    console.error('Block save error:', err);
+                } finally {
+                    setBlockSaving(false);
+                }
+            }, 500);
+        };
+
+        editor.on('update', handleUpdate);
+        return () => {
+            editor.off('update', handleUpdate);
+            if (saveTimeout) clearTimeout(saveTimeout);
+        };
+    }, [editor, blockEditorEnabled, courseId, lessonId]);
 
     useEffect(() => {
         const handleClick = () => {

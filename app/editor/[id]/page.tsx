@@ -14,6 +14,7 @@ import {
     FolderOpen
 } from "lucide-react";
 import { useState, useEffect, useRef, use } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { ComponentRenderer } from "@/components/cms/ComponentRenderer";
@@ -25,8 +26,8 @@ import { FluidEditor, FluidEditorRef } from "@/components/cms/FluidEditor";
 import { FluidEditorSidebar } from "@/components/cms/FluidEditorSidebar";
 import { MobileEditorToolbar } from "@/components/cms/MobileEditorToolbar";
 import { serializeToComponents, deserializeFromComponents } from "@/lib/cms/serialization";
-import { fetchCourse, updateCourse } from "@/lib/api/courseApi";
-import { saveCourseMetadata } from "@/lib/firebase/firestore";
+import { fetchCourse, updateCourse, publishCourse } from "@/lib/api/courseApi";
+// saveCourseMetadata removed - now using Telegram storage
 import { createComponent } from "@/lib/cms/registry";
 
 
@@ -108,6 +109,11 @@ const TopBar = ({
 
 export default function CourseEditorPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: courseId } = use(params);
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
+    // Get initial lesson index from URL
+    const initialLessonIndex = parseInt(searchParams.get('lesson') || '0', 10);
 
     const [course, setCourse] = useState<Course | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -160,7 +166,9 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                 setIsPublished(serverCourse.isPublished || false);
 
                 if (serverCourse.lessons && serverCourse.lessons.length > 0) {
-                    setEditingIndex(0);
+                    // Use lesson from URL if valid, otherwise default to 0
+                    const lessonIdx = initialLessonIndex < serverCourse.lessons.length ? initialLessonIndex : 0;
+                    setEditingIndex(lessonIdx);
                 }
                 setSections(serverCourse.sections || []);
                 setExpandedSections(new Set((serverCourse.sections || []).map(s => s.id)));
@@ -168,6 +176,24 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
             setIsLoading(false);
         }).catch(() => setIsLoading(false));
     }, [courseId]);
+
+    // Start 30s checkpoint sync
+    useEffect(() => {
+        // Dynamic import to avoid SSR issues
+        import('@/lib/cache/checkpoint-sync').then(({ startCheckpointSync, stopCheckpointSync }) => {
+            startCheckpointSync();
+            return () => stopCheckpointSync();
+        });
+    }, []);
+
+    // Sync editingIndex to URL when lesson changes (without adding history entries)
+    useEffect(() => {
+        if (editingIndex !== null && editingIndex !== initialLessonIndex) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('lesson', editingIndex.toString());
+            window.history.replaceState({}, '', url.toString());
+        }
+    }, [editingIndex, initialLessonIndex]);
 
     // Close add menu when clicking outside
     useEffect(() => {
@@ -202,6 +228,61 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [lessonDropdownOpen]);
+
+    // Keyboard navigation for CMS editor
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            const isModifier = event.ctrlKey || event.metaKey;
+
+            // Check target type
+            const target = event.target as HTMLElement;
+            const isFormInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+
+            // Ctrl/Cmd + S: Save (always works)
+            if (isModifier && event.key === 's') {
+                event.preventDefault();
+                handleSave();
+                return;
+            }
+
+            // Ctrl/Cmd + Arrow: Lesson navigation (works even in editor)
+            if (isModifier && event.key === 'ArrowUp') {
+                event.preventDefault();
+                if (editingIndex !== null && editingIndex > 0) {
+                    setEditingIndex(editingIndex - 1);
+                    console.log('📖 Navigated to previous lesson');
+                }
+                return;
+            }
+
+            if (isModifier && event.key === 'ArrowDown') {
+                event.preventDefault();
+                if (editingIndex !== null && editingIndex < lessons.length - 1) {
+                    setEditingIndex(editingIndex + 1);
+                    console.log('📖 Navigated to next lesson');
+                }
+                return;
+            }
+
+            // Ctrl/Cmd + N: New lesson
+            if (isModifier && event.key === 'n') {
+                event.preventDefault();
+                handleAddLesson();
+                console.log('📖 Added new lesson');
+                return;
+            }
+
+            // Escape: Deselect component
+            if (event.key === 'Escape') {
+                setSelectedComponentId(null);
+                setContextMenu(null);
+                return;
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [editingIndex, lessons.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Handle lesson reorder
     const handleLessonReorder = (fromIndex: number, toIndex: number) => {
@@ -265,29 +346,15 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
             publishedAt: new Date().toISOString(),
         };
 
-        // Publish to server
-        const success = await updateCourse(courseId, updatedCourse);
+        // Publish to Telegram (explicit action)
+        const success = await publishCourse(courseId, updatedCourse);
 
         if (success) {
             setIsPublished(true);
-            console.log('✅ Course published');
+            console.log('✅ Course published to Telegram');
         } else {
             console.error('❌ Publish failed');
         }
-
-        // Fire-and-forget Firebase sync
-        saveCourseMetadata({
-            courseId,
-            title: courseTitle,
-            description: courseDescription,
-            instructor: courseAuthor,
-            isPublished: true,
-            lessonsCount: lessons.length,
-            enrolledCount: course.enrolledCount || 0,
-            createdBy: "admin",
-        }).catch(() => {
-            // Intentional silent fail - metadata save is non-critical, main save already succeeded
-        });
 
         setIsSaving(false);
     };
@@ -641,6 +708,9 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
                                     placeholder="Type '/' for commands, or just start writing..."
                                     editable={!previewMode}
                                     className="min-h-[300px]"
+                                    // Per-block native saves
+                                    courseId={courseId}
+                                    lessonId={currentLesson?.id}
                                 />
                                 {/* Mobile Inline Toolbar */}
                                 <MobileEditorToolbar editor={fluidEditor} />

@@ -12,6 +12,36 @@ import { useAuth } from "../auth/AuthContext";
 import { useTranslation } from "@/lib/i18n";
 import { useTranslatedCourse } from "@/lib/hooks/useTranslatedCourse";
 
+// Convert Google Drive URLs to proxy URLs
+function getProxiedImageUrl(url: string | undefined): string | undefined {
+    if (!url) return undefined;
+
+    // Already a proxy URL
+    if (url.startsWith('/api/images/')) return url;
+
+    // Extract Google Drive file ID from various URL formats
+    const drivePatterns = [
+        /drive\.google\.com\/file\/d\/([^/]+)/,
+        /drive\.google\.com\/open\?id=([^&]+)/,
+        /drive\.google\.com\/uc\?.*id=([^&]+)/,
+    ];
+
+    for (const pattern of drivePatterns) {
+        const match = url.match(pattern);
+        if (match && match[1]) {
+            return `/api/images/${match[1]}`;
+        }
+    }
+
+    // If it's just a file ID (no URL)
+    if (/^[a-zA-Z0-9_-]{25,}$/.test(url)) {
+        return `/api/images/${url}`;
+    }
+
+    // Return original URL for non-Drive images
+    return url;
+}
+
 interface CourseCardProps {
     course: Course;
     index?: number;
@@ -90,6 +120,12 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
     // Determine if we should show the fallback
     const showFallback = !course.thumbnail || imageError;
 
+    // Debug: Log thumbnail URL
+    if (course.thumbnail) {
+        console.log(`[CourseCard] ${course.title}: Original URL:`, course.thumbnail);
+        console.log(`[CourseCard] ${course.title}: Proxied URL:`, getProxiedImageUrl(course.thumbnail));
+    }
+
     return (
         <div ref={cardRef} className="h-full group">
             <Link href={isEnrolled ? `/class/${course.id}` : '#'} onClick={(e) => !isEnrolled && e.preventDefault()}>
@@ -104,7 +140,7 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
                         {/* Render image on top if thumbnail exists */}
                         {course.thumbnail && !imageError && (
                             <img
-                                src={course.thumbnail}
+                                src={getProxiedImageUrl(course.thumbnail)}
                                 alt={course.title}
                                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                 onError={() => setImageError(true)}

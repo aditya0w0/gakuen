@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Course ID and All Courses are required' }, { status: 400 });
         }
 
-        // Limit data for processing (simulated database fetch would happen here in prod)
+        // Limit data for ML processing (only need text fields)
         const simplifiedCourses = allCourses.map((c: any) => ({
             id: c.id,
             title: c.title,
@@ -26,11 +26,19 @@ export async function POST(request: NextRequest) {
 
         console.log(`🧠 finding similarities for course ${courseId}...`);
 
-        const relatedCourses = await findSimilarCourses(courseId, simplifiedCourses);
+        const relatedCourseResults = await findSimilarCourses(courseId, simplifiedCourses);
 
-        console.log(`✅ found ${relatedCourses.length} matches`);
+        console.log(`✅ found ${relatedCourseResults.length} matches`);
 
-        return NextResponse.json(relatedCourses);
+        // Merge back full course data (including thumbnail, instructor, etc.)
+        const relatedCoursesWithFullData = relatedCourseResults
+            .map((result: any) => {
+                const fullCourse = allCourses.find((c: any) => c.id === result.id);
+                return fullCourse || result;
+            })
+            .filter(Boolean);
+
+        return NextResponse.json(relatedCoursesWithFullData);
     } catch (error: any) {
         console.error('ML Recommendation error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

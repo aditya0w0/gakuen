@@ -3,6 +3,7 @@ import { getCourse, saveCourse, deleteCourse } from '@/lib/server/fileOperations
 import { Course } from '@/lib/types';
 import { requireAdmin, safeErrorResponse } from '@/lib/api/auth-guard';
 import { validateCourseId } from '@/lib/api/validators';
+import { applyObjectTheming } from '@/lib/utils/content-theming';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,10 @@ export async function GET(
             return NextResponse.json({ error: 'Course not found' }, { status: 404 });
         }
 
-        return NextResponse.json(course, {
+        // 🎮 Apply content theming (replace platform names with lore equivalents)
+        const themedCourse = applyObjectTheming(course);
+
+        return NextResponse.json(themedCourse, {
             headers: {
                 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
                 'Pragma': 'no-cache',

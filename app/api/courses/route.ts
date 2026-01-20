@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { listCourses, saveCourse } from '@/lib/server/fileOperations';
 import { requireAdmin, safeErrorResponse } from '@/lib/api/auth-guard';
 import { sanitizeString, validateCourseId } from '@/lib/api/validators';
+import { applyObjectTheming } from '@/lib/utils/content-theming';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,13 +45,18 @@ export async function GET() {
             enrolledCount: course.enrolledCount || 0,
             rating: course.rating || 0,
             price: course.price || 0,
+            isFree: course.isFree || course.price === 0,
             instructor: course.instructor,
+            instructorAvatar: course.instructorAvatar,
             isPublished: course.isPublished,
             createdAt: course.createdAt,
             // ❌ DO NOT include: lessons, content, components, createdBy
         }));
 
-        return NextResponse.json(publicCourses, {
+        // 🎮 Apply content theming (replace platform names with lore equivalents)
+        const themedCourses = publicCourses.map(course => applyObjectTheming(course));
+
+        return NextResponse.json(themedCourses, {
             headers: {
                 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
                 'Pragma': 'no-cache',

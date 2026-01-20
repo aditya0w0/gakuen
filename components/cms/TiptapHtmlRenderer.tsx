@@ -1,7 +1,10 @@
 "use client";
 
-// Renders Tiptap JSON to HTML for student view
-// This handles content saved as tiptapJson (which includes tables)
+// Renders Tiptap JSON to React components for student view
+// This handles content saved as tiptapJson (which includes tables and quizzes)
+
+import { QuizBlock } from "@/components/quiz/QuizBlock";
+import type { Quiz } from "@/lib/types";
 
 interface TiptapNode {
     type: string;
@@ -11,7 +14,8 @@ interface TiptapNode {
     marks?: { type: string; attrs?: Record<string, unknown> }[];
 }
 
-function renderNode(node: TiptapNode): string {
+// Render non-interactive nodes to HTML
+function renderNodeToHtml(node: TiptapNode): string {
     if (!node) return '';
 
     // Text node with marks
@@ -37,9 +41,15 @@ function renderNode(node: TiptapNode): string {
                         text = `<a href="${mark.attrs?.href || '#'}" target="_blank" class="text-indigo-400 underline">${text}</a>`;
                         break;
                     case 'textStyle':
+                        const styles: string[] = [];
                         const color = mark.attrs?.color as string;
-                        if (color) {
-                            text = `<span style="color: ${color}">${text}</span>`;
+                        const fontSize = mark.attrs?.fontSize as string;
+                        const fontFamily = mark.attrs?.fontFamily as string;
+                        if (color) styles.push(`color: ${color}`);
+                        if (fontSize) styles.push(`font-size: ${fontSize}`);
+                        if (fontFamily) styles.push(`font-family: ${fontFamily}`);
+                        if (styles.length > 0) {
+                            text = `<span style="${styles.join('; ')}">${text}</span>`;
                         }
                         break;
                 }
@@ -48,7 +58,7 @@ function renderNode(node: TiptapNode): string {
         return text;
     }
 
-    const children = node.content?.map(child => renderNode(child)).join('') || '';
+    const children = node.content?.map(child => renderNodeToHtml(child)).join('') || '';
 
     switch (node.type) {
         case 'doc':
@@ -88,21 +98,85 @@ function renderNode(node: TiptapNode): string {
     }
 }
 
-interface TiptapHtmlRendererProps {
-    content: { type: string; content?: TiptapNode[] };
+// Split content into segments: HTML strings and quiz nodes
+interface ContentSegment {
+    type: 'html' | 'quiz';
+    content?: string;
+    quizId?: string;
+    passingScore?: number;
+    timeLimit?: number;
 }
 
-export function TiptapHtmlRenderer({ content }: TiptapHtmlRendererProps) {
-    if (!content || content.type !== 'doc') {
+function segmentContent(nodes: TiptapNode[]): ContentSegment[] {
+    const segments: ContentSegment[] = [];
+    let htmlBuffer = '';
+
+    for (const node of nodes) {
+        if (node.type === 'customQuiz') {
+            // Flush HTML buffer
+            if (htmlBuffer) {
+                segments.push({ type: 'html', content: htmlBuffer });
+                htmlBuffer = '';
+            }
+            // Add quiz segment
+            segments.push({
+                type: 'quiz',
+                quizId: node.attrs?.quizId as string,
+                passingScore: node.attrs?.passingScore as number,
+                timeLimit: node.attrs?.timeLimit as number,
+            });
+        } else {
+            // Accumulate HTML
+            htmlBuffer += renderNodeToHtml(node);
+        }
+    }
+
+    // Flush remaining HTML
+    if (htmlBuffer) {
+        segments.push({ type: 'html', content: htmlBuffer });
+    }
+
+    return segments;
+}
+
+interface TiptapHtmlRendererProps {
+    content: { type: string; content?: TiptapNode[] };
+    courseId?: string;
+    quizzes?: Quiz[];
+}
+
+export function TiptapHtmlRenderer({ content, courseId, quizzes }: TiptapHtmlRendererProps) {
+    if (!content || content.type !== 'doc' || !content.content) {
         return null;
     }
 
-    const html = renderNode(content as TiptapNode);
+    const segments = segmentContent(content.content);
 
     return (
-        <div
-            className="prose prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <div className="ProseMirror prose prose-invert max-w-none">
+            {segments.map((segment, index) => {
+                if (segment.type === 'html') {
+                    return (
+                        <div
+                            key={index}
+                            dangerouslySetInnerHTML={{ __html: segment.content || '' }}
+                        />
+                    );
+                } else if (segment.type === 'quiz') {
+                    const quiz = quizzes?.find(q => q.id === segment.quizId) || null;
+                    return (
+                        <QuizBlock
+                            key={index}
+                            quizId={segment.quizId || ''}
+                            courseId={courseId || ''}
+                            quiz={quiz}
+                            passingScore={segment.passingScore}
+                            timeLimit={segment.timeLimit}
+                        />
+                    );
+                }
+                return null;
+            })}
+        </div>
     );
 }

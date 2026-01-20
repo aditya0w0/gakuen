@@ -1,6 +1,6 @@
 "use client";
 
-import { Lesson } from "@/lib/types";
+import { Lesson, Quiz } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { animate } from "@/components/animations/useAnime";
@@ -19,9 +19,10 @@ interface MaterialViewerProps {
     isCompleted: boolean;
     courseId?: string;
     courseTitle?: string;
+    quizzes?: Quiz[];
 }
 
-export function MaterialViewer({ lesson, onComplete, isCompleted, courseId, courseTitle }: MaterialViewerProps) {
+export function MaterialViewer({ lesson, onComplete, isCompleted, courseId, courseTitle, quizzes }: MaterialViewerProps) {
     useTimeTracker();
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://gakuen.vercel.app';
     const sourceUrl = courseId ? `${baseUrl}/browse/${courseId}` : baseUrl;
@@ -136,7 +137,7 @@ export function MaterialViewer({ lesson, onComplete, isCompleted, courseId, cour
                             courseTitle={courseTitle}
                         >
                             <div className="max-w-4xl mx-auto">
-                                <TiptapHtmlRenderer content={json as Parameters<typeof TiptapHtmlRenderer>[0]['content']} />
+                                <TiptapHtmlRenderer content={json as Parameters<typeof TiptapHtmlRenderer>[0]['content']} courseId={courseId} quizzes={quizzes} />
                             </div>
                         </WatermarkedContent>
                     </div>
@@ -159,31 +160,17 @@ export function MaterialViewer({ lesson, onComplete, isCompleted, courseId, cour
                         courseId={courseId}
                         courseTitle={courseTitle}
                     >
-                        <div className="max-w-4xl mx-auto space-y-6">
-                            {/* Loading skeleton while translating CMS components */}
-                            {translatedCms.loading ? (
-                                <div className="space-y-6 animate-pulse">
-                                    <div className="h-8 bg-neutral-700 rounded w-2/3" />
-                                    <div className="space-y-3">
-                                        <div className="h-4 bg-neutral-700 rounded w-full" />
-                                        <div className="h-4 bg-neutral-700 rounded w-5/6" />
-                                        <div className="h-4 bg-neutral-700 rounded w-4/5" />
-                                    </div>
-                                    <div className="h-6 bg-neutral-700 rounded w-1/2" />
-                                    <div className="space-y-3">
-                                        <div className="h-4 bg-neutral-700 rounded w-full" />
-                                        <div className="h-4 bg-neutral-700 rounded w-3/4" />
-                                    </div>
-                                </div>
-                            ) : (
-                                translatedCms.components.map((component) => (
-                                    <ComponentRenderer
-                                        key={component.id}
-                                        component={component}
-                                        isEditing={false}
-                                    />
-                                ))
-                            )}
+                        <div className="max-w-4xl mx-auto space-y-6 ProseMirror prose prose-invert"
+                            style={{ maxWidth: '100%' }}>
+                            {/* Show content immediately - translation happens in background */}
+                            {/* Use translated components if ready, otherwise show originals */}
+                            {(translatedCms.loading ? lesson.components : translatedCms.components)?.map((component) => (
+                                <ComponentRenderer
+                                    key={component.id}
+                                    component={component}
+                                    isEditing={false}
+                                />
+                            ))}
                         </div>
                     </WatermarkedContent>
                 </div>

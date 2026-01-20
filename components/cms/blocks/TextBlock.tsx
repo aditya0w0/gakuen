@@ -54,10 +54,11 @@ export function TextBlock({
     const [processingType, setProcessingType] = useState<'typos' | 'paraphrase' | null>(null);
 
     const style = {
-        textAlign: component.align || "left",
-        color: component.color || "#d4d4d8",
-        fontSize: component.fontSize ? `${component.fontSize}px` : "16px",
-        lineHeight: component.lineHeight || 1.6,
+        // Only apply explicit styling, let prose CSS handle defaults
+        textAlign: component.align || undefined,
+        color: component.color || undefined,
+        fontSize: component.fontSize ? `${component.fontSize}px` : undefined,
+        lineHeight: component.lineHeight || undefined,
         marginTop: component.margin?.top ? `${component.margin.top}px` : undefined,
         marginRight: component.margin?.right ? `${component.margin.right}px` : undefined,
         marginBottom: component.margin?.bottom ? `${component.margin.bottom}px` : undefined,

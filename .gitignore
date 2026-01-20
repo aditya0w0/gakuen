@@ -46,4 +46,5 @@ next-env.d.ts
 
 # course data files
 /data/courses
-client_secret_700858158754-d1ctsikj75qlrg8fei197sfc0tagqh6a.apps.googleusercontent.com.json
+client_secret_700858158754-d1ctsikj75qlrg8fei197sfc0tagqh6a.apps.googleusercontent.com.json.data/
+client_secret_*.json

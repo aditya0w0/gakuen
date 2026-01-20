@@ -57,12 +57,59 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Image too large (max 10MB)' }, { status: 400 });
         }
 
-        // Detect mime type from data URL
+        // Detect mime type - will be determined below
         let mimeType = 'image/png';
-        if (image.startsWith('data:image/jpeg')) mimeType = 'image/jpeg';
-        else if (image.startsWith('data:image/webp')) mimeType = 'image/webp';
-        else if (image.startsWith('data:image/gif')) mimeType = 'image/gif';
-        else if (image.startsWith('data:image/png')) mimeType = 'image/png';
+        let imageBuffer: Buffer;
+
+        // Check if it's an HTTP URL (external image)
+        if (image.startsWith('http://') || image.startsWith('https://')) {
+            console.log(`📥 Fetching external image: ${image}`);
+
+            try {
+                const response = await fetch(image, {
+                    headers: {
+                        // Some servers require a user agent
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error(`❌ Failed to fetch external image: ${response.status} ${response.statusText}`);
+                    return NextResponse.json({ error: `Failed to fetch image: ${response.status}` }, { status: 400 });
+                }
+
+                // Get content type from response
+                const contentType = response.headers.get('content-type') || 'image/png';
+                mimeType = contentType.split(';')[0].trim();
+
+                // Get the image as an ArrayBuffer
+                const arrayBuffer = await response.arrayBuffer();
+                imageBuffer = Buffer.from(arrayBuffer);
+
+                console.log(`✅ Fetched external image: ${imageBuffer.length} bytes, type: ${mimeType}`);
+
+                if (imageBuffer.length < 100) {
+                    console.error(`❌ Fetched image too small (${imageBuffer.length} bytes), likely an error`);
+                    return NextResponse.json({ error: 'Failed to fetch valid image' }, { status: 400 });
+                }
+            } catch (fetchError) {
+                console.error('❌ Error fetching external image:', fetchError);
+                return NextResponse.json({ error: 'Failed to fetch external image' }, { status: 400 });
+            }
+        } else if (image.startsWith('data:')) {
+            // Handle base64 data URL
+            if (image.startsWith('data:image/jpeg')) mimeType = 'image/jpeg';
+            else if (image.startsWith('data:image/webp')) mimeType = 'image/webp';
+            else if (image.startsWith('data:image/gif')) mimeType = 'image/gif';
+            else if (image.startsWith('data:image/png')) mimeType = 'image/png';
+
+            // Extract base64 data from data URL
+            const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+            imageBuffer = Buffer.from(base64Data, 'base64');
+        } else {
+            // Assume it's raw base64
+            imageBuffer = Buffer.from(image, 'base64');
+        }
 
         // Get file extension from mime type
         const extMap: Record<string, string> = {
@@ -72,17 +119,6 @@ export async function POST(request: NextRequest) {
             'image/gif': 'gif',
         };
         const ext = extMap[mimeType] || 'png';
-
-        // Handle base64 data - convert to buffer
-        let imageBuffer: Buffer;
-        if (image.startsWith('data:')) {
-            // Extract base64 data from data URL
-            const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
-            imageBuffer = Buffer.from(base64Data, 'base64');
-        } else {
-            // Assume it's already base64
-            imageBuffer = Buffer.from(image, 'base64');
-        }
 
         // Generate unique filename (UUID-based for security - prevents path traversal)
         const generatedFilename = `${uuidv4().slice(0, 8)}-${Date.now()}.${ext}`;
@@ -118,7 +154,7 @@ export async function POST(request: NextRequest) {
 
         // Fallback: Save to local file storage
         const uploadsDir = join(process.cwd(), 'public', 'uploads', folderName);
-        
+
         // Create directory if it doesn't exist
         if (!existsSync(uploadsDir)) {
             await mkdir(uploadsDir, { recursive: true });
@@ -127,15 +163,15 @@ export async function POST(request: NextRequest) {
         // Generate filename with user ID for organization
         const localFilename = `${authResult.user.id}-${uuidv4().slice(0, 8)}.${ext}`;
         const filepath = join(uploadsDir, localFilename);
-        
+
         // Write binary file
         await writeFile(filepath, imageBuffer);
-        
+
         // Generate a local file ID that points to our image serving API
         // Format: local-{type}-{filename}
         const localFileId = `local-${folderName}-${localFilename}`;
         const publicUrl = `/api/images/${localFileId}`;
-        
+
         console.log(`✅ AI image saved locally: ${publicUrl}`);
 
         return NextResponse.json({

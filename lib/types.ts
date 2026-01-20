@@ -49,6 +49,7 @@ export interface Course {
     createdBy?: string;
     accessTier?: "free" | "basic" | "mid" | "pro";
     translations?: Record<string, CourseTranslation>;
+    quizzes?: Quiz[]; // Quiz data stored at course level
 }
 
 export interface CourseTranslation {
@@ -63,3 +64,21 @@ export interface LessonTranslation {
     content?: string;
 }
 
+// Quiz types for CMS
+export interface QuizQuestion {
+    id: string;
+    text: string;
+    options: string[];
+    correctIndex: number;
+    explanation?: string;
+}
+
+export interface Quiz {
+    id: string;
+    title: string;
+    category?: string;
+    questions: QuizQuestion[];
+    shuffleQuestions?: boolean;
+    shuffleOptions?: boolean;
+    timeLimit?: number; // minutes
+}

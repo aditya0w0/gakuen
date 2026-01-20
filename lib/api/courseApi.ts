@@ -1,45 +1,110 @@
-import { Course } from '@/lib/types';
+/**
+ * Course API - Now with IndexedDB-first caching
+ * 
+ * - fetchCourse: Local cache first, API fallback
+ * - updateCourse: Saves to local cache, shows as "saved" instantly
+ * - publishCourse: Uploads to Telegram via API
+ */
 
-// Fetch course by ID
+import { Course } from '@/lib/types';
+import {
+    saveDraftLocal,
+    getDraftLocal,
+    markDraftSynced
+} from '@/lib/cache/draft-cache';
+
+/**
+ * Fetch course by ID
+ * Tries local cache first, then API
+ */
 export async function fetchCourse(id: string): Promise<Course | null> {
     try {
+        // Try local cache first (instant, no API)
+        const localDraft = await getDraftLocal(id);
+        if (localDraft) {
+            console.log(`📂 [Local] Using cached draft for ${id}`);
+            return localDraft;
+        }
+
+        // Fallback to API
+        console.log(`🌐 [API] Fetching ${id} from server`);
         const response = await fetch(`/api/courses/${id}`, { cache: 'no-store' });
         if (!response.ok) {
+            console.error(`❌ API fetch failed: ${response.status}`);
             return null;
         }
-        return await response.json();
+
+        const course = await response.json();
+
+        // Cache locally for future
+        await saveDraftLocal(id, course);
+        await markDraftSynced(id);
+
+        return course;
     } catch (error) {
         console.error(`Error fetching course ${id}:`, error);
         return null;
     }
 }
 
-// Update course
+/**
+ * Update course - saves to LOCAL CACHE only (instant, no API)
+ * Use publishCourse() to sync to server
+ */
 export async function updateCourse(id: string, course: Course): Promise<boolean> {
     try {
-        const response = await fetch(`/api/courses/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(course),
-            credentials: 'include', // Send auth cookies
-            cache: 'no-store',
-        });
-        if (!response.ok) {
-            const text = await response.text();
-            console.error(`❌ Failed to save course ${id}: ${response.status}`, text);
-        } else {
-            console.log(`✅ Course ${id} saved successfully`);
-        }
-        return response.ok;
+        // Save to local cache only (instant, no network)
+        await saveDraftLocal(id, course);
+        console.log(`💾 [Local] Draft saved for ${id}`);
+        return true;
     } catch (error) {
-        console.error(`Error updating course ${id}:`, error);
+        console.error(`Error saving draft ${id}:`, error);
         return false;
     }
 }
 
-// Fetch all courses
+/**
+ * Publish course to server (Telegram upload)
+ * Only call this on explicit "Publish" action
+ */
+export async function publishCourse(id: string, course: Course): Promise<boolean> {
+    try {
+        console.log(`📤 [Publish] Uploading ${id} to server...`);
+
+        // First save to local
+        await saveDraftLocal(id, course);
+
+        // Then push to server via publish API WITH the course data
+        const response = await fetch(`/api/courses/${id}/publish`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',  // Include cookies for auth
+            body: JSON.stringify({ course }),  // Send course data in body!
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`${response.status} ${text}`);
+        }
+
+        const result = await response.json();
+        console.log(`✅ [Publish] ${id} published:`, result);
+
+        // Mark as synced
+        await markDraftSynced(id);
+
+        return true;
+    } catch (error) {
+        console.error(`❌ Publish failed:`, error);
+        throw error;  // Re-throw so UI can show error message
+    }
+}
+
+/**
+ * Fetch all courses (list view - always from API)
+ */
 export async function fetchAllCourses(): Promise<Course[]> {
     try {
         const response = await fetch('/api/courses', { cache: 'no-store' });

@@ -144,38 +144,51 @@ export async function uploadToDrive(
     folder: UploadFolder = 'cms',
     mimeType: string = 'image/webp'
 ): Promise<{ fileId: string; url: string }> {
-    const drive = getDriveClient();
+    const startTime = Date.now();
+    console.log(`📤 [UPLOAD START] ${filename} (${buffer.length} bytes) to ${folder}`);
 
-    // Get the target folder
-    const folderId = await getUploadFolderId(folder);
+    try {
+        console.log(`📤 [STEP 1] Getting Drive client... (${Date.now() - startTime}ms)`);
+        const drive = getDriveClient();
 
-    // Create readable stream from buffer
-    const stream = new Readable();
-    stream.push(buffer);
-    stream.push(null);
+        console.log(`📤 [STEP 2] Getting folder ID for '${folder}'... (${Date.now() - startTime}ms)`);
+        const folderId = await getUploadFolderId(folder);
+        console.log(`📤 [STEP 2 DONE] Folder ID: ${folderId} (${Date.now() - startTime}ms)`);
 
-    // Upload file to folder (PRIVATE - no public permissions)
-    const response = await drive.files.create({
-        requestBody: {
-            name: filename,
-            mimeType,
-            parents: [folderId]
-        },
-        media: {
-            mimeType,
-            body: stream,
-        },
-        fields: 'id',
-    });
+        // Create readable stream from buffer
+        console.log(`📤 [STEP 3] Creating upload stream... (${Date.now() - startTime}ms)`);
+        const stream = new Readable();
+        stream.push(buffer);
+        stream.push(null);
 
-    const fileId = response.data.id!;
+        // Upload file to folder (PRIVATE - no public permissions)
+        console.log(`📤 [STEP 4] Uploading to Drive... (${Date.now() - startTime}ms)`);
+        const response = await drive.files.create({
+            requestBody: {
+                name: filename,
+                mimeType,
+                parents: [folderId]
+            },
+            media: {
+                mimeType,
+                body: stream,
+            },
+            fields: 'id',
+        });
 
-    // Generate URL that points to our image serving API (not direct Drive URL)
-    // This allows us to control access, add caching headers, and serve binary data
-    const url = `/api/images/${fileId}`;
+        const fileId = response.data.id!;
+        console.log(`📤 [STEP 4 DONE] File ID: ${fileId} (${Date.now() - startTime}ms)`);
 
-    console.log(`📤 Uploaded to Drive: ${folder}/${filename} (fileId: ${fileId})`);
-    return { fileId, url };
+        // Generate URL that points to our image serving API (not direct Drive URL)
+        // This allows us to control access, add caching headers, and serve binary data
+        const url = `/api/images/${fileId}`;
+
+        console.log(`📤 [UPLOAD SUCCESS] ${folder}/${filename} -> ${fileId} (total: ${Date.now() - startTime}ms)`);
+        return { fileId, url };
+    } catch (error) {
+        console.error(`📤 [UPLOAD ERROR] After ${Date.now() - startTime}ms:`, error);
+        throw error;
+    }
 }
 
 /**
@@ -186,13 +199,17 @@ export async function getFileFromDrive(fileId: string): Promise<{ buffer: Buffer
     try {
         const drive = getDriveClient();
 
+        console.log(`📥 Fetching file from Drive: ${fileId}`);
+
         // Get file metadata first
         const metadata = await drive.files.get({
             fileId,
-            fields: 'mimeType, name'
+            fields: 'mimeType, name, size'
         });
 
         const mimeType = metadata.data.mimeType || 'image/webp';
+        const expectedSize = metadata.data.size ? parseInt(metadata.data.size) : null;
+        console.log(`📋 File metadata: name=${metadata.data.name}, mimeType=${mimeType}, expectedSize=${expectedSize}`);
 
         // Download file content
         const response = await drive.files.get(
@@ -200,7 +217,21 @@ export async function getFileFromDrive(fileId: string): Promise<{ buffer: Buffer
             { responseType: 'arraybuffer' }
         );
 
+        // Check if response.data exists and is valid
+        if (!response.data) {
+            console.error(`❌ No data received for file ${fileId}`);
+            return null;
+        }
+
         const buffer = Buffer.from(response.data as ArrayBuffer);
+        console.log(`📦 Downloaded buffer size: ${buffer.length} bytes`);
+
+        // Sanity check: if buffer is too small, something went wrong
+        if (buffer.length < 100) {
+            console.error(`❌ Buffer too small (${buffer.length} bytes), might be error response`);
+            // Log first bytes as string to see if it's an error message
+            console.error(`📝 First bytes as text: ${buffer.toString('utf8').slice(0, 100)}`);
+        }
 
         return { buffer, mimeType };
     } catch (error) {

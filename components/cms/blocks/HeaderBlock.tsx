@@ -18,15 +18,26 @@ export function HeaderBlock({
     onUpdate,
     onSelect,
 }: HeaderBlockProps) {
+    // Default font sizes for each heading level (matching typical typography)
+    const defaultFontSizes: Record<number, string> = {
+        1: '2.25rem',  // 36px
+        2: '1.5rem',   // 24px
+        3: '1.25rem',  // 20px
+        4: '1.125rem', // 18px
+        5: '1rem',     // 16px
+        6: '0.875rem', // 14px
+    };
+
     const style: React.CSSProperties = {
-        textAlign: component.align || "left",
-        color: component.color || "#ffffff",
-        fontSize: component.fontSize ? `${component.fontSize}px` : undefined,
-        fontWeight: component.fontWeight || 600,
-        marginTop: component.margin?.top ? `${component.margin.top}px` : undefined,
+        textAlign: component.align || undefined,
+        color: component.color || '#fafafa',  // Light color for dark mode
+        fontSize: component.fontSize ? `${component.fontSize}px` : defaultFontSizes[component.level || 1],
+        fontWeight: component.fontWeight || 600,  // Semi-bold for headers
+        marginTop: component.margin?.top ? `${component.margin.top}px` : '0',
         marginRight: component.margin?.right ? `${component.margin.right}px` : undefined,
-        marginBottom: component.margin?.bottom ? `${component.margin.bottom}px` : undefined,
+        marginBottom: component.margin?.bottom ? `${component.margin.bottom}px` : '0.875em',
         marginLeft: component.margin?.left ? `${component.margin.left}px` : undefined,
+        lineHeight: 1.2,
     };
 
     const tagName = `h${component.level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";

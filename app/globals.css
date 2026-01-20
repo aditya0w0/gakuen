@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@tailwindcss/typography";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -7,7 +8,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -275,6 +276,139 @@
   will-change: transform;
 }
 
+/* ========================================
+   Custom Prose Typography Styles
+   (Replaces @tailwindcss/typography plugin)
+   ======================================== */
+
+/* Base prose container */
+.prose {
+  color: #e4e4e7;
+  line-height: 1.75;
+}
+
+.prose-invert {
+  color: #e4e4e7;
+}
+
+/* Headers */
+.prose h1 {
+  font-size: 2.25rem !important;
+  font-weight: 700 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0.875em !important;
+  line-height: 1.2 !important;
+  color: #fafafa !important;
+}
+
+.prose h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 1.75em;
+  margin-bottom: 0.75em;
+  line-height: 1.3;
+  color: #fafafa;
+}
+
+.prose h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.4;
+  color: #fafafa;
+}
+
+.prose h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  color: #fafafa;
+}
+
+/* Paragraphs */
+.prose p {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+/* Links */
+.prose a {
+  color: #818cf8;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.prose a:hover {
+  color: #a5b4fc;
+}
+
+/* Lists */
+.prose ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.prose ol {
+  list-style-type: decimal;
+  padding-left: 1.5em;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.prose li {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose li::marker {
+  color: #a78bfa;
+}
+
+/* Nested lists */
+.prose ul ul {
+  list-style-type: circle;
+}
+
+.prose ul ul ul {
+  list-style-type: square;
+}
+
+/* Blockquote */
+.prose blockquote {
+  border-left: 4px solid #6366f1;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  color: #a1a1aa;
+  font-style: italic;
+}
+
+/* Code */
+.prose code:not(pre code) {
+  background: rgba(255, 149, 0, 0.12);
+  color: #ffa94d;
+  padding: 0.2em 0.4em;
+  border-radius: 6px;
+  font-size: 0.875em;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Strong/Bold */
+.prose strong {
+  font-weight: 600;
+  color: #fafafa;
+}
+
+/* Horizontal rule */
+.prose hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 2rem 0;
+}
+
 /* ProseMirror/Tiptap Editor Styles */
 .ProseMirror {
   outline: none;
@@ -470,4 +604,324 @@
 
 .ProseMirror.resize-cursor {
   cursor: col-resize;
+}
+
+/* ========================================
+   Code Block Styling - Modern Dark Theme
+   ======================================== */
+
+/* Code block container - high specificity */
+.ProseMirror pre,
+.prose pre,
+pre[class*="language-"],
+.tiptap pre,
+.prose-invert pre {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', 'Monaco', monospace !important;
+  font-size: 0.875rem !important;
+  line-height: 1.7 !important;
+  font-weight: 400;
+  background: linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%) !important;
+  border: 1px solid rgba(255, 149, 0, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 1.25rem 1.5rem !important;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  color: #e4e4e7;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+}
+
+/* Code inside pre */
+.ProseMirror pre code,
+.prose pre code,
+pre code {
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  color: inherit;
+  white-space: pre;
+  word-wrap: normal;
+}
+
+/* Inline code */
+.ProseMirror code:not(pre code),
+.prose code:not(pre code) {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.85em;
+  background: rgba(255, 149, 0, 0.12);
+  color: #ffa94d;
+  padding: 0.2em 0.4em;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 149, 0, 0.2);
+}
+
+/* Code block decoration - top bar effect */
+.ProseMirror pre::before,
+.prose pre::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ff9500, #ff5e3a, #ff2d55);
+  border-radius: 12px 12px 0 0;
+}
+
+/* Syntax highlighting colors */
+.ProseMirror pre .token.comment,
+.prose pre .comment {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.ProseMirror pre .token.keyword,
+.prose pre .keyword {
+  color: #c084fc;
+  font-weight: 500;
+}
+
+.ProseMirror pre .token.string,
+.prose pre .string {
+  color: #86efac;
+}
+
+.ProseMirror pre .token.number,
+.prose pre .number {
+  color: #fbbf24;
+}
+
+.ProseMirror pre .token.function,
+.prose pre .function {
+  color: #60a5fa;
+}
+
+.ProseMirror pre .token.operator,
+.prose pre .operator {
+  color: #f472b6;
+}
+
+.ProseMirror pre .token.variable,
+.prose pre .variable {
+  color: #fb923c;
+}
+
+.ProseMirror pre .token.boolean,
+.prose pre .boolean {
+  color: #f87171;
+}
+
+/* Selection in code */
+.ProseMirror pre ::selection,
+.prose pre ::selection {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+/* Code block scrollbar */
+.ProseMirror pre::-webkit-scrollbar,
+.prose pre::-webkit-scrollbar {
+  height: 6px;
+}
+
+.ProseMirror pre::-webkit-scrollbar-track,
+.prose pre::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.ProseMirror pre::-webkit-scrollbar-thumb,
+.prose pre::-webkit-scrollbar-thumb {
+  background: rgba(255, 149, 0, 0.4);
+  border-radius: 3px;
+}
+
+.ProseMirror pre::-webkit-scrollbar-thumb:hover,
+.prose pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 149, 0, 0.6);
+}
+
+/* Focus state for code blocks */
+.ProseMirror pre:focus-within {
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -2px rgba(0, 0, 0, 0.2),
+    0 0 0 3px rgba(255, 149, 0, 0.15);
+}
+
+/* ========================================
+   Highlight.js/Lowlight Syntax Colors
+   Tokyo Night inspired theme
+   ======================================== */
+
+/* Base code style */
+.hljs {
+  color: #a9b1d6;
+  background: transparent;
+}
+
+/* Comments - muted gray italic */
+.hljs-comment,
+.hljs-quote {
+  color: #565f89;
+  font-style: italic;
+}
+
+/* Keywords - sky blue (macOS Sonoma) */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-tag,
+.hljs-type {
+  color: #5ac8fa;
+  font-weight: 500;
+}
+
+/* Strings - green */
+.hljs-string,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-addition {
+  color: #9ece6a;
+}
+
+/* Numbers - orange */
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet {
+  color: #ff9e64;
+}
+
+/* Functions - blue */
+.hljs-title,
+.hljs-title.function_,
+.hljs-section {
+  color: #7aa2f7;
+  font-weight: 500;
+}
+
+/* Variables & params - warm orange */
+.hljs-variable,
+.hljs-params,
+.hljs-attr {
+  color: #ff9f0a;
+}
+
+/* Built-in keywords - cyan */
+.hljs-built_in,
+.hljs-name {
+  color: #7dcfff;
+}
+
+/* Class names - yellow */
+.hljs-class .hljs-title,
+.hljs-title.class_ {
+  color: #e0af68;
+}
+
+/* Meta & preprocessor - teal */
+.hljs-meta,
+.hljs-meta .hljs-keyword,
+.hljs-meta .hljs-string {
+  color: #73daca;
+}
+
+/* Deletion - coral red */
+.hljs-deletion {
+  color: #ff453a;
+}
+
+/* Operators & punctuation */
+.hljs-operator,
+.hljs-punctuation {
+  color: #89ddff;
+}
+
+/* Emphasis & strong */
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+/* Links in code */
+.hljs-link {
+  color: #7aa2f7;
+  text-decoration: underline;
+}
+
+/* ============================================
+   Dark Mode Content Overrides
+   Force dark theme on pasted content with light backgrounds
+   ============================================ */
+
+/* Override light backgrounds in prose content */
+.prose.prose-invert *[style*="background-color"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Override light backgrounds from pastes (common colors) */
+.prose.prose-invert *[style*="background: rgb(255"],
+.prose.prose-invert *[style*="background: rgb(254"],
+.prose.prose-invert *[style*="background: rgb(253"],
+.prose.prose-invert *[style*="background: rgb(252"],
+.prose.prose-invert *[style*="background: rgb(251"],
+.prose.prose-invert *[style*="background: rgb(250"],
+.prose.prose-invert *[style*="background: rgb(249"],
+.prose.prose-invert *[style*="background: rgb(248"],
+.prose.prose-invert *[style*="background: rgb(247"],
+.prose.prose-invert *[style*="background: rgb(246"],
+.prose.prose-invert *[style*="background: rgb(245"],
+.prose.prose-invert *[style*="background-color: rgb(255"],
+.prose.prose-invert *[style*="background-color: rgb(254"],
+.prose.prose-invert *[style*="background-color: rgb(253"],
+.prose.prose-invert *[style*="background-color: rgb(252"],
+.prose.prose-invert *[style*="background-color: rgb(251"],
+.prose.prose-invert *[style*="background-color: rgb(250"],
+.prose.prose-invert *[style*="background-color: rgb(249"],
+.prose.prose-invert *[style*="background-color: rgb(248"],
+.prose.prose-invert *[style*="background-color: rgb(247"],
+.prose.prose-invert *[style*="background-color: rgb(246"],
+.prose.prose-invert *[style*="background-color: rgb(245"],
+.prose.prose-invert *[style*="background-color: white"],
+.prose.prose-invert *[style*="background-color: #fff"],
+.prose.prose-invert *[style*="background-color: #FFF"],
+.prose.prose-invert *[style*="background-color:#fff"],
+.prose.prose-invert *[style*="background-color:#FFF"],
+.prose.prose-invert *[style*="background: white"],
+.prose.prose-invert *[style*="background: #fff"],
+.prose.prose-invert *[style*="background: #FFF"],
+.prose.prose-invert *[style*="background:#fff"],
+.prose.prose-invert *[style*="background:#FFF"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Override dark text on light backgrounds */
+.prose.prose-invert *[style*="color: rgb(0"],
+.prose.prose-invert *[style*="color: rgb(1"],
+.prose.prose-invert *[style*="color: rgb(2"],
+.prose.prose-invert *[style*="color: rgb(3"],
+.prose.prose-invert *[style*="color: rgb(4"],
+.prose.prose-invert *[style*="color: rgb(5"],
+.prose.prose-invert *[style*="color: black"],
+.prose.prose-invert *[style*="color: #000"],
+.prose.prose-invert *[style*="color:#000"] {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Specific fix for highlight/mark-like backgrounds (yellows, oranges, etc) */
+.prose.prose-invert mark,
+.prose.prose-invert *[style*="background-color: yellow"],
+.prose.prose-invert *[style*="background-color: #ff"],
+.prose.prose-invert *[style*="background: yellow"] {
+  background-color: rgba(250, 204, 21, 0.2) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
 }

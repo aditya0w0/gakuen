@@ -41,7 +41,7 @@ export default function CourseCheckoutPage() {
     const params = useParams();
     const router = useRouter();
     const { refreshUser } = useAuth();
-    const courseId = params.courseId as string;
+    const courseId = params.id as string;
 
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);

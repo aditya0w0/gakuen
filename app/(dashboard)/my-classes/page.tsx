@@ -11,6 +11,23 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/i18n";
 
+// Convert Google Drive URLs to proxy URLs
+function getProxiedImageUrl(url: string | undefined): string | undefined {
+    if (!url) return undefined;
+    if (url.startsWith('/api/images/')) return url;
+    const drivePatterns = [
+        /drive\.google\.com\/file\/d\/([^/]+)/,
+        /drive\.google\.com\/open\?id=([^&]+)/,
+        /drive\.google\.com\/uc\?.*id=([^&]+)/,
+    ];
+    for (const pattern of drivePatterns) {
+        const match = url.match(pattern);
+        if (match && match[1]) return `/api/images/${match[1]}`;
+    }
+    if (/^[a-zA-Z0-9_-]{25,}$/.test(url)) return `/api/images/${url}`;
+    return url;
+}
+
 export default function MyClassesPage() {
     const { user } = useAuth();
     const [courses, setCourses] = useState<Course[]>([]);
@@ -170,7 +187,7 @@ export default function MyClassesPage() {
                                     <div className="flex flex-col md:flex-row gap-4">
                                         <div className="relative w-full md:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0">
                                             <img
-                                                src={course.thumbnail}
+                                                src={getProxiedImageUrl(course.thumbnail)}
                                                 alt={course.title}
                                                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                             />
@@ -190,7 +207,7 @@ export default function MyClassesPage() {
                                             <div className="flex items-center gap-4 text-sm text-neutral-400">
                                                 <span className="flex items-center gap-1">
                                                     <BookOpen className="w-4 h-4" />
-                                                    {course.lessons.length} lessons
+                                                    {course.lessonsCount || course.lessons?.length || 0} lessons
                                                 </span>
                                                 <span className="flex items-center gap-1">
                                                     <Clock className="w-4 h-4" />

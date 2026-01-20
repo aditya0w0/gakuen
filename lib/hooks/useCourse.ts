@@ -7,9 +7,12 @@ export function useCourse(courseId: string) {
         courseId ? `/api/courses/${courseId}` : null,
         (url) => fetch(url, { cache: 'no-store' }).then(res => res.json()),
         {
-            refreshInterval: 4000, // Poll every 4 seconds
+            // Disabled polling - course data rarely changes while viewing
+            // Students only need fresh data on focus/remount
+            refreshInterval: 0,
             revalidateOnFocus: true,
-            dedupingInterval: 2000,
+            dedupingInterval: 5000,  // Dedupe for 5 seconds
+            revalidateOnReconnect: true,
         }
     );
 

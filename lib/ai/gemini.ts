@@ -166,6 +166,63 @@ export async function generateImage(prompt: string): Promise<string> {
     });
 }
 
+// Image editing - takes existing image and edit prompt
+export async function editImage(imageBase64: string, prompt: string): Promise<string> {
+    if (!checkGeminiRateLimit('editImage')) {
+        throw new Error('Rate limit reached for image editing. Please try again in a minute.');
+    }
+
+    const cacheKey = `edit_${prompt.substring(0, 50)}_${imageBase64.substring(0, 50)}`;
+
+    return deduplicatedCall(cacheKey, async () => {
+        const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
+
+        console.log('✏️ Editing image with prompt:', prompt);
+
+        // Extract base64 data from data URL if needed
+        let base64Data = imageBase64;
+        let mimeType = 'image/png';
+
+        if (imageBase64.startsWith('data:')) {
+            const matches = imageBase64.match(/data:([^;]+);base64,(.+)/);
+            if (matches) {
+                mimeType = matches[1];
+                base64Data = matches[2];
+            }
+        }
+
+        // Send image + prompt as multimodal input
+        const result = await model.generateContent([
+            {
+                inlineData: {
+                    mimeType,
+                    data: base64Data,
+                },
+            },
+            { text: `Edit this image: ${prompt}. Return the modified image.` },
+        ]);
+
+        console.log('📦 Edit result received');
+
+        const response = await result.response;
+
+        // Check for inline data (base64 image)
+        const candidate = response.candidates?.[0];
+        if (candidate?.content?.parts?.[0]?.inlineData) {
+            const img = candidate.content.parts[0].inlineData;
+            const dataUrl = `data:${img.mimeType};base64,${img.data}`;
+            console.log('✅ Found edited image data');
+            return dataUrl;
+        }
+
+        // Try text response (might be an error message)
+        const text = response.text();
+        console.log('📄 Text response:', text);
+
+        throw new Error('No edited image data found in response');
+    });
+}
+
 // Recommendation engine with caching
 const recommendationCache = new Map<string, { result: string; timestamp: number }>();
 const RECOMMENDATION_CACHE_TTL = 1000 * 60 * 10; // 10 minute cache

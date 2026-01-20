@@ -32,6 +32,12 @@ type AuthResult =
 /**
  * Validate user session from cookie and fetch real profile from Firestore
  * Returns user data if authenticated, error response if not
+ * 
+ * JWT-FIRST DESIGN:
+ * 1. Always validate JWT token (free, no quota)
+ * 2. Use JWT claims for essential data (role, email)
+ * 3. Try Firestore for enrichment (enrolledCourses, etc.)
+ * 4. Gracefully skip Firestore if quota exhausted
  */
 export async function requireAuth(request: NextRequest): Promise<AuthResult> {
     try {
@@ -48,7 +54,7 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
             };
         }
 
-        // Validate token (Session Cookie - created via createSessionCookie in /api/auth/set-token)
+        // Step 1: Validate JWT token (FREE - no Firestore quota used)
         const { verifySessionCookie } = await import('@/lib/auth/validateToken');
         const decodedUser = await verifySessionCookie(token);
 
@@ -62,45 +68,43 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
             };
         }
 
-        // Fetch user profile from Firestore using Admin SDK (secure server-side)
-        const { getAdminUserProfile } = await import('@/lib/firebase/firestore-admin');
-        const profile = await getAdminUserProfile(decodedUser.uid);
+        // Step 2: Build base user from JWT claims ONLY (works even with Firestore quota exhausted)
+        // JWT claims include: uid, email, name, role (set during login via custom claims)
+        const jwtRole = decodedUser.role || decodedUser.admin ? 'admin' : 'student';
+        let user: User = {
+            id: decodedUser.uid,
+            name: decodedUser.name || decodedUser.email?.split('@')[0] || 'User',
+            email: decodedUser.email || '',
+            role: jwtRole as "admin" | "student",
+            enrolledCourses: [],
+            completedLessons: [],
+        };
 
-        let user: User;
+        // Step 3: Try to enrich from Firestore (optional - skip on quota error)
+        try {
+            const { getAdminUserProfile } = await import('@/lib/firebase/firestore-admin');
+            const profile = await getAdminUserProfile(decodedUser.uid);
 
-        if (profile) {
-            // Use real profile data from Firestore (most common case)
-            // Normalize role: 'user' is legacy, map it to 'student'
-            const normalizedRole: "admin" | "student" = profile.role === 'admin' ? 'admin' : 'student';
-            user = {
-                id: profile.id,
-                name: profile.name || 'User',
-                email: profile.email || decodedUser.email || '',
-                role: normalizedRole,
-                avatar: profile.avatar,
-                username: profile.username,
-                enrolledCourses: profile.enrolledCourses || [],
-                completedLessons: profile.completedLessons || [],
-                subscription: profile.subscription,
-                createdAt: profile.createdAt,
-            };
-        } else {
-            // User exists in Auth but not Firestore
-            user = {
-                id: decodedUser.uid,
-                name: decodedUser.name || 'User',
-                email: decodedUser.email || '',
-                role: (decodedUser.role as "admin" | "student") || 'student',
-                enrolledCourses: [],
-                completedLessons: [],
-            };
-
-            // Only create profile if not already pending (prevents log spam from concurrent requests)
-            if (!profileCreationPending.has(decodedUser.uid)) {
+            if (profile) {
+                // Merge Firestore data with JWT data
+                const normalizedRole: "admin" | "student" = profile.role === 'admin' ? 'admin' : 'student';
+                user = {
+                    id: profile.id,
+                    name: profile.name || user.name,
+                    email: profile.email || user.email,
+                    role: normalizedRole,
+                    avatar: profile.avatar,
+                    username: profile.username,
+                    enrolledCourses: profile.enrolledCourses || [],
+                    completedLessons: profile.completedLessons || [],
+                    subscription: profile.subscription,
+                    createdAt: profile.createdAt,
+                };
+            } else if (!profileCreationPending.has(decodedUser.uid)) {
+                // User exists in Auth but not Firestore - create profile in background
                 profileCreationPending.add(decodedUser.uid);
-                console.log(`📝 Creating Firestore profile for legacy user: ${decodedUser.uid} (${decodedUser.email})`);
+                console.log(`📝 Creating Firestore profile for new user: ${decodedUser.uid}`);
 
-                // Create profile in background using Admin SDK (secure server-side)
                 import('@/lib/firebase/firestore-admin').then(({ createAdminUserProfile }) => {
                     createAdminUserProfile({
                         id: user.id,
@@ -111,14 +115,21 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
                         completedLessons: [],
                         createdAt: new Date().toISOString(),
                     }).then(() => {
-                        console.log(`✅ Created Firestore profile for legacy user: ${user.id}`);
+                        console.log(`✅ Created Firestore profile: ${user.id}`);
                     }).catch((err) => {
-                        console.error(`❌ Failed to create Firestore profile for legacy user: ${user.id}`, err);
-                        // Remove from pending so it can be retried on next request
+                        console.error(`❌ Failed to create profile: ${user.id}`, err);
                         profileCreationPending.delete(user.id);
                     });
                 });
             }
+        } catch (firestoreError: any) {
+            // Firestore quota exhausted or unavailable - continue with JWT data only
+            if (firestoreError?.code === 8 || firestoreError?.message?.includes('RESOURCE_EXHAUSTED')) {
+                console.warn(`⚠️ Firestore quota exhausted - using JWT claims only for ${user.email}`);
+            } else {
+                console.warn(`⚠️ Firestore unavailable - using JWT claims only:`, firestoreError?.message);
+            }
+            // Auth still succeeds! User can still login and use the app
         }
 
         return { authenticated: true, user };
