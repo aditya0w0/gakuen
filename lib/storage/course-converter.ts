@@ -63,12 +63,16 @@ export function courseToBlob(course: Course): {
     const lessons: Record<string, LessonCompact> = {};
     const blocks: Record<string, BlockCompact> = {};
 
+    // Map from original lessonId to compact lessonId (e.g., "lesson-abc-123" -> "L1")
+    const lessonIdMap = new Map<string, string>();
+
     let blockCounter = 1;
     let lessonCounter = 1;
 
-    // Convert each lesson
+    // Convert each lesson and build the ID mapping
     for (const lesson of course.lessons || []) {
-        const lessonId = `L${lessonCounter++}`;
+        const compactLessonId = `L${lessonCounter++}`;
+        lessonIdMap.set(lesson.id, compactLessonId);  // Map original ID to compact ID
         const blockIds: string[] = [];
 
         // Convert components to blocks
@@ -116,7 +120,7 @@ export function courseToBlob(course: Course): {
 
         // Build lesson object with optional tiptapJson for rich rendering
         const lessonData: any = {
-            id: lessonId,
+            id: compactLessonId,
             t: lesson.title,
             d: lesson.duration,
             b: blockIds,
@@ -127,14 +131,17 @@ export function courseToBlob(course: Course): {
             lessonData.j = lesson.tiptapJson;  // 'j' for JSON (compact key)
         }
 
-        lessons[lessonId] = lessonData;
+        lessons[compactLessonId] = lessonData;
     }
 
-    // Convert sections
+    // Convert sections - map original lessonIds to compact IDs
     const sections: SectionCompact[] = (course.sections || []).map((section, i) => ({
         id: `S${i + 1}`,
         t: section.title,
-        l: section.lessonIds.map((_, j) => `L${j + 1}`),
+        // Use the mapping to convert original lessonIds to compact IDs
+        l: section.lessonIds
+            .map(originalId => lessonIdMap.get(originalId))
+            .filter((id): id is string => id !== undefined),  // Filter out any missing mappings
     }));
 
     // Extract metadata (filter out undefined values for Firestore)
