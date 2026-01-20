@@ -5,7 +5,7 @@ import { Course } from '@/lib/types'; // Ensure type safety if possible, or just
 export function useCourse(courseId: string) {
     const { data, error, isLoading, mutate } = useSWR(
         courseId ? `/api/courses/${courseId}` : null,
-        (url) => fetch(url, { cache: 'no-store' }).then(res => res.json()),
+        (url) => fetch(url).then(res => res.json()),
         {
             // Disabled polling - course data rarely changes while viewing
             // Students only need fresh data on focus/remount

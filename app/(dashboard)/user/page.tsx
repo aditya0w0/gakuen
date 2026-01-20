@@ -108,7 +108,7 @@ export default function UserDashboard() {
     }, [user, isUserLoading]);
 
     useEffect(() => {
-        fetch('/api/courses', { cache: 'no-store' })
+        fetch('/api/courses', { next: { revalidate: 60 } })
             .then(res => res.json())
             .then(data => {
                 // DEFENSIVE: Ensure data is an array before setting state

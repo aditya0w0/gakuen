@@ -28,7 +28,7 @@ export async function fetchCourse(id: string): Promise<Course | null> {
 
         // Fallback to API
         console.log(`🌐 [API] Fetching ${id} from server`);
-        const response = await fetch(`/api/courses/${id}`, { cache: 'no-store' });
+        const response = await fetch(`/api/courses/${id}`, { next: { revalidate: 60 } });
         if (!response.ok) {
             console.error(`❌ API fetch failed: ${response.status}`);
             return null;
@@ -107,7 +107,7 @@ export async function publishCourse(id: string, course: Course): Promise<boolean
  */
 export async function fetchAllCourses(): Promise<Course[]> {
     try {
-        const response = await fetch('/api/courses', { cache: 'no-store' });
+        const response = await fetch('/api/courses', { next: { revalidate: 60 } });
         if (!response.ok) {
             return [];
         }

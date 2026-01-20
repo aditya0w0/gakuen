@@ -39,7 +39,7 @@ export default function MyClassesPage() {
 
     // Fetch courses from API
     useEffect(() => {
-        fetch('/api/courses', { cache: 'no-store' })
+        fetch('/api/courses', { next: { revalidate: 60 } })
             .then(res => res.json())
             .then(data => {
                 setCourses(Array.isArray(data) ? data : []);
