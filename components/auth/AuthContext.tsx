@@ -65,10 +65,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 authCookies.set(profile);
                             });
                         }
-                    } else if (!cachedUser) {
-                        // Only clear user if we also don't have cached user
-                        // This prevents flash during logout navigation
-                        setUser(null);
+                    } else {
+                        // Firebase says no user - but CHECK LOCALSTORAGE FRESH
+                        // This prevents race condition where Firebase is slow during navigation
+                        const freshCachedUser = hybridStorage.auth.getSession();
+                        if (!freshCachedUser) {
+                            // No user in Firebase AND no user in cache - truly logged out
+                            setUser(null);
+                            console.log('🔒 [Auth] No user found in Firebase or cache');
+                        } else {
+                            // User exists in cache but Firebase temporarily doesn't see them
+                            // Keep the user, don't log them out
+                            console.log('⏳ [Auth] Firebase auth null but cache has user, keeping session');
+                        }
                     }
                     setIsLoading(false);
                 });
