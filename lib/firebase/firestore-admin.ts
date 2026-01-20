@@ -94,12 +94,30 @@ export async function createAdminUserProfile(user: User): Promise<User> {
 
 /**
  * Get aggregated course stats (enrollments, ratings) using Admin SDK
+ * CACHED: Aggregates are cached for 10 minutes to avoid reading entire collections!
  */
+
+// Cache for course stats (10 minute TTL)
+let statsCache: {
+    data: { enrollmentCounts: Record<string, number>; courseRatings: Record<string, { sum: number; count: number }> } | null;
+    timestamp: number;
+} = { data: null, timestamp: 0 };
+
+const STATS_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 export async function getCourseStats() {
+    // Check cache first
+    const now = Date.now();
+    if (statsCache.data && (now - statsCache.timestamp) < STATS_CACHE_TTL) {
+        console.log(`📊 [Stats] Using cached stats (${Math.round((now - statsCache.timestamp) / 1000)}s old)`);
+        return statsCache.data;
+    }
+
     const { firestore } = initAdmin();
     const db = firestore();
 
     try {
+        console.log(`📊 [Stats] Fetching fresh stats from Firestore...`);
         const [enrollmentsSnap, reviewsSnap] = await Promise.all([
             db.collection("enrollments").get(),
             db.collection("reviews").get()
@@ -126,7 +144,12 @@ export async function getCourseStats() {
             }
         });
 
-        return { enrollmentCounts, courseRatings };
+        // Cache the result
+        const result = { enrollmentCounts, courseRatings };
+        statsCache = { data: result, timestamp: now };
+        console.log(`✅ [Stats] Cached (${enrollmentsSnap.size} enrollments, ${reviewsSnap.size} reviews)`);
+
+        return result;
     } catch (error) {
         console.error("Error fetching course stats:", error);
         return { enrollmentCounts: {}, courseRatings: {} };
