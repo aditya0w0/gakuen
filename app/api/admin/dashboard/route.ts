@@ -4,9 +4,36 @@ import { initAdmin } from '@/lib/auth/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 
+// 🔧 In-memory cache for dashboard stats (5 minute TTL)
+// This prevents reading entire collections on every request
+interface DashboardCache {
+    data: DashboardStats | null;
+    timestamp: number;
+}
+
+interface DashboardStats {
+    totalUsers: number;
+    activeCourses: number;
+    totalRevenue: number;
+    avgCompletion: number;
+    subscriptions: {
+        free: number;
+        basic: number;
+        mid: number;
+        pro: number;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recentPayments: any[];
+    monthlyRevenue: number;
+}
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+let dashboardCache: DashboardCache = { data: null, timestamp: 0 };
+
 /**
  * GET /api/admin/dashboard
  * Get dashboard statistics with real revenue data
+ * Cached for 5 minutes to reduce Firestore reads
  */
 export async function GET(request: NextRequest) {
     try {
@@ -16,6 +43,17 @@ export async function GET(request: NextRequest) {
             return authResult.response;
         }
 
+        // Check cache first
+        const now = Date.now();
+        if (dashboardCache.data && (now - dashboardCache.timestamp) < CACHE_TTL_MS) {
+            console.log('📊 Dashboard: serving from cache');
+            return NextResponse.json(dashboardCache.data, {
+                headers: { 'X-Cache': 'HIT' }
+            });
+        }
+
+        console.log('📊 Dashboard: fetching fresh data from Firestore');
+
         const admin = initAdmin();
         if (!admin) {
             return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
@@ -23,19 +61,18 @@ export async function GET(request: NextRequest) {
 
         const db = admin.firestore();
 
-        const stats = {
+        const stats: DashboardStats = {
             totalUsers: 0,
             activeCourses: 0,
             totalRevenue: 0,
             avgCompletion: 0,
-            // New subscription stats
             subscriptions: {
                 free: 0,
                 basic: 0,
                 mid: 0,
                 pro: 0,
             },
-            recentPayments: [] as any[],
+            recentPayments: [],
             monthlyRevenue: 0,
         };
 
@@ -59,8 +96,8 @@ export async function GET(request: NextRequest) {
 
             let totalRevenue = 0;
             let monthlyRevenue = 0;
-            const now = new Date();
-            const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const recentPayments: any[] = [];
 
             paymentsSnapshot.forEach(doc => {
@@ -68,13 +105,11 @@ export async function GET(request: NextRequest) {
                 const amount = data.amount || 0;
                 totalRevenue += amount;
 
-                // Check if payment is from this month
                 const createdAt = data.createdAt?.toDate?.() || new Date(data.createdAt);
                 if (createdAt >= thisMonth) {
                     monthlyRevenue += amount;
                 }
 
-                // Collect recent payments (last 5)
                 if (recentPayments.length < 5) {
                     recentPayments.push({
                         id: doc.id,
@@ -121,9 +156,15 @@ export async function GET(request: NextRequest) {
             console.log('Failed to fetch courses count:', e);
         }
 
-        return NextResponse.json(stats);
+        // Update cache
+        dashboardCache = { data: stats, timestamp: now };
+
+        return NextResponse.json(stats, {
+            headers: { 'X-Cache': 'MISS' }
+        });
     } catch (error) {
         return safeErrorResponse(error, 'Failed to fetch dashboard stats');
     }
 }
+
 
