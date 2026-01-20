@@ -21,7 +21,7 @@ import { ComponentPalette } from "@/components/cms/ComponentPalette";
 import { DesignControls } from "@/components/cms/DesignControls";
 import { ContextMenu } from "@/components/cms/ContextMenu";
 import { CourseSettings } from "@/components/cms/CourseSettings";
-import { fetchCourse, updateCourse } from "@/lib/api/courseApi";
+import { fetchCourse, updateCourse, publishCourse } from "@/lib/api/courseApi";
 import { saveCourseMetadata } from "@/lib/firebase/firestore";
 import { createComponent } from "@/lib/cms/registry";
 
@@ -198,14 +198,16 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
             publishedAt: new Date().toISOString(),
         };
 
-        // Publish to server
-        const success = await updateCourse(courseId, updatedCourse);
-
-        if (success) {
+        try {
+            // CRITICAL: Use publishCourse to actually push to server!
+            // updateCourse only saves to local IndexedDB
+            await publishCourse(courseId, updatedCourse);
             setIsPublished(true);
-            console.log('✅ Course published');
-        } else {
-            console.error('❌ Publish failed');
+            console.log('✅ Course published to server');
+        } catch (error) {
+            console.error('❌ Publish failed:', error);
+            // Fall back to local save at minimum
+            await updateCourse(courseId, updatedCourse);
         }
 
         // Fire-and-forget Firebase sync
