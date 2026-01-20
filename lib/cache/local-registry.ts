@@ -150,27 +150,38 @@ function saveToFile(): void {
 async function ensureLoaded(): Promise<void> {
     if (loaded) return;
 
-    // Always load from file first (fastest, most recent)
-    const fileEntries = loadFromFile();
-    for (const entry of fileEntries) {
-        localRegistry.set(entry.id, entry);
-    }
+    console.log(`🔄 [Registry] Loading... (Blob enabled: ${isBlobEnabled()})`);
 
-    // Then merge with blob entries (for courses that were on another server)
+    // On Vercel, prioritize Blob since file doesn't persist
     if (isBlobEnabled()) {
         try {
             const blobEntries = await loadFromBlob();
             for (const entry of blobEntries) {
-                // Only add if not already in file (file is more recent)
-                if (!localRegistry.has(entry.id)) {
-                    localRegistry.set(entry.id, entry);
-                }
+                localRegistry.set(entry.id, entry);
             }
+            console.log(`📂 [Registry] Loaded ${blobEntries.length} entries from Blob`);
         } catch (error) {
             console.warn('⚠️ [Registry] Could not load from blob:', error);
         }
     }
 
+    // Then merge with file entries (for local dev - file is faster)
+    try {
+        const fileEntries = loadFromFile();
+        for (const entry of fileEntries) {
+            // In dev, file is more recent. On prod, this won't find anything.
+            if (!localRegistry.has(entry.id)) {
+                localRegistry.set(entry.id, entry);
+            }
+        }
+        if (fileEntries.length > 0) {
+            console.log(`📂 [Registry] Merged ${fileEntries.length} entries from file`);
+        }
+    } catch {
+        // File read can fail on Vercel - that's OK
+    }
+
+    console.log(`✅ [Registry] Total: ${localRegistry.size} courses`);
     loaded = true;
 }
 
