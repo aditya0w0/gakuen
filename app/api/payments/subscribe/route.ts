@@ -5,6 +5,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { SUBSCRIPTION_TIERS, type SubscriptionTier, type UserSubscription } from '@/lib/constants/subscription';
 import { logger } from '@/lib/logger';
 import { validateCoupon, incrementCouponUsage } from '@/lib/firebase/coupon-operations';
+import { incrementRevenue, updateSubscriptionTier } from '@/lib/firebase/admin-stats';
 
 export const dynamic = 'force-dynamic';
 
@@ -134,6 +135,13 @@ export const POST = withAuthTracked(async (request, { user }) => {
         if (appliedCouponId) {
             await incrementCouponUsage(appliedCouponId);
         }
+
+        // Update pre-aggregated admin stats (non-blocking)
+        const previousTier = (userData?.subscription?.tier || 'free') as "free" | "basic" | "mid" | "pro";
+        Promise.all([
+            incrementRevenue(amount, true),
+            updateSubscriptionTier(previousTier, tier as "free" | "basic" | "mid" | "pro"),
+        ]).catch(err => console.warn('Stats update failed (non-critical):', err));
 
         logger.info(`Subscription created: ${tier} ${billingCycle}`, {
             userId,
