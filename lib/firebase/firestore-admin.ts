@@ -19,11 +19,54 @@ interface FirebaseUser {
     createdAt?: Timestamp | string;
 }
 
+// ============================================
+// ADMIN PROFILE CACHE (server-side)
+// Prevents repeated Firestore reads on every API request
+// ============================================
+interface AdminCachedProfile {
+    user: User;
+    cachedAt: number;
+}
+
+const adminProfileCache = new Map<string, AdminCachedProfile>();
+const ADMIN_PROFILE_CACHE_TTL = 2 * 60 * 1000; // 2 minutes (shorter for server)
+
+function getAdminCachedProfile(userId: string): User | null {
+    const cached = adminProfileCache.get(userId);
+    if (!cached) return null;
+
+    if (Date.now() - cached.cachedAt > ADMIN_PROFILE_CACHE_TTL) {
+        adminProfileCache.delete(userId);
+        return null;
+    }
+
+    return cached.user;
+}
+
+function setAdminCachedProfile(userId: string, user: User): void {
+    adminProfileCache.set(userId, {
+        user,
+        cachedAt: Date.now(),
+    });
+}
+
+export function invalidateAdminProfileCache(userId: string): void {
+    adminProfileCache.delete(userId);
+}
+
 /**
  * Get user profile using Admin SDK (bypasses Firestore rules)
  * Essential for Auth Guards where client SDK is unauthenticated
+ * 
+ * OPTIMIZED: Uses in-memory cache with 2-min TTL
  */
 export async function getAdminUserProfile(userId: string): Promise<User | null> {
+    // Check cache first
+    const cached = getAdminCachedProfile(userId);
+    if (cached) {
+        return cached;
+    }
+
     const { firestore } = initAdmin();
     const db = firestore();
 
@@ -34,7 +77,7 @@ export async function getAdminUserProfile(userId: string): Promise<User | null> 
 
         const data = docSnap.data() as FirebaseUser;
 
-        return {
+        const user: User = {
             id: userId,
             email: data.email,
             name: data.name || 'User',
@@ -59,6 +102,11 @@ export async function getAdminUserProfile(userId: string): Promise<User | null> 
                 ? (typeof data.createdAt === 'string' ? data.createdAt : (data.createdAt as Timestamp).toDate().toISOString())
                 : new Date().toISOString(),
         };
+
+        // Cache the result
+        setAdminCachedProfile(userId, user);
+
+        return user;
     } catch (error) {
         console.error("Error fetching admin user profile:", error);
         return null;
