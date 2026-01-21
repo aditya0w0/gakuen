@@ -52,12 +52,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         ? [
             { icon: LayoutDashboard, label: t.dashboard, href: "/dashboard" },
             { icon: BookMarked, label: t.admin.courses, href: "/courses" },
-            { icon: Users, label: t.admin.users, href: "/users" },
             { icon: DollarSign, label: "Pricing", href: "/course-pricing" },
             { icon: TrendingUp, label: "Revenue", href: "/revenue" },
             { icon: Tag, label: "Promotions", href: "/coupons" },
-            { icon: BarChart3, label: t.admin.analytics, href: "/analytics" },
-            { icon: Bell, label: t.settingsPage.notifications, href: "/notifications" },
             { icon: Shield, label: "Control", href: "/control" },
             { icon: Settings, label: t.settings, href: "/settings" },
         ]
