@@ -8,6 +8,7 @@ import { syncManager } from "@/lib/storage/sync-manager";
 import { ChevronLeft, Camera, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
 
 export default function ProfileDetailsPage() {
     const { user, refreshUser } = useAuth();
@@ -25,6 +26,10 @@ export default function ProfileDetailsPage() {
     const [isUploading, setIsUploading] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
+    // Cropper modal state
+    const [cropperOpen, setCropperOpen] = useState(false);
+    const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+
     useEffect(() => {
         if (user) {
             setUsername(user.username || "");
@@ -36,21 +41,36 @@ export default function ProfileDetailsPage() {
         }
     }, [user]);
 
-    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle file selection - open cropper
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file || !user) return;
+        if (!file) return;
 
-        // Store previous avatar for rollback on failure
+        // Create object URL for cropper preview
+        const imageUrl = URL.createObjectURL(file);
+        setSelectedImageUrl(imageUrl);
+        setCropperOpen(true);
+
+        // Reset file input so same file can be selected again
+        e.target.value = "";
+    };
+
+    // Handle cropped image upload
+    const handleCroppedUpload = async (blob: Blob) => {
+        if (!user) return;
+
+        setCropperOpen(false);
         const previousAvatar = avatarUrl;
 
         setIsUploading(true);
         try {
+            // Convert blob to File
+            const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+
             const formData = new FormData();
             formData.append('file', file);
             formData.append('type', 'avatar');
             formData.append('id', user.id);
-
-
 
             const res = await authenticatedFetch('/api/upload', {
                 method: 'POST',
@@ -85,6 +105,11 @@ export default function ProfileDetailsPage() {
             setSaveMessage(error.message || "Failed to upload avatar");
         } finally {
             setIsUploading(false);
+            // Clean up object URL
+            if (selectedImageUrl) {
+                URL.revokeObjectURL(selectedImageUrl);
+                setSelectedImageUrl(null);
+            }
         }
     };
 
@@ -192,7 +217,7 @@ export default function ProfileDetailsPage() {
                                     ref={fileInputRef}
                                     className="hidden"
                                     accept="image/*"
-                                    onChange={handleAvatarUpload}
+                                    onChange={handleFileSelect}
                                     disabled={isUploading}
                                 />
                             </div>
@@ -298,6 +323,20 @@ export default function ProfileDetailsPage() {
                     </button>
                 </form>
             </div>
+
+            {/* Image Cropper Modal */}
+            {selectedImageUrl && (
+                <ImageCropperModal
+                    imageUrl={selectedImageUrl}
+                    isOpen={cropperOpen}
+                    onClose={() => {
+                        setCropperOpen(false);
+                        URL.revokeObjectURL(selectedImageUrl);
+                        setSelectedImageUrl(null);
+                    }}
+                    onApply={handleCroppedUpload}
+                />
+            )}
         </div>
     );
 }

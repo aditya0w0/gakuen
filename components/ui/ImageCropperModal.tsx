@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, ZoomIn, ZoomOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 interface ImageCropperModalProps {
     imageUrl: string;
     isOpen: boolean;
     onClose: () => void;
     onApply: (croppedImageBlob: Blob) => void;
-    aspectRatio?: number; // 1 for square, undefined for free
 }
 
 export function ImageCropperModal({
@@ -17,10 +15,8 @@ export function ImageCropperModal({
     isOpen,
     onClose,
     onApply,
-    aspectRatio = 1,
 }: ImageCropperModalProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
     const [image, setImage] = useState<HTMLImageElement | null>(null);
     const [zoom, setZoom] = useState(1);
     const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -28,9 +24,9 @@ export function ImageCropperModal({
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [isApplying, setIsApplying] = useState(false);
 
-    const CROP_SIZE = 280; // Size of the crop area
+    const CROP_SIZE = 300;
 
-    // Load image when URL changes
+    // Load image
     useEffect(() => {
         if (!imageUrl) return;
 
@@ -38,9 +34,7 @@ export function ImageCropperModal({
         img.crossOrigin = "anonymous";
         img.onload = () => {
             setImage(img);
-            // Center the image initially
             setPosition({ x: 0, y: 0 });
-            // Set initial zoom to fit the crop area
             const minDimension = Math.min(img.width, img.height);
             setZoom(CROP_SIZE / minDimension);
         };
@@ -58,207 +52,140 @@ export function ImageCropperModal({
         canvas.width = CROP_SIZE;
         canvas.height = CROP_SIZE;
 
-        // Clear canvas
-        ctx.fillStyle = "#1a1a1a";
+        ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, CROP_SIZE, CROP_SIZE);
 
-        // Calculate scaled dimensions
         const scaledWidth = image.width * zoom;
         const scaledHeight = image.height * zoom;
-
-        // Draw image centered with offset
         const x = (CROP_SIZE - scaledWidth) / 2 + position.x;
         const y = (CROP_SIZE - scaledHeight) / 2 + position.y;
 
         ctx.drawImage(image, x, y, scaledWidth, scaledHeight);
     }, [image, zoom, position]);
 
-    // Handle mouse/touch drag
+    // Drag handlers
     const handleDragStart = useCallback((clientX: number, clientY: number) => {
         setIsDragging(true);
-        setDragStart({
-            x: clientX - position.x,
-            y: clientY - position.y,
-        });
+        setDragStart({ x: clientX - position.x, y: clientY - position.y });
     }, [position]);
 
     const handleDragMove = useCallback((clientX: number, clientY: number) => {
         if (!isDragging) return;
-        setPosition({
-            x: clientX - dragStart.x,
-            y: clientY - dragStart.y,
-        });
+        setPosition({ x: clientX - dragStart.x, y: clientY - dragStart.y });
     }, [isDragging, dragStart]);
 
-    const handleDragEnd = useCallback(() => {
-        setIsDragging(false);
-    }, []);
-
-    // Mouse events
-    const handleMouseDown = (e: React.MouseEvent) => {
-        e.preventDefault();
-        handleDragStart(e.clientX, e.clientY);
-    };
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        handleDragMove(e.clientX, e.clientY);
-    };
-
-    const handleMouseUp = () => {
-        handleDragEnd();
-    };
-
-    // Touch events
-    const handleTouchStart = (e: React.TouchEvent) => {
-        const touch = e.touches[0];
-        handleDragStart(touch.clientX, touch.clientY);
-    };
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        const touch = e.touches[0];
-        handleDragMove(touch.clientX, touch.clientY);
-    };
-
-    const handleTouchEnd = () => {
-        handleDragEnd();
-    };
+    const handleDragEnd = useCallback(() => setIsDragging(false), []);
 
     // Apply crop
     const handleApply = async () => {
         if (!canvasRef.current || !image) return;
-
         setIsApplying(true);
 
-        // Create output canvas at higher resolution
         const outputCanvas = document.createElement("canvas");
-        const outputSize = 512; // Output size
+        const outputSize = 512;
         outputCanvas.width = outputSize;
         outputCanvas.height = outputSize;
 
         const ctx = outputCanvas.getContext("2d");
         if (!ctx) return;
 
-        // Scale factor from preview to output
         const scale = outputSize / CROP_SIZE;
-
-        // Calculate scaled dimensions
         const scaledWidth = image.width * zoom * scale;
         const scaledHeight = image.height * zoom * scale;
-
-        // Draw image
         const x = (outputSize - scaledWidth) / 2 + position.x * scale;
         const y = (outputSize - scaledHeight) / 2 + position.y * scale;
 
         ctx.drawImage(image, x, y, scaledWidth, scaledHeight);
 
-        // Convert to blob
-        outputCanvas.toBlob(
-            (blob) => {
-                if (blob) {
-                    onApply(blob);
-                }
-                setIsApplying(false);
-            },
-            "image/jpeg",
-            0.9
-        );
+        outputCanvas.toBlob((blob) => {
+            if (blob) onApply(blob);
+            setIsApplying(false);
+        }, "image/jpeg", 0.9);
     };
 
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop */}
+            {/* Backdrop - Apple blur */}
             <div
-                className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/50 backdrop-blur-xl"
                 onClick={onClose}
             />
 
-            {/* Modal */}
-            <div className="relative bg-white dark:bg-neutral-900 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal - Apple style */}
+            <div className="relative bg-white/95 dark:bg-neutral-900/95 backdrop-blur-2xl rounded-[28px] max-w-[380px] w-full mx-4 shadow-2xl animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-                        Adjust Image
-                    </h2>
+                <div className="relative flex items-center justify-center px-4 py-4 border-b border-neutral-200/50 dark:border-neutral-700/50">
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                        className="absolute left-4 text-blue-500 dark:text-blue-400 font-medium text-[17px] hover:text-blue-600 transition-colors"
                     >
-                        <X className="w-5 h-5" />
+                        Cancel
+                    </button>
+                    <h2 className="text-[17px] font-semibold text-neutral-900 dark:text-white">
+                        Move and Scale
+                    </h2>
+                    <button
+                        onClick={handleApply}
+                        disabled={isApplying}
+                        className="absolute right-4 text-blue-500 dark:text-blue-400 font-semibold text-[17px] hover:text-blue-600 transition-colors disabled:opacity-50"
+                    >
+                        {isApplying ? "..." : "Choose"}
                     </button>
                 </div>
 
                 {/* Crop Area */}
-                <div
-                    ref={containerRef}
-                    className="relative mx-auto mb-6 overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-800"
-                    style={{ width: CROP_SIZE, height: CROP_SIZE }}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                >
-                    {/* Canvas for preview */}
-                    <canvas
-                        ref={canvasRef}
-                        className="cursor-move"
-                        style={{ width: CROP_SIZE, height: CROP_SIZE }}
-                    />
-
-                    {/* Circular overlay mask */}
+                <div className="p-6 flex flex-col items-center">
                     <div
-                        className="absolute inset-0 pointer-events-none"
+                        className="relative overflow-hidden bg-black"
                         style={{
-                            background: `radial-gradient(circle at center, transparent 45%, rgba(0,0,0,0.6) 45%)`,
+                            width: CROP_SIZE,
+                            height: CROP_SIZE,
+                            borderRadius: "50%",
                         }}
-                    />
-
-                    {/* Border */}
-                    <div
-                        className="absolute inset-0 pointer-events-none flex items-center justify-center"
+                        onMouseDown={(e) => { e.preventDefault(); handleDragStart(e.clientX, e.clientY); }}
+                        onMouseMove={(e) => handleDragMove(e.clientX, e.clientY)}
+                        onMouseUp={handleDragEnd}
+                        onMouseLeave={handleDragEnd}
+                        onTouchStart={(e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
+                        onTouchMove={(e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY)}
+                        onTouchEnd={handleDragEnd}
                     >
-                        <div
-                            className="border-2 border-white/80 rounded-full"
-                            style={{ width: CROP_SIZE * 0.9, height: CROP_SIZE * 0.9 }}
+                        <canvas
+                            ref={canvasRef}
+                            className="cursor-move"
+                            style={{
+                                width: CROP_SIZE,
+                                height: CROP_SIZE,
+                                borderRadius: "50%",
+                            }}
                         />
                     </div>
-                </div>
 
-                {/* Zoom Slider */}
-                <div className="flex items-center gap-4 mb-6 px-4">
-                    <ZoomOut className="w-4 h-4 text-neutral-400" />
-                    <input
-                        type="range"
-                        min={0.5}
-                        max={3}
-                        step={0.01}
-                        value={zoom}
-                        onChange={(e) => setZoom(parseFloat(e.target.value))}
-                        className="flex-1 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                    />
-                    <ZoomIn className="w-4 h-4 text-neutral-400" />
-                </div>
-
-                {/* Buttons */}
-                <div className="flex gap-3">
-                    <Button
-                        variant="outline"
-                        onClick={onClose}
-                        className="flex-1"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleApply}
-                        disabled={isApplying}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                        {isApplying ? "Applying..." : "Apply"}
-                    </Button>
+                    {/* Zoom Slider - Apple style */}
+                    <div className="w-full mt-6 px-2">
+                        <div className="flex items-center gap-3">
+                            <div className="w-4 h-4 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+                                <div className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+                            </div>
+                            <input
+                                type="range"
+                                min={0.5}
+                                max={3}
+                                step={0.01}
+                                value={zoom}
+                                onChange={(e) => setZoom(parseFloat(e.target.value))}
+                                className="flex-1 h-1 rounded-full appearance-none cursor-pointer bg-neutral-200 dark:bg-neutral-700"
+                                style={{
+                                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((zoom - 0.5) / 2.5) * 100}%, #e5e5e5 ${((zoom - 0.5) / 2.5) * 100}%, #e5e5e5 100%)`,
+                                }}
+                            />
+                            <div className="w-6 h-6 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+                                <div className="w-3 h-3 rounded-full bg-neutral-500" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
