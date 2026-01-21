@@ -1,6 +1,4 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // R2 Client singleton
 let r2Client: S3Client | null = null;
