@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, BookOpen, Settings, Home, Users, ChevronLeft, ChevronRight, Compass, BarChart3, BookMarked, Bell, Tag } from "lucide-react";
+import { LayoutDashboard, BookOpen, Settings, Home, Users, ChevronLeft, ChevronRight, Compass, BarChart3, BookMarked, Bell, Tag, DollarSign, TrendingUp } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -35,9 +35,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             { icon: LayoutDashboard, label: t.dashboard, href: "/dashboard" },
             { icon: BookMarked, label: t.admin.courses, href: "/courses" },
             { icon: Users, label: t.admin.users, href: "/users" },
-            { icon: Bell, label: t.settingsPage.notifications, href: "/notifications" },
+            { icon: DollarSign, label: "Pricing", href: "/pricing" },
+            { icon: TrendingUp, label: "Revenue", href: "/revenue" },
+            { icon: Tag, label: "Promotions", href: "/coupons" },
             { icon: BarChart3, label: t.admin.analytics, href: "/analytics" },
-            { icon: Tag, label: "Coupons", href: "/coupons" },
+            { icon: Bell, label: t.settingsPage.notifications, href: "/notifications" },
             { icon: Settings, label: t.settings, href: "/settings" },
         ]
         : [
