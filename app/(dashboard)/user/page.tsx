@@ -15,6 +15,8 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 
+import { Course } from "@/lib/types";
+
 // Convert Google Drive URLs to proxy URLs
 function getProxiedImageUrl(url: string | undefined): string | undefined {
     if (!url) return undefined;
@@ -34,7 +36,7 @@ function getProxiedImageUrl(url: string | undefined): string | undefined {
 
 export default function UserDashboard() {
     const { user, isLoading: isUserLoading } = useAuth();
-    const [allCourses, setAllCourses] = useState<any[]>([]);
+    const [allCourses, setAllCourses] = useState<Course[]>([]);
     const [isLoadingCourses, setIsLoadingCourses] = useState(true);
     const [mounted, setMounted] = useState(false);
     const { t } = useTranslation();
@@ -149,6 +151,7 @@ export default function UserDashboard() {
                             <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
                                 {/* Thumbnail */}
                                 <div className="w-full md:w-48 aspect-video md:aspect-square rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={getProxiedImageUrl(currentCourse.thumbnail) || "/placeholder.svg"}
                                         alt={currentCourse.title}
@@ -294,7 +297,7 @@ function SectionHeader({ title, href }: { title: string; href?: string }) {
 }
 
 // Course List Item
-function CourseListItem({ course, progress }: { course: any; progress: number }) {
+function CourseListItem({ course, progress }: { course: Course; progress: number }) {
     const isComplete = progress === 100;
 
     return (
@@ -328,6 +331,7 @@ function CourseListItem({ course, progress }: { course: any; progress: number })
 
                 {/* Thumbnail */}
                 <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-neutral-100 dark:bg-neutral-800">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src={getProxiedImageUrl(course.thumbnail) || "/placeholder.svg"}
                         alt={course.title}
@@ -352,11 +356,12 @@ function CourseListItem({ course, progress }: { course: any; progress: number })
 }
 
 // Explore Card
-function ExploreCard({ course }: { course: any }) {
+function ExploreCard({ course }: { course: Course }) {
     return (
         <Link href={`/course/${course.id}`}>
             <div className="bg-white dark:bg-neutral-900 rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
                 <div className="aspect-[4/3] bg-neutral-100 dark:bg-neutral-800">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src={getProxiedImageUrl(course.thumbnail) || "/placeholder.svg"}
                         alt={course.title}

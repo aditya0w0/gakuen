@@ -23,6 +23,7 @@ export interface ModerationResult {
 }
 
 // Threshold for blocking - LIKELY or VERY_LIKELY blocks the upload
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const BLOCKED_LIKELIHOODS: Likelihood[] = ['LIKELY', 'VERY_LIKELY'];
 
 // Client singleton

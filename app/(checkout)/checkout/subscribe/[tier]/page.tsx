@@ -83,8 +83,8 @@ export default function SubscribeCheckoutPage() {
             }
 
             setCouponApplied({ code: couponCode, discount: data.discountPercent });
-        } catch (err: any) {
-            setCouponError(err.message);
+        } catch (err: unknown) {
+            setCouponError(err instanceof Error ? err.message : 'Invalid coupon');
         } finally {
             setCouponLoading(false);
         }
@@ -128,8 +128,8 @@ export default function SubscribeCheckoutPage() {
             }
 
             setStep('success');
-        } catch (err: any) {
-            setPaymentError(err.message);
+        } catch (err: unknown) {
+            setPaymentError(err instanceof Error ? err.message : 'Payment failed');
         } finally {
             setProcessing(false);
         }

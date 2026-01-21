@@ -16,7 +16,6 @@ import {
     Trash2,
     Loader2,
     Key,
-    RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 
@@ -181,6 +180,7 @@ export default function UserProfilePage() {
                         {/* Avatar */}
                         <div className="relative flex-shrink-0">
                             {user.avatar ? (
+                                // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                     src={user.avatar}
                                     alt={user.name}
@@ -205,8 +205,8 @@ export default function UserProfilePage() {
                                     {user.name || 'Unknown User'}
                                 </h1>
                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${user.role === 'admin'
-                                        ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400'
-                                        : 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400'
+                                    ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400'
+                                    : 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400'
                                     }`}>
                                     {user.role === 'admin' ? 'Admin' : 'Student'}
                                 </span>

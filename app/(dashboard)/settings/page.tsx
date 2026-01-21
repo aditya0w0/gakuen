@@ -97,9 +97,9 @@ export default function SettingsPage() {
             await hybridStorage.profile.update(user.id, { avatar: url });
             await syncManager.syncNow();
             await refreshUser();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to upload avatar", error);
-            alert(error.message || "Failed to upload avatar");
+            alert(error instanceof Error ? error.message : "Failed to upload avatar");
         } finally {
             setIsUploading(false);
             if (selectedImageUrl) {
@@ -190,11 +190,14 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-4">
                                 <div className="relative group">
                                     {user.avatar ? (
-                                        <img
-                                            src={user.avatar}
-                                            alt={user.name}
-                                            className="h-16 w-16 rounded-full object-cover border-2 border-white/10 group-hover:border-blue-500 transition-colors"
-                                        />
+                                        <>
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={user.avatar}
+                                                alt={user.name}
+                                                className="h-16 w-16 rounded-full object-cover border-2 border-white/10 group-hover:border-blue-500 transition-colors"
+                                            />
+                                        </>
                                     ) : (
                                         <div className="h-16 w-16 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center text-xl font-bold text-neutral-600 dark:text-white border-2 border-neutral-300 dark:border-white/10 group-hover:border-blue-500 transition-colors">
                                             {user.name?.[0]?.toUpperCase() || "U"}

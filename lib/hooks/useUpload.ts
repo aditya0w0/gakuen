@@ -52,8 +52,8 @@ export function useUpload({ type, id, courseId, onSuccess, onError }: UseUploadO
             onSuccess?.(data);
             return data;
 
-        } catch (error: any) {
-            onError?.(error.message);
+        } catch (error: unknown) {
+            onError?.(error instanceof Error ? error.message : 'Upload failed');
             return null;
         } finally {
             setIsUploading(false);

@@ -82,6 +82,7 @@ export const localCache = {
 
     // Progress cache operations
     progress: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         set: (data: any) => localCache.set(CACHE_KEYS.PROGRESS, data),
         get: () => localCache.get(CACHE_KEYS.PROGRESS),
         remove: () => localCache.remove(CACHE_KEYS.PROGRESS),
@@ -89,12 +90,16 @@ export const localCache = {
 
     // Sync queue operations
     syncQueue: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         add: (operation: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const queue = localCache.get<any[]>(CACHE_KEYS.SYNC_QUEUE) || [];
             queue.push(operation);
             localCache.set(CACHE_KEYS.SYNC_QUEUE, queue);
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         set: (operations: any[]) => localCache.set(CACHE_KEYS.SYNC_QUEUE, operations),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         get: () => localCache.get<any[]>(CACHE_KEYS.SYNC_QUEUE) || [],
         clear: () => localCache.remove(CACHE_KEYS.SYNC_QUEUE),
     },

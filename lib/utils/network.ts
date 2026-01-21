@@ -7,14 +7,14 @@ interface FetchOptions extends RequestInit {
     timeout?: number;
     retries?: number;
     retryDelay?: number;
-    offlineFallback?: () => any;
+    offlineFallback?: () => unknown;
 }
 
 // Cache for offline support
-const responseCache = new Map<string, { data: any; timestamp: number }>();
+const responseCache = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-export async function resilientFetch<T = any>(
+export async function resilientFetch<T = unknown>(
     url: string,
     options: FetchOptions = {}
 ): Promise<T> {
@@ -117,6 +117,7 @@ export function prefetch(urls: string[]) {
     };
 
     if ('requestIdleCallback' in window) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).requestIdleCallback(doPreload);
     } else {
         setTimeout(doPreload, 1000);
@@ -126,6 +127,7 @@ export function prefetch(urls: string[]) {
 /**
  * Debounce function for expensive operations
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function debounce<T extends (...args: any[]) => any>(
     fn: T,
     delay: number
@@ -141,6 +143,7 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * Throttle function for scroll/resize handlers
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function throttle<T extends (...args: any[]) => any>(
     fn: T,
     limit: number
@@ -166,11 +169,14 @@ export function isLowEndDevice(): boolean {
     const lowCores = (navigator.hardwareConcurrency || 4) <= 2;
 
     // Check for low memory (Chrome only)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lowMemory = (navigator as any).deviceMemory
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ? (navigator as any).deviceMemory <= 2
         : false;
 
     // Check for slow connection
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const connection = (navigator as any).connection;
     const slowConnection = connection
         ? connection.effectiveType === '2g' || connection.effectiveType === 'slow-2g'
@@ -191,6 +197,7 @@ export function isLowEndDevice(): boolean {
 export function getOptimalImageQuality(): 'low' | 'medium' | 'high' {
     if (typeof window === 'undefined') return 'high';
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const connection = (navigator as any).connection;
 
     if (!connection) return 'high';

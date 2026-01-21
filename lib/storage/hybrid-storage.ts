@@ -154,6 +154,7 @@ export const hybridStorage = {
 
     // Progress tracking
     progress: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         get(): any {
             const cached = localCache.progress.get();
             if (cached) return cached;

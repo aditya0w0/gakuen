@@ -19,6 +19,7 @@ const isLowPowerDevice = () => {
     const lowCores = (navigator.hardwareConcurrency || 4) <= 4;
 
     // Check device memory (if available)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lowMemory = (navigator as any).deviceMemory ? (navigator as any).deviceMemory <= 4 : false;
 
     return isMobile || prefersReducedMotion || (lowCores && lowMemory);

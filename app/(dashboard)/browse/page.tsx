@@ -9,12 +9,6 @@ import { RecommendedCourses } from "@/components/course/RecommendedCourses";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "@/lib/i18n";
 
-// Apple-style spring animation
-const spring = {
-    type: "spring",
-    stiffness: 300,
-    damping: 30,
-};
 
 // Container stagger variants
 const containerVariants = {
@@ -87,7 +81,7 @@ export default function BrowsePage() {
                     return;
                 }
 
-                const mergedResults = results.map((r: any) => {
+                const mergedResults = results.map((r: { id: string;[key: string]: unknown }) => {
                     const original = courses.find(c => c.id === r.id);
                     return original ? { ...original, ...r } : r;
                 });

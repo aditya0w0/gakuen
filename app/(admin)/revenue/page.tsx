@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import {
     DollarSign,
-    TrendingUp,
     CreditCard,
     Loader2,
     Package,

@@ -19,8 +19,8 @@ import {
     Bell,
     AlertCircle,
     RefreshCw,
-    ExternalLink,
     CheckCircle2,
+    X,
 } from "lucide-react";
 import Link from "next/link";
 import { SimpleModal } from "@/components/ui/SimpleModal";
@@ -35,6 +35,13 @@ interface FeatureFlags {
     aiWhitelist: string[];
     updatedAt: string;
     updatedBy?: string;
+}
+
+interface MigrationStats {
+    total: number;
+    migrated: number;
+    failed: number;
+    updatedDocs: number;
 }
 
 interface SystemStatus {
@@ -57,7 +64,7 @@ export default function AdminControlPage() {
     });
 
     const [isMigrating, setIsMigrating] = useState(false);
-    const [migrationStats, setMigrationStats] = useState<any>(null);
+    const [migrationStats, setMigrationStats] = useState<MigrationStats | null>(null);
     const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
     const [migrationError, setMigrationError] = useState<string | null>(null);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);

@@ -187,6 +187,7 @@ export default function UsersPage() {
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
                                                 {user.avatar ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
                                                     <img
                                                         src={user.avatar}
                                                         alt={user.name}

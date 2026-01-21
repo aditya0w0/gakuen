@@ -171,7 +171,7 @@ export const setPurgeEnabled = setReplaceEnabled;
 export const isPurgeActive = isReplaceActive;
 export const addPurgePlatform = (name: string) => addReplacement(name, 'St. Freya Academy');
 
-export default {
+const platformPurgeExports = {
     replacePlatformNames,
     setReplaceEnabled,
     isReplaceActive,
@@ -183,3 +183,5 @@ export default {
     setPurgeEnabled,
     isPurgeActive,
 };
+
+export default platformPurgeExports;

@@ -3,8 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import {
-    DollarSign,
-    TrendingUp,
     Package,
     Gift,
     Search,
@@ -79,7 +77,7 @@ export default function PricingPage() {
         fetch("/api/courses", { cache: "no-store" })
             .then((res) => res.json())
             .then((data) => {
-                const coursesWithPricing = (data || []).map((c: any) => ({
+                const coursesWithPricing = (data || []).map((c: CoursePrice & { isFree?: boolean }) => ({
                     id: c.id,
                     title: c.title,
                     thumbnail: c.thumbnail,

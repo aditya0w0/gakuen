@@ -150,6 +150,7 @@ export function applyObjectTheming<T extends object>(
 ): T {
     if (!obj || typeof obj !== 'object') return obj;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const themed = { ...obj } as any;
 
     for (const key of Object.keys(themed)) {
@@ -209,9 +210,11 @@ export function findUnthemedTerms(content: string): string[] {
     return [...new Set(found)]; // Unique terms
 }
 
-export default {
+const contentThemingExports = {
     applyContentTheming,
     applyObjectTheming,
     containsUnthemedContent,
     findUnthemedTerms,
 };
+
+export default contentThemingExports;

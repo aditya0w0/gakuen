@@ -10,14 +10,13 @@ import Link from "next/link";
 import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/components/providers/SessionProvider";
-import { firebaseAuth } from "@/lib/firebase/auth";
 import { logger } from "@/lib/logger";
 
 export const dynamic = 'force-dynamic';
 
 function LoginPageContent() {
     const { error: authError, login: authLogin, signup: authSignup } = useAuth();
-    const { user: sessionUser, isLoading: sessionLoading } = useSession();
+    const { user: sessionUser } = useSession();
     const searchParams = useSearchParams();
     const router = useRouter();
     const [email, setEmail] = useState("");

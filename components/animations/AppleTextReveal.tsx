@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
-import { useRef, Children, ReactNode } from "react";
+import { useRef } from "react";
 
 interface AppleTextRevealProps {
     /** Text to reveal (string or ReactNode with text) */

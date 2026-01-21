@@ -155,8 +155,8 @@ export default function AdminNotificationsPage() {
             setTitle("");
             setMessage("");
             setSelectedUsers(new Map());
-        } catch (error: any) {
-            setStatus({ type: 'error', message: error.message });
+        } catch (error: unknown) {
+            setStatus({ type: 'error', message: error instanceof Error ? error.message : 'An error occurred' });
         } finally {
             setLoading(false);
         }
@@ -370,7 +370,7 @@ export default function AdminNotificationsPage() {
                                     <button
                                         key={item.id}
                                         type="button"
-                                        onClick={() => setType(item.id as any)}
+                                        onClick={() => setType(item.id as 'info' | 'success' | 'warning' | 'error')}
                                         className={cn(
                                             "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all",
                                             type === item.id

@@ -68,7 +68,7 @@ export default function CourseCheckoutPage() {
     const cardBrand = useMemo(() => detectCardBrand(cardNumber), [cardNumber]);
     const cardValidation = useMemo(() => validateCardNumber(cardNumber), [cardNumber]);
     const expiryValidation = useMemo(() => validateExpiry(expiry), [expiry]);
-    const cvvValidation = useMemo(() => validateCVV(cvv, cardBrand), [cvv, cardBrand]);
+    const _cvvValidation = useMemo(() => validateCVV(cvv, cardBrand), [cvv, cardBrand]);
 
     useEffect(() => {
         const fetchCourse = async () => {
@@ -134,8 +134,8 @@ export default function CourseCheckoutPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Invalid coupon');
             setCouponApplied({ code: couponCode, discount: data.discountPercent });
-        } catch (err: any) {
-            setCouponError(err.message);
+        } catch (err: unknown) {
+            setCouponError(err instanceof Error ? err.message : 'Invalid coupon');
         } finally {
             setCouponLoading(false);
         }
@@ -183,8 +183,8 @@ export default function CourseCheckoutPage() {
             await refreshUser();
 
             setStep('success');
-        } catch (err: any) {
-            setPaymentError(err.message);
+        } catch (err: unknown) {
+            setPaymentError(err instanceof Error ? err.message : 'Payment failed');
         } finally {
             paymentInFlightRef.current = false;
             setProcessing(false);

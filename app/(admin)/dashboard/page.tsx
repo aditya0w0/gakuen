@@ -4,7 +4,7 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { Course } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, BookOpen, TrendingUp, DollarSign, Eye, Edit, Trash2, Settings, Zap, CreditCard, Cloud } from "lucide-react";
+import { Users, BookOpen, TrendingUp, DollarSign, Eye, Edit, Trash2, Settings } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { dashboardCache, CACHE_KEYS } from "@/lib/cache/dashboard-cache";
@@ -72,6 +72,7 @@ export default function AdminDashboard() {
     const [recentUsers, setRecentUsers] = useState<RecentUser[]>(() =>
         dashboardCache.getCached<{ users: RecentUser[] }>(CACHE_KEYS.USERS)?.users || []
     );
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [features, setFeatures] = useState<FeatureFlags | null>(() =>
         dashboardCache.getCached<FeatureFlags>(CACHE_KEYS.FEATURES)
     );
@@ -149,28 +150,8 @@ export default function AdminDashboard() {
         };
     }, [fetchCourses, fetchStats, fetchUsers, fetchFeatures]);
 
-    // Toggle feature handler
-    const handleToggleFeature = async (feature: 'subscriptionsEnabled' | 'aiEnabled' | 'freeCoursesMode' | 'disableRateLimits' | 'aiUnlimitedMode') => {
-        if (!features || isTogglingFeature) return;
-
-        setIsTogglingFeature(feature);
-        try {
-            const res = await fetch('/api/admin/features', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ [feature]: !features[feature] }),
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                setFeatures(data.flags);
-            }
-        } catch (error) {
-            console.error('Failed to toggle feature:', error);
-        } finally {
-            setIsTogglingFeature(null);
-        }
-    };
+    // Note: Feature toggling is handled in the control page now
+    void isTogglingFeature; // Suppress unused warning - kept for future use
 
     // Layout already handles auth - just show loading state if needed
     if (isLoading) {

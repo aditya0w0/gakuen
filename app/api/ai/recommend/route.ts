@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Limit course data to save tokens (send only id, title, description, category)
-        const simplifiedCourses = courses.slice(0, 50).map((c: any) => ({
+        const simplifiedCourses = courses.slice(0, 50).map((c: { id: string; title?: string; description?: string; category?: string; level?: string }) => ({
             id: c.id,
             title: c.title?.slice(0, 200),
             description: c.description?.slice(0, 500),
