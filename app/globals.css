@@ -233,6 +233,75 @@
   .safe-area-pt {
     padding-top: env(safe-area-inset-top, 0);
   }
+
+  /* 
+   * Light mode text color overrides for prose/lesson content
+   * Content may have inline light colors saved from dark mode editing
+   * This forces readable colors in light mode while preserving dark mode
+   */
+  .prose,
+  .ProseMirror {
+    /* Light mode: force dark text */
+    color: #171717 !important;
+  }
+
+  .dark .prose,
+  .dark .ProseMirror {
+    /* Dark mode: force light text */
+    color: #f5f5f5 !important;
+  }
+
+  /* Override inline styles that use light colors (from dark mode editing) */
+  .prose *,
+  .ProseMirror * {
+
+    /* In light mode, override very light inline colors */
+    &:not(.dark *) {
+      /* This doesn't work well, use JavaScript or component-level fix instead */
+    }
+  }
+
+  /* Force headings to be readable */
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4,
+  .prose h5,
+  .prose h6,
+  .ProseMirror h1,
+  .ProseMirror h2,
+  .ProseMirror h3,
+  .ProseMirror h4,
+  .ProseMirror h5,
+  .ProseMirror h6 {
+    color: #171717 !important;
+  }
+
+  .dark .prose h1,
+  .dark .prose h2,
+  .dark .prose h3,
+  .dark .prose h4,
+  .dark .prose h5,
+  .dark .prose h6,
+  .dark .ProseMirror h1,
+  .dark .ProseMirror h2,
+  .dark .ProseMirror h3,
+  .dark .ProseMirror h4,
+  .dark .ProseMirror h5,
+  .dark .ProseMirror h6 {
+    color: #fafafa !important;
+  }
+
+  /* Force paragraphs to be readable */
+  .prose p,
+  .ProseMirror p {
+    color: #171717 !important;
+  }
+
+  .dark .prose p,
+  .dark .ProseMirror p {
+    color: #e5e5e5 !important;
+  }
 }
 
 /* GPU-optimized background animations */
