@@ -395,7 +395,8 @@ export async function listCourses(): Promise<Course[]> {
                     rating: data.rating || 0,
                     price: data.price || 0,
                     lessons: [],
-                    isPublished: data.status === 'published' || data.isPublished,
+                    // Check for published.tg_file_id (the real indicator), then legacy fields
+                    isPublished: !!data.published?.tg_file_id || data.status === 'published' || data.isPublished === true,
                 } as Course);
                 seenIds.add(doc.id);  // Track this ID to prevent duplicates
             });
