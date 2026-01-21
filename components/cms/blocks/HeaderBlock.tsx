@@ -30,7 +30,7 @@ export function HeaderBlock({
 
     const style: React.CSSProperties = {
         textAlign: component.align || undefined,
-        color: component.color || '#fafafa',  // Light color for dark mode
+        color: component.color || undefined,  // Inherit from parent prose container
         fontSize: component.fontSize ? `${component.fontSize}px` : defaultFontSizes[component.level || 1],
         fontWeight: component.fontWeight || 600,  // Semi-bold for headers
         marginTop: component.margin?.top ? `${component.margin.top}px` : '0',
