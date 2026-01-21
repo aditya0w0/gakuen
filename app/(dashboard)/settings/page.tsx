@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
 import { SimpleModal } from "@/components/ui/SimpleModal";
+import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
 
 export default function SettingsPage() {
     const { user, refreshUser } = useAuth();
@@ -19,6 +20,10 @@ export default function SettingsPage() {
     const [tempName, setTempName] = useState("");
     const [isUploading, setIsUploading] = useState(false);
     const { t } = useTranslation();
+
+    // Cropper modal state
+    const [cropperOpen, setCropperOpen] = useState(false);
+    const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
     // Google Drive Token Handling
     const searchParams = useSearchParams();
@@ -53,19 +58,30 @@ export default function SettingsPage() {
         }
     }, [user]);
 
-    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle file selection - open cropper
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file || !user) return;
+        if (!file) return;
 
+        const imageUrl = URL.createObjectURL(file);
+        setSelectedImageUrl(imageUrl);
+        setCropperOpen(true);
+        e.target.value = "";
+    };
+
+    // Handle cropped image upload
+    const handleCroppedUpload = async (blob: Blob) => {
+        if (!user) return;
+
+        setCropperOpen(false);
         setIsUploading(true);
+
         try {
-            // Upload using new API
+            const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
             const formData = new FormData();
             formData.append('file', file);
             formData.append('type', 'avatar');
             formData.append('id', user.id);
-
-
 
             const res = await authenticatedFetch('/api/upload', {
                 method: 'POST',
@@ -78,22 +94,18 @@ export default function SettingsPage() {
             }
             const { url } = await res.json();
 
-            // Update Profile in both local and Firebase
             await hybridStorage.profile.update(user.id, { avatar: url });
-
-            // Force immediate sync to Firestore (don't wait for debounce)
-            // This ensures avatar persists even if user hard refreshes immediately
             await syncManager.syncNow();
-
-            // Refresh Context to show new avatar instantly
             await refreshUser();
         } catch (error: any) {
             console.error("Failed to upload avatar", error);
-            // No rollback needed - avatar state wasn't updated until after success
-            // The user's avatar remains unchanged as expected
             alert(error.message || "Failed to upload avatar");
         } finally {
             setIsUploading(false);
+            if (selectedImageUrl) {
+                URL.revokeObjectURL(selectedImageUrl);
+                setSelectedImageUrl(null);
+            }
         }
     };
 
@@ -194,7 +206,7 @@ export default function SettingsPage() {
                                             type="file"
                                             className="hidden"
                                             accept="image/*"
-                                            onChange={handleAvatarUpload}
+                                            onChange={handleFileSelect}
                                             disabled={isUploading}
                                         />
                                     </label>
@@ -362,6 +374,20 @@ export default function SettingsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Image Cropper Modal */}
+            {selectedImageUrl && (
+                <ImageCropperModal
+                    imageUrl={selectedImageUrl}
+                    isOpen={cropperOpen}
+                    onClose={() => {
+                        setCropperOpen(false);
+                        URL.revokeObjectURL(selectedImageUrl);
+                        setSelectedImageUrl(null);
+                    }}
+                    onApply={handleCroppedUpload}
+                />
+            )}
         </div>
     );
 }
