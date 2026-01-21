@@ -8,17 +8,21 @@ import {
     Package,
     Gift,
     Search,
-    Filter,
     ChevronRight,
     Loader2,
     Check,
     X,
     Edit3,
     Tag,
+    Crown,
+    Sparkles,
+    Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+
+type AccessTier = "free" | "basic" | "mid" | "pro";
 
 interface CoursePrice {
     id: string;
@@ -26,16 +30,43 @@ interface CoursePrice {
     thumbnail?: string;
     price: number;
     isFree: boolean;
-    accessTier?: "free" | "basic" | "mid" | "pro";
+    accessTier: AccessTier;
     enrolledCount: number;
     isPublished?: boolean;
 }
+
+const TIER_CONFIG: Record<AccessTier, { label: string; icon: React.ReactNode; color: string; bgColor: string }> = {
+    free: {
+        label: "Free",
+        icon: <Gift className="w-4 h-4" />,
+        color: "text-emerald-600 dark:text-emerald-400",
+        bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    },
+    basic: {
+        label: "Basic",
+        icon: <Star className="w-4 h-4" />,
+        color: "text-blue-600 dark:text-blue-400",
+        bgColor: "bg-blue-100 dark:bg-blue-900/30",
+    },
+    mid: {
+        label: "Mid",
+        icon: <Sparkles className="w-4 h-4" />,
+        color: "text-purple-600 dark:text-purple-400",
+        bgColor: "bg-purple-100 dark:bg-purple-900/30",
+    },
+    pro: {
+        label: "Pro",
+        icon: <Crown className="w-4 h-4" />,
+        color: "text-amber-600 dark:text-amber-400",
+        bgColor: "bg-amber-100 dark:bg-amber-900/30",
+    },
+};
 
 export default function PricingPage() {
     const { isAdmin, isLoading: authLoading } = useRequireAdmin();
     const [courses, setCourses] = useState<CoursePrice[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [filter, setFilter] = useState<"all" | "free" | "paid">("all");
+    const [filter, setFilter] = useState<"all" | AccessTier>("all");
     const [search, setSearch] = useState("");
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editPrice, setEditPrice] = useState<number>(0);
@@ -67,43 +98,45 @@ export default function PricingPage() {
             });
     }, [isAdmin]);
 
-    // Stats
-    const stats = useMemo(() => {
-        const freeCourses = courses.filter((c) => c.isFree).length;
-        const paidCourses = courses.filter((c) => !c.isFree).length;
-        const avgPrice =
-            paidCourses > 0
-                ? Math.round(
-                    courses.filter((c) => !c.isFree).reduce((sum, c) => sum + c.price, 0) /
-                    paidCourses
-                )
-                : 0;
-        const totalPotentialRevenue = courses.reduce(
-            (sum, c) => sum + c.price * c.enrolledCount,
-            0
-        );
-        return { freeCourses, paidCourses, avgPrice, totalPotentialRevenue };
+    // Stats by tier
+    const tierStats = useMemo(() => {
+        return {
+            free: courses.filter((c) => c.accessTier === "free").length,
+            basic: courses.filter((c) => c.accessTier === "basic").length,
+            mid: courses.filter((c) => c.accessTier === "mid").length,
+            pro: courses.filter((c) => c.accessTier === "pro").length,
+            total: courses.length,
+        };
     }, [courses]);
 
     // Filtered courses
     const filteredCourses = useMemo(() => {
         return courses
             .filter((c) => {
-                if (filter === "free") return c.isFree;
-                if (filter === "paid") return !c.isFree;
-                return true;
+                if (filter === "all") return true;
+                return c.accessTier === filter;
             })
             .filter((c) =>
                 c.title.toLowerCase().includes(search.toLowerCase())
             );
     }, [courses, filter, search]);
 
+    // Handle tier change
+    const handleTierChange = async (courseId: string, newTier: AccessTier) => {
+        setCourses((prev) =>
+            prev.map((c) =>
+                c.id === courseId
+                    ? { ...c, accessTier: newTier, isFree: newTier === "free" }
+                    : c
+            )
+        );
+        // TODO: Call API to persist tier change
+    };
+
     // Handle price update
     const handleSavePrice = async (courseId: string) => {
         setIsSaving(true);
         try {
-            // This would call an API to update the course price
-            // For now, update locally
             setCourses((prev) =>
                 prev.map((c) =>
                     c.id === courseId
@@ -119,16 +152,6 @@ export default function PricingPage() {
         }
     };
 
-    const handleToggleFree = async (courseId: string, currentlyFree: boolean) => {
-        setCourses((prev) =>
-            prev.map((c) =>
-                c.id === courseId
-                    ? { ...c, isFree: !currentlyFree, price: !currentlyFree ? 0 : c.price }
-                    : c
-            )
-        );
-    };
-
     if (authLoading || !isAdmin) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -142,84 +165,60 @@ export default function PricingPage() {
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
-                    Pricing
+                    Pricing & Tiers
                 </h1>
                 <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-                    Manage course prices and revenue
+                    Manage course prices and subscription access
                 </p>
             </div>
 
-            {/* Stats Cards - Apple Style */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                    label="Total Revenue"
-                    value={`Rp ${stats.totalPotentialRevenue.toLocaleString()}`}
-                    icon={<DollarSign className="w-5 h-5 text-emerald-500" />}
-                    trend="+12%"
+            {/* Tier Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <TierStatCard
+                    tier="all"
+                    count={tierStats.total}
+                    label="All Courses"
+                    isActive={filter === "all"}
+                    onClick={() => setFilter("all")}
                 />
-                <StatCard
-                    label="Paid Courses"
-                    value={stats.paidCourses}
-                    icon={<TrendingUp className="w-5 h-5 text-blue-500" />}
-                />
-                <StatCard
-                    label="Free Courses"
-                    value={stats.freeCourses}
-                    icon={<Gift className="w-5 h-5 text-purple-500" />}
-                />
-                <StatCard
-                    label="Avg. Price"
-                    value={`Rp ${stats.avgPrice.toLocaleString()}`}
-                    icon={<Package className="w-5 h-5 text-orange-500" />}
-                />
+                {(Object.keys(TIER_CONFIG) as AccessTier[]).map((tier) => (
+                    <TierStatCard
+                        key={tier}
+                        tier={tier}
+                        count={tierStats[tier]}
+                        label={TIER_CONFIG[tier].label}
+                        isActive={filter === tier}
+                        onClick={() => setFilter(tier)}
+                    />
+                ))}
             </div>
 
-            {/* Quick Actions */}
+            {/* Search & Actions */}
             <div className="flex items-center justify-between flex-wrap gap-4">
-                {/* Search & Filter */}
-                <div className="flex items-center gap-3 flex-1 min-w-[200px]">
-                    <div className="relative flex-1 max-w-sm">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                        <Input
-                            type="text"
-                            placeholder="Search courses..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="pl-10 bg-white dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700"
-                        />
-                    </div>
-
-                    {/* Filter Pills */}
-                    <div className="flex items-center bg-neutral-100 dark:bg-neutral-800 rounded-full p-1">
-                        {(["all", "paid", "free"] as const).map((f) => (
-                            <button
-                                key={f}
-                                onClick={() => setFilter(f)}
-                                className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all ${filter === f
-                                        ? "bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm"
-                                        : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300"
-                                    }`}
-                            >
-                                {f.charAt(0).toUpperCase() + f.slice(1)}
-                            </button>
-                        ))}
-                    </div>
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <Input
+                        type="text"
+                        placeholder="Search courses..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="pl-10 bg-white dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700"
+                    />
                 </div>
 
-                {/* Coupons Link */}
                 <Link href="/coupons">
                     <Button
                         variant="outline"
                         className="gap-2 border-neutral-200 dark:border-neutral-700"
                     >
                         <Tag className="w-4 h-4" />
-                        Manage Promotions
+                        Promotions
                         <ChevronRight className="w-4 h-4" />
                     </Button>
                 </Link>
             </div>
 
-            {/* Course Pricing List - Apple Style */}
+            {/* Course List */}
             <div className="bg-white dark:bg-neutral-900/50 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
                 {isLoading ? (
                     <div className="flex items-center justify-center py-20">
@@ -268,16 +267,27 @@ export default function PricingPage() {
                                     </p>
                                 </div>
 
-                                {/* Free Toggle */}
-                                <button
-                                    onClick={() => handleToggleFree(course.id, course.isFree)}
-                                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${course.isFree
-                                            ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                                            : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400"
-                                        }`}
-                                >
-                                    {course.isFree ? "Free" : "Paid"}
-                                </button>
+                                {/* Tier Selector */}
+                                <div className="flex items-center gap-1">
+                                    {(Object.keys(TIER_CONFIG) as AccessTier[]).map((tier) => {
+                                        const config = TIER_CONFIG[tier];
+                                        const isActive = course.accessTier === tier;
+                                        return (
+                                            <button
+                                                key={tier}
+                                                onClick={() => handleTierChange(course.id, tier)}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${isActive
+                                                        ? `${config.bgColor} ${config.color}`
+                                                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                                                    }`}
+                                                title={config.label}
+                                            >
+                                                {config.icon}
+                                                <span className="hidden sm:inline">{config.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
 
                                 {/* Price Editor */}
                                 {editingId === course.id ? (
@@ -313,7 +323,7 @@ export default function PricingPage() {
                                 ) : (
                                     <div className="flex items-center gap-3">
                                         <span className="text-lg font-semibold text-neutral-900 dark:text-white min-w-[100px] text-right">
-                                            {course.isFree
+                                            {course.accessTier === "free"
                                                 ? "Free"
                                                 : `Rp ${course.price.toLocaleString()}`}
                                         </span>
@@ -334,44 +344,57 @@ export default function PricingPage() {
                 )}
             </div>
 
-            {/* Footer Note */}
-            <p className="text-center text-sm text-neutral-400 dark:text-neutral-500">
-                Price changes take effect immediately for new enrollments
-            </p>
+            {/* Tier Legend */}
+            <div className="flex items-center justify-center gap-6 text-sm">
+                {(Object.keys(TIER_CONFIG) as AccessTier[]).map((tier) => {
+                    const config = TIER_CONFIG[tier];
+                    return (
+                        <div key={tier} className={`flex items-center gap-2 ${config.color}`}>
+                            {config.icon}
+                            <span>{config.label}</span>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
 
-// Apple-style Stat Card
-function StatCard({
+// Tier Stat Card Component
+function TierStatCard({
+    tier,
+    count,
     label,
-    value,
-    icon,
-    trend,
+    isActive,
+    onClick,
 }: {
+    tier: AccessTier | "all";
+    count: number;
     label: string;
-    value: string | number;
-    icon: React.ReactNode;
-    trend?: string;
+    isActive: boolean;
+    onClick: () => void;
 }) {
+    const config = tier === "all" ? null : TIER_CONFIG[tier];
+
     return (
-        <div className="bg-white dark:bg-neutral-900/50 rounded-2xl p-5 border border-neutral-200 dark:border-neutral-800">
-            <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-xl">
-                    {icon}
-                </div>
-                {trend && (
-                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-full">
-                        {trend}
-                    </span>
+        <button
+            onClick={onClick}
+            className={`p-4 rounded-xl border transition-all text-left ${isActive
+                    ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
+                    : "bg-white dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
+                }`}
+        >
+            <div className="flex items-center gap-2 mb-2">
+                {config ? (
+                    <div className={isActive ? "" : config.color}>{config.icon}</div>
+                ) : (
+                    <Package className="w-4 h-4" />
                 )}
             </div>
-            <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                {value}
-            </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+            <p className="text-2xl font-bold">{count}</p>
+            <p className={`text-xs ${isActive ? "opacity-70" : "text-neutral-500"}`}>
                 {label}
             </p>
-        </div>
+        </button>
     );
 }
