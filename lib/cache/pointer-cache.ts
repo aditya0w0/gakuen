@@ -163,3 +163,14 @@ export function getPointerCacheStats(): {
         draftCount: pointerCache ? Object.keys(pointerCache.draft).length : 0,
     };
 }
+
+/**
+ * Remove a course from cache (call after delete)
+ */
+export function removeFromPointerCache(courseId: string): void {
+    if (pointerCache) {
+        delete pointerCache.published[courseId];
+        delete pointerCache.draft[courseId];
+        console.log(`🗑️ [PointerCache] Removed ${courseId}`);
+    }
+}

@@ -31,7 +31,8 @@ import {
     getDraftPointer,
     getAnyPointer,
     invalidatePointerCache,
-    updatePointerCache
+    updatePointerCache,
+    removeFromPointerCache
 } from '@/lib/cache/pointer-cache';
 import {
     addToLocalRegistry,
@@ -417,26 +418,27 @@ export async function listCourses(): Promise<Course[]> {
 }
 
 /**
- * Delete course (from Firestore AND local registry)
+ * Delete course (from Firestore AND local registry AND pointer cache)
  */
 export async function deleteCourse(id: string): Promise<boolean> {
-    // Remove from local registry first (always do this)
+    // Remove from all caches first (always do this)
     await removeFromLocalRegistry(id);
+    removeFromPointerCache(id);
 
     const db = getFirestore();
     if (!db) {
-        console.log(`✅ Deleted ${id} from local registry (Firestore unavailable)`);
+        console.log(`✅ Deleted ${id} from local registry + cache (Firestore unavailable)`);
         return true;
     }
 
     try {
         await db.collection('courses').doc(id).delete();
-        console.log(`✅ Deleted ${id} from Firestore and local registry`);
+        console.log(`✅ Deleted ${id} from Firestore, local registry, and cache`);
         return true;
     } catch (error: any) {
         if (error?.code === 8 || error?.message?.includes('RESOURCE_EXHAUSTED')) {
-            console.warn(`⚠️ [Firestore] Quota exhausted - deleted from local registry only`);
-            return true;  // Local registry deletion succeeded
+            console.warn(`⚠️ [Firestore] Quota exhausted - deleted from local registry + cache only`);
+            return true;  // Local deletion succeeded
         }
         console.error(`Error deleting course ${id}:`, error);
         return false;
