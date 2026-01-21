@@ -12,9 +12,51 @@ import { getFirebaseDB, isFirebaseEnabled } from "./config";
 import { User } from "@/lib/types";
 import type { FirebaseUser, FirebaseProgress } from "./types";
 
+// ============================================
+// USER PROFILE CACHE (prevents excessive Firestore reads)
+// ============================================
+interface CachedProfile {
+    user: User;
+    cachedAt: number;
+}
+
+const profileCache = new Map<string, CachedProfile>();
+const PROFILE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedProfile(userId: string): User | null {
+    const cached = profileCache.get(userId);
+    if (!cached) return null;
+
+    // Check if cache is still valid
+    if (Date.now() - cached.cachedAt > PROFILE_CACHE_TTL) {
+        profileCache.delete(userId);
+        return null;
+    }
+
+    return cached.user;
+}
+
+function setCachedProfile(userId: string, user: User): void {
+    profileCache.set(userId, {
+        user,
+        cachedAt: Date.now(),
+    });
+}
+
+export function invalidateProfileCache(userId: string): void {
+    profileCache.delete(userId);
+}
+
 // User Operations
 export const getUserProfile = async (userId: string): Promise<User | null> => {
     if (!isFirebaseEnabled()) return null;
+
+    // Check cache first (prevents repeated Firestore reads)
+    const cached = getCachedProfile(userId);
+    if (cached) {
+        console.log(`📦 [ProfileCache] Hit for ${userId.slice(0, 8)}...`);
+        return cached;
+    }
 
     const db = getFirebaseDB();
     if (!db) return null;
@@ -28,7 +70,7 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
         const data = docSnap.data() as FirebaseUser;
         // Normalize role: 'user' is legacy, map it to 'student'
         const normalizedRole: "admin" | "student" = data.role === 'admin' ? 'admin' : 'student';
-        return {
+        const user: User = {
             id: userId,
             email: data.email,
             name: data.name,
@@ -49,6 +91,12 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
                 ? (data.createdAt as Timestamp).toDate().toISOString()
                 : new Date().toISOString(),
         };
+
+        // Cache the profile
+        setCachedProfile(userId, user);
+        console.log(`🔥 [Firestore] Fetched profile for ${userId.slice(0, 8)}... (now cached)`);
+
+        return user;
     } catch (error) {
         console.error("Error fetching user profile:", error);
         return null;
