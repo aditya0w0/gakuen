@@ -7,7 +7,8 @@ interface FetchOptions extends RequestInit {
     timeout?: number;
     retries?: number;
     retryDelay?: number;
-    offlineFallback?: () => unknown;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    offlineFallback?: () => any;
 }
 
 // Cache for offline support
@@ -40,7 +41,7 @@ export async function resilientFetch<T = any>(
         // Use fallback if available
         if (offlineFallback) {
             console.log('📴 Offline, using fallback for:', url);
-            return offlineFallback();
+            return offlineFallback() as T;
         }
 
         throw new Error('No network connection and no cached data available');
