@@ -17,8 +17,13 @@ import {
     Users,
     Settings,
     Bell,
+    AlertCircle,
+    RefreshCw,
+    ExternalLink,
+    CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
+import { SimpleModal } from "@/components/ui/SimpleModal";
 
 interface FeatureFlags {
     subscriptionsEnabled: boolean;
@@ -33,9 +38,10 @@ interface FeatureFlags {
 }
 
 interface SystemStatus {
-    firebase: "healthy" | "degraded" | "error";
-    telegram: "healthy" | "degraded" | "error";
-    ai: "healthy" | "degraded" | "error";
+    firebase: "healthy" | "degraded" | "error" | "loading";
+    drive: "healthy" | "degraded" | "error" | "loading";
+    r2: "healthy" | "degraded" | "error" | "loading";
+    telegram: "healthy" | "degraded" | "error" | "loading";
 }
 
 export default function AdminControlPage() {
@@ -43,11 +49,37 @@ export default function AdminControlPage() {
     const [features, setFeatures] = useState<FeatureFlags | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isTogglingFeature, setIsTogglingFeature] = useState<string | null>(null);
-    const [systemStatus] = useState<SystemStatus>({
-        firebase: "healthy",
-        telegram: "healthy",
-        ai: "healthy",
+    const [status, setStatus] = useState<SystemStatus>({
+        firebase: "loading",
+        drive: "loading",
+        r2: "loading",
+        telegram: "loading",
     });
+
+    const [isMigrating, setIsMigrating] = useState(false);
+    const [migrationStats, setMigrationStats] = useState<any>(null);
+    const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
+    const [migrationError, setMigrationError] = useState<string | null>(null);
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
+    // Fetch system status
+    const fetchStatus = useCallback(async () => {
+        try {
+            const res = await fetch("/api/admin/status");
+            if (res.ok) {
+                const data = await res.json();
+                setStatus(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch system status:", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isAdmin) {
+            fetchStatus();
+        }
+    }, [isAdmin, fetchStatus]);
 
     // Fetch features
     useEffect(() => {
@@ -91,6 +123,31 @@ export default function AdminControlPage() {
         [features, isTogglingFeature]
     );
 
+    // Run migration
+    const handleMigrate = async () => {
+        setIsMigrationModalOpen(false);
+        setIsMigrating(true);
+        setMigrationStats(null);
+        setMigrationError(null);
+
+        try {
+            const res = await fetch("/api/admin/migrate", { method: "POST" });
+            const data = await res.json();
+            if (res.ok) {
+                setMigrationStats(data.stats);
+                setIsSuccessModalOpen(true);
+                fetchStatus();
+            } else {
+                setMigrationError(data.error || "Unknown migration error");
+            }
+        } catch (error) {
+            console.error("Migration error:", error);
+            setMigrationError("Migration failed due to a network error.");
+        } finally {
+            setIsMigrating(false);
+        }
+    };
+
     if (authLoading || !isAdmin) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -122,21 +179,147 @@ export default function AdminControlPage() {
                 <div className="grid grid-cols-3 divide-x divide-neutral-100 dark:divide-neutral-800">
                     <StatusIndicator
                         label="Firebase"
-                        status={systemStatus.firebase}
+                        status={status.firebase}
                         icon={<Database className="w-4 h-4" />}
                     />
                     <StatusIndicator
-                        label="Telegram"
-                        status={systemStatus.telegram}
+                        label="Google Drive"
+                        status={status.drive}
                         icon={<Cloud className="w-4 h-4" />}
                     />
                     <StatusIndicator
-                        label="AI Services"
-                        status={systemStatus.ai}
-                        icon={<Sparkles className="w-4 h-4" />}
+                        label="Cloudflare R2"
+                        status={status.r2}
+                        icon={<Cloud className="w-4 h-4" />}
+                    />
+                    <StatusIndicator
+                        label="Telegram"
+                        status={status.telegram}
+                        icon={<Database className="w-4 h-4" />}
                     />
                 </div>
+
+                {/* Status-specific Alerts */}
+                {(status.drive === 'error' || status.telegram === 'error' || status.r2 === 'error') && (
+                    <div className="p-4 bg-red-50 dark:bg-red-500/10 border-t border-neutral-200 dark:border-neutral-800">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="text-sm font-semibold text-red-900 dark:text-red-400">
+                                    Connection Issues Detected
+                                </p>
+                                <p className="text-xs text-red-700 dark:text-red-500/80 mt-1">
+                                    {status.drive === 'error' && "Google Drive token has expired or is invalid. "}
+                                    {status.r2 === 'error' && "Cloudflare R2 configuration is invalid or bucket is unreachable. "}
+                                    {status.telegram === 'error' && "Telegram bot token is invalid or bot is not responding."}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* System Actions & Migration */}
+                <div className="p-4 bg-neutral-50/50 dark:bg-neutral-800/10 border-t border-neutral-200 dark:border-neutral-800 flex flex-wrap gap-3">
+                    {status.drive === 'error' && (
+                        <Link
+                            href="/api/admin/authorize-drive"
+                            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-red-500/20"
+                        >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            Re-authorize Google Drive
+                        </Link>
+                    )}
+
+                    {status.r2 === 'healthy' && (
+                        <button
+                            onClick={() => setIsMigrationModalOpen(true)}
+                            disabled={isMigrating || status.drive !== 'healthy'}
+                            className={`flex items-center gap-2 px-4 py-2 text-white text-xs font-bold rounded-lg transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${status.drive === 'healthy'
+                                ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
+                                : "bg-neutral-500 shadow-neutral-500/20"
+                                }`}
+                        >
+                            {isMigrating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                            {status.drive === 'healthy' ? "Migrate Drive to R2" : "Re-auth Drive to Enable Migration"}
+                        </button>
+                    )}
+
+                    <button
+                        onClick={fetchStatus}
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 text-xs font-bold rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                    >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Retry Connection
+                    </button>
+                </div>
+
+                {migrationStats && (
+                    <div className="p-4 bg-emerald-50/30 dark:bg-emerald-500/5 border-t border-neutral-200 dark:border-neutral-800">
+                        <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-2">Last Migration Results:</p>
+                        <div className="grid grid-cols-4 gap-4">
+                            <div className="text-center p-2 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800">
+                                <p className="text-[10px] text-neutral-500 uppercase tracking-wider">Total</p>
+                                <p className="text-lg font-bold text-neutral-900 dark:text-white">{migrationStats.total}</p>
+                            </div>
+                            <div className="text-center p-2 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800">
+                                <p className="text-[10px] text-emerald-500 uppercase tracking-wider">Migrated</p>
+                                <p className="text-lg font-bold text-emerald-500">{migrationStats.migrated}</p>
+                            </div>
+                            <div className="text-center p-2 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800">
+                                <p className="text-[10px] text-red-500 uppercase tracking-wider">Failed</p>
+                                <p className="text-lg font-bold text-red-500">{migrationStats.failed}</p>
+                            </div>
+                            <div className="text-center p-2 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800">
+                                <p className="text-[10px] text-blue-500 uppercase tracking-wider">Updated</p>
+                                <p className="text-lg font-bold text-blue-500">{migrationStats.updatedDocs}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
+
+            {/* Migration Confirmation Modal */}
+            <SimpleModal
+                isOpen={isMigrationModalOpen}
+                onClose={() => setIsMigrationModalOpen(false)}
+                onConfirm={handleMigrate}
+                title="Migrate Images to R2"
+                description="This will download all images from Google Drive and upload them to Cloudflare R2. Database references will be updated automatically. This process might take several minutes."
+                confirmText="Start Migration"
+                cancelText="Cancel"
+                icon={<Cloud className="w-5 h-5" />}
+                isLoading={isMigrating}
+            />
+
+            {/* Migration Success Modal */}
+            <SimpleModal
+                isOpen={isSuccessModalOpen}
+                onClose={() => setIsSuccessModalOpen(false)}
+                onConfirm={() => setIsSuccessModalOpen(false)}
+                title="Migration Complete"
+                description="Successfully migrated your images from Google Drive to Cloudflare R2."
+                confirmText="Done"
+                icon={<CheckCircle2 className="w-5 h-5" />}
+            />
+
+            {/* Migration Error Alert */}
+            {migrationError && (
+                <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-right duration-300">
+                    <div className="bg-red-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4">
+                        <AlertCircle className="w-6 h-6" />
+                        <div>
+                            <p className="font-bold">Migration Failed</p>
+                            <p className="text-sm opacity-90">{migrationError}</p>
+                        </div>
+                        <button
+                            onClick={() => setMigrationError(null)}
+                            className="ml-4 hover:opacity-70"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
 
             {/* Feature Toggles */}
             <div className="bg-white dark:bg-neutral-900/50 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
@@ -271,8 +454,8 @@ function FeatureToggle({
                 onClick={onToggle}
                 disabled={isToggling}
                 className={`relative w-14 h-8 rounded-full transition-colors ${enabled
-                        ? "bg-emerald-500"
-                        : "bg-neutral-300 dark:bg-neutral-600"
+                    ? "bg-emerald-500"
+                    : "bg-neutral-300 dark:bg-neutral-600"
                     } ${isToggling ? "opacity-50" : ""}`}
             >
                 <span
@@ -294,19 +477,21 @@ function StatusIndicator({
     icon,
 }: {
     label: string;
-    status: "healthy" | "degraded" | "error";
+    status: "healthy" | "degraded" | "error" | "loading";
     icon: React.ReactNode;
 }) {
     const statusColors = {
         healthy: "text-emerald-500",
         degraded: "text-amber-500",
         error: "text-red-500",
+        loading: "text-neutral-400",
     };
 
     const statusLabels = {
         healthy: "Operational",
         degraded: "Degraded",
         error: "Error",
+        loading: "Checking...",
     };
 
     return (
@@ -318,10 +503,10 @@ function StatusIndicator({
             <div className="flex items-center justify-center gap-2">
                 <span
                     className={`w-2 h-2 rounded-full ${status === "healthy"
-                            ? "bg-emerald-500"
-                            : status === "degraded"
-                                ? "bg-amber-500"
-                                : "bg-red-500"
+                        ? "bg-emerald-500"
+                        : status === "degraded"
+                            ? "bg-amber-500"
+                            : "bg-red-500"
                         }`}
                 />
                 <span className="text-xs text-neutral-500">{statusLabels[status]}</span>

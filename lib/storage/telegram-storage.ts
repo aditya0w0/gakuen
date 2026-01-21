@@ -184,3 +184,22 @@ export function getBlobStats(blob: CourseBlob): {
         hash: crypto.createHash('md5').update(jsonString).digest('hex'),
     };
 }
+
+/**
+ * Validate Telegram connection by checking bot token
+ */
+export async function validateTelegramConnection(): Promise<boolean> {
+    if (!isTelegramEnabled()) return false;
+
+    try {
+        const token = process.env.TELEGRAM_BOT_TOKEN!;
+        const response = await fetch(`${TG_API}${token}/getMe`);
+        if (!response.ok) return false;
+
+        const result = await response.json();
+        return result.ok === true;
+    } catch (error) {
+        console.error('Telegram connection validation failed:', error);
+        return false;
+    }
+}

@@ -1,67 +1,199 @@
 [
   {
     "id": "untitled-course-1768880419792",
-    "tg_file_id": "BQACAgUAAyEGAATV17OvAAM9aW8F6vSteVUcMIA9-FdvYh-QLwoAAtgZAAIzc3hXo0WS36yijmQ4BA",
+    "tg_file_id": "BQACAgUAAyEGAATV17OvAAO_aXEHM2JU-dmOXp2hqVrg0nirCusAAskbAAJDNohXu51Flo34M8I4BA",
     "meta": {
-      "title": "Back-End Pemula dengan JavaScript",
-      "description": "Start building your course...",
-      "thumbnail": "https://placehold.co/800x400",
+      "duration": "0 hours",
       "instructor": "Ayaka",
-      "instructorAvatar": "",
-      "category": "Web Development",
       "level": "beginner",
-      "duration": "0 hours"
+      "description": "Start building your course...",
+      "instructorAvatar": "",
+      "thumbnail": "/api/images/r2-cms:migrated-18e-1H2f8BE-zQZVzfLR01Zo-8cSNtf-B.webp",
+      "category": "Backend Development",
+      "title": "Belajar Back-End Pemula dengan JavaScript"
     },
     "sections": [
       {
         "id": "S1",
         "t": "Pendahuluan",
         "l": [
-          "L1"
+          "L1",
+          "L2",
+          "L3",
+          "L4",
+          "L5",
+          "L6",
+          "L7"
         ]
       },
       {
         "id": "S2",
         "t": "Pengenalan ke Back-End",
-        "l": []
+        "l": [
+          "L8",
+          "L9",
+          "L10",
+          "L11",
+          "L12",
+          "L13",
+          "L14",
+          "L15",
+          "L16",
+          "L17",
+          "L18"
+        ]
       },
       {
         "id": "S3",
         "t": "Dasar-Dasar Node.js",
-        "l": []
+        "l": [
+          "L19",
+          "L20",
+          "L21",
+          "L22",
+          "L23",
+          "L24",
+          "L25",
+          "L26",
+          "L27",
+          "L28",
+          "L29",
+          "L30",
+          "L31",
+          "L32",
+          "L33"
+        ]
       },
       {
         "id": "S4",
         "t": "Membangun Web Service menggunakan Node.js",
-        "l": []
+        "l": [
+          "L34",
+          "L35",
+          "L36",
+          "L37",
+          "L38",
+          "L39",
+          "L40",
+          "L41",
+          "L42",
+          "L43",
+          "L44",
+          "L45",
+          "L46",
+          "L47",
+          "L48",
+          "L49",
+          "L50",
+          "L51",
+          "L52",
+          "L53",
+          "L54",
+          "L55",
+          "L56",
+          "L57",
+          "L58",
+          "L59",
+          "L60",
+          "L61",
+          "L62",
+          "L63",
+          "L64",
+          "L65"
+        ]
       },
       {
         "id": "S5",
         "t": "Deploy Web Services",
-        "l": []
+        "l": [
+          "L66",
+          "L67",
+          "L68",
+          "L69",
+          "L70",
+          "L71",
+          "L72",
+          "L73",
+          "L74",
+          "L75",
+          "L76",
+          "L77",
+          "L78",
+          "L79",
+          "L80",
+          "L81",
+          "L82",
+          "L83",
+          "L84",
+          "L85",
+          "L86"
+        ]
       },
       {
         "id": "S6",
         "t": " Mengonsumsi dan Menguji RESTful API menggunakan Postman",
-        "l": []
+        "l": [
+          "L87",
+          "L88",
+          "L89",
+          "L90",
+          "L91",
+          "L92",
+          "L93",
+          "L94",
+          "L95",
+          "L96",
+          "L97",
+          "L98",
+          "L99",
+          "L100",
+          "L101",
+          "L102",
+          "L103",
+          "L104",
+          "L105",
+          "L106",
+          "L107",
+          "L108",
+          "L109"
+        ]
       },
       {
         "id": "S7",
         "t": " AI di Balik Layar: Integrasi AI di Back-End",
-        "l": []
+        "l": [
+          "L110",
+          "L111",
+          "L112",
+          "L113",
+          "L114",
+          "L115",
+          "L116",
+          "L117",
+          "L118",
+          "L119",
+          "L120",
+          "L121",
+          "L122"
+        ]
       },
       {
         "id": "S8",
         "t": "Penutup",
-        "l": []
+        "l": [
+          "L124",
+          "L123"
+        ]
       },
       {
         "id": "S9",
         "t": "Proyek Akhir",
-        "l": []
+        "l": [
+          "L125"
+        ]
       }
     ],
-    "createdAt": "2026-01-20T04:34:54.990Z",
+    "createdAt": "2026-01-21T17:06:31.382Z",
     "pending_sync": false
   }
 ]

@@ -87,6 +87,18 @@ export async function GET(
             buffer = await readFile(filepath);
             mimeType = 'image/webp'; // All processed images are WebP
 
+        } else if (fileId.startsWith('r2-')) {
+            // Cloudflare R2 storage
+            const { getFileFromR2 } = await import('@/lib/storage/r2-storage');
+            const result = await getFileFromR2(fileId);
+
+            if (!result) {
+                return NextResponse.json({ error: 'File not found on R2' }, { status: 404 });
+            }
+
+            buffer = result.buffer;
+            mimeType = result.mimeType;
+
         } else {
             // Google Drive file
             const { isDriveEnabled, getFileFromDrive } = await import('@/lib/storage/google-drive');

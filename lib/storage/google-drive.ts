@@ -265,3 +265,25 @@ export function isDriveEnabled(): boolean {
         process.env.GOOGLE_REFRESH_TOKEN
     );
 }
+
+/**
+ * Validate the Drive connection by performing a simple API call
+ * Returns true if connection is healthy, false otherwise
+ */
+export async function validateDriveConnection(): Promise<boolean> {
+    if (!isDriveEnabled()) return false;
+
+    try {
+        const drive = getDriveClient();
+        // Fast, cheap metadata call to verify token validity
+        await drive.files.list({
+            pageSize: 1,
+            fields: 'files(id)',
+            spaces: 'drive'
+        });
+        return true;
+    } catch (error) {
+        console.error('Drive connection validation failed:', error);
+        return false;
+    }
+}

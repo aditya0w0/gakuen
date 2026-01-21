@@ -150,8 +150,38 @@ export const POST = withAuthTracked(async (request, { user }) => {
                     replaced: wasReplaced  // True if NSFW was replaced with meme
                 });
             } catch (driveError) {
-                console.error('Drive upload failed, falling back to local storage:', driveError);
-                // Fall through to local storage
+                console.error('Drive upload failed, trying R2 fallback:', driveError);
+                // Fall through to R2
+            }
+        }
+
+        // --- CLOUDFLARE R2 FALLBACK ---
+        const { isR2Enabled, uploadToR2 } = await import('@/lib/storage/r2-storage');
+
+        if (isR2Enabled()) {
+            try {
+                const r2Folder = DRIVE_FOLDERS[type]; // Uses same folder names
+                const { url, fileId } = await uploadToR2(
+                    processedBuffer, // Use the same processed buffer
+                    filename,
+                    r2Folder as any,
+                    'image/webp'
+                );
+
+                console.log(`✅ Image uploaded to R2: ${fileId}`);
+                return NextResponse.json({
+                    url,
+                    fileId,
+                    width: metadata.width,
+                    height: metadata.height,
+                    size: processedBuffer.length,
+                    filename,
+                    storage: 'r2',
+                    replaced: wasReplaced
+                });
+            } catch (r2Error) {
+                console.error('R2 upload failed, falling back to local storage:', r2Error);
+                // Fall through to local
             }
         }
 
