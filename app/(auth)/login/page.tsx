@@ -112,6 +112,11 @@ function LoginPageContent() {
 
         try {
             const user = await hybridStorage.auth.signInWithGoogle();
+
+            // Small delay to ensure user profile/role is fully loaded from Firestore
+            // Matches the delay in AuthContext.login to prevent race conditions
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             router.push(user.role === "admin" ? "/dashboard" : "/user");
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Google sign-in failed";
