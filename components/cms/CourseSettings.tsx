@@ -3,6 +3,7 @@
 import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
 import React, { useState } from "react";
 import { Upload, Wand2, Loader2, X, Plus } from "lucide-react";
+import Image from "next/image";
 
 // Available course categories
 const COURSE_CATEGORIES = [
@@ -152,13 +153,16 @@ export function CourseSettings({
                 <div className="relative w-full h-64 bg-zinc-800 rounded-xl overflow-hidden group">
                     {/* Image or Placeholder */}
                     {courseThumbnail && courseThumbnail !== 'https://placehold.co/800x400' && !thumbnailError ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                            src={courseThumbnail}
-                            alt="Course thumbnail"
-                            className="w-full h-full object-cover"
-                            onError={() => setThumbnailError(true)}
-                        />
+                        <div className="relative w-full h-full">
+                            <Image
+                                src={courseThumbnail}
+                                alt="Course thumbnail"
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 768px) 100vw, 672px"
+                                onError={() => setThumbnailError(true)}
+                            />
+                        </div>
                     ) : (
                         /* Same decorative background as ImageBlock - also shown on error */
                         <div
@@ -319,13 +323,16 @@ export function CourseSettings({
                                     <Loader2 size={20} className="animate-spin text-indigo-400" />
                                 </div>
                             ) : courseAuthorAvatar && !avatarError ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    src={courseAuthorAvatar}
-                                    alt="Instructor"
-                                    className="w-full h-full object-cover"
-                                    onError={() => setAvatarError(true)}
-                                />
+                                <div className="relative w-full h-full">
+                                    <Image
+                                        src={courseAuthorAvatar}
+                                        alt="Instructor"
+                                        fill
+                                        className="object-cover"
+                                        sizes="64px"
+                                        onError={() => setAvatarError(true)}
+                                    />
+                                </div>
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500/20 to-purple-500/20">
                                     <span className="text-xl font-bold text-indigo-300/60">

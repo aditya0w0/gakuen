@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { Camera, Loader2, User } from 'lucide-react';
 import { useUpload } from '@/lib/hooks/useUpload';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface AvatarUploadProps {
     userId: string;
@@ -59,12 +60,15 @@ export function AvatarUpload({ userId, currentAvatar, onUpload, size = 'md' }: A
                 )}
             >
                 {displayImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={displayImage}
-                        alt="Avatar"
-                        className="w-full h-full object-cover"
-                    />
+                    <div className="relative w-full h-full">
+                        <Image
+                            src={displayImage}
+                            alt="Avatar"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 128px) 100vw, 128px"
+                        />
+                    </div>
                 ) : (
                     <User className="w-1/2 h-1/2 text-zinc-500" />
                 )}

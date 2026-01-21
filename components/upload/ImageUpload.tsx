@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { ImagePlus, Loader2, X, Image as ImageIcon } from 'lucide-react';
 import { useUpload } from '@/lib/hooks/useUpload';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface ImageUploadProps {
     type: 'course' | 'lesson' | 'cms';
@@ -100,12 +101,15 @@ export function ImageUpload({
             >
                 {displayImage ? (
                     <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={displayImage}
-                            alt="Uploaded"
-                            className="w-full h-full object-cover"
-                        />
+                        <div className="relative w-full h-full">
+                            <Image
+                                src={displayImage}
+                                alt="Uploaded"
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            />
+                        </div>
 
                         {/* Actions overlay */}
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">

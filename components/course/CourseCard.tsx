@@ -11,6 +11,7 @@ import { animate } from "@/components/animations/useAnime";
 import { useAuth } from "../auth/AuthContext";
 import { useTranslation } from "@/lib/i18n";
 import { useTranslatedCourse } from "@/lib/hooks/useTranslatedCourse";
+import Image from "next/image";
 
 // Convert Google Drive URLs to proxy URLs
 function getProxiedImageUrl(url: string | undefined): string | undefined {
@@ -139,13 +140,16 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
                         </div>
                         {/* Render image on top if thumbnail exists */}
                         {course.thumbnail && !imageError && (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                                src={getProxiedImageUrl(course.thumbnail)}
-                                alt={course.title}
-                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                onError={() => setImageError(true)}
-                            />
+                            <div className="absolute inset-0">
+                                <Image
+                                    src={getProxiedImageUrl(course.thumbnail) || ''}
+                                    alt={course.title}
+                                    fill
+                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                    onError={() => setImageError(true)}
+                                />
+                            </div>
                         )}
                         {/* Gradient Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-zinc-950 via-white/20 dark:via-zinc-950/20 to-transparent opacity-90" />
@@ -231,17 +235,24 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
                                 <>
                                     <div className="flex items-center gap-2">
                                         {course.instructorAvatar ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                                src={course.instructorAvatar}
-                                                alt={course.instructor || "Instructor"}
-                                                className="h-8 w-8 rounded-full object-cover border border-neutral-200 dark:border-white/10"
-                                                onError={(e) => {
-                                                    // Fallback to initial on error
-                                                    e.currentTarget.style.display = 'none';
-                                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                                }}
-                                            />
+                                            <div className="relative h-8 w-8 rounded-full overflow-hidden border border-neutral-200 dark:border-white/10">
+                                                <Image
+                                                    src={course.instructorAvatar}
+                                                    alt={course.instructor || "Instructor"}
+                                                    fill
+                                                    className="object-cover"
+                                                    sizes="32px"
+                                                    onError={(e) => {
+                                                        // Fallback to initial on error
+                                                        const target = e.currentTarget as HTMLImageElement;
+                                                        const parent = target.parentElement;
+                                                        if (parent) {
+                                                            parent.style.display = 'none';
+                                                            parent.nextElementSibling?.classList.remove('hidden');
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
                                         ) : null}
                                         <div className={`h-8 w-8 rounded-full bg-neutral-100 dark:bg-zinc-800 border border-neutral-200 dark:border-white/5 flex items-center justify-center text-xs font-bold text-neutral-400 dark:text-white/50 ${course.instructorAvatar ? 'hidden' : ''}`}>
                                             {(course.instructor || "A")[0]}

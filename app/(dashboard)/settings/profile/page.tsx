@@ -9,6 +9,7 @@ import { ChevronLeft, Camera, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
+import Image from "next/image";
 
 export default function ProfileDetailsPage() {
     const { user, refreshUser } = useAuth();
@@ -198,8 +199,15 @@ export default function ProfileDetailsPage() {
                             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                                 <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-white dark:ring-neutral-900 shadow-lg">
                                     {avatarUrl ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                                        <div className="relative w-full h-full">
+                                            <Image
+                                                src={avatarUrl}
+                                                alt="Profile"
+                                                fill
+                                                className="object-cover"
+                                                sizes="96px"
+                                            />
+                                        </div>
                                     ) : (
                                         <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-3xl font-bold text-white">
                                             {firstName?.[0] || user.name?.[0] || "U"}

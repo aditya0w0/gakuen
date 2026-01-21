@@ -8,6 +8,7 @@ import { LogOut, Sun, Moon, Globe, ChevronDown, User, Settings, AlertCircle, Spa
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 interface UserMenuProps {
     collapsed?: boolean;
@@ -61,12 +62,15 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
                 )}
             >
                 {user.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={user.avatar}
-                        alt={user.name}
-                        className="h-9 w-9 rounded-full object-cover ring-2 ring-neutral-200 dark:ring-white/10"
-                    />
+                    <div className="relative h-9 w-9 rounded-full overflow-hidden ring-2 ring-neutral-200 dark:ring-white/10">
+                        <Image
+                            src={user.avatar}
+                            alt={user.name}
+                            fill
+                            className="object-cover"
+                            sizes="36px"
+                        />
+                    </div>
                 ) : (
                     <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white">
                         {user.name?.[0]?.toUpperCase() || "U"}
@@ -108,8 +112,15 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
                         <div className="p-4 border-b border-neutral-100 dark:border-neutral-800">
                             <div className="flex items-center gap-3">
                                 {user.avatar ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={user.avatar} alt={user.name} className="h-10 w-10 rounded-full object-cover" />
+                                    <div className="relative h-10 w-10 rounded-full overflow-hidden">
+                                        <Image
+                                            src={user.avatar}
+                                            alt={user.name}
+                                            fill
+                                            className="object-cover"
+                                            sizes="40px"
+                                        />
+                                    </div>
                                 ) : (
                                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white">
                                         {user.name?.[0]?.toUpperCase() || "U"}
