@@ -24,11 +24,29 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         setMounted(true);
     }, []);
 
-    // Determine admin status - only after mounted AND auth is loaded
-    const isAdmin = mounted && !isAuthLoading && user?.role === "admin";
+    // Check localStorage for cached role (prevents flash of wrong nav)
+    const cachedRole = mounted && typeof window !== 'undefined'
+        ? (() => {
+            try {
+                const cached = localStorage.getItem('gakuen_user');
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    return parsed.role;
+                }
+            } catch { /* ignore */ }
+            return null;
+        })()
+        : null;
 
-    // Show loading state during SSR or while auth is loading to prevent flash of wrong navigation
-    const showNavigation = mounted && !isAuthLoading;
+    // Determine admin status - use cached role if auth is still loading
+    // This prevents the flash of user nav for admins
+    const isAdmin = mounted && !isAuthLoading && user?.role === "admin"
+        || (mounted && isAuthLoading && cachedRole === "admin");
+
+    // Show navigation only when we have stable auth state
+    // If auth is loading but we have a cached role, show nav based on cache
+    const showNavigation = mounted && (!isAuthLoading || cachedRole !== null);
+
 
     const navItems = isAdmin
         ? [

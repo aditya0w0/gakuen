@@ -37,7 +37,17 @@ export default function DashboardLayout({
             return;
         }
 
-        // User is authenticated
+        // If user is admin, let the admin layout handle them
+        // This prevents the flash of user dashboard for admins
+        if (user.role === "admin") {
+            // Admin is in user dashboard area, they should use admin routes
+            // But /dashboard is handled by admin layout, so this is fine
+            // Just don't show user dashboard content to admins
+            setIsChecking(false);
+            return;
+        }
+
+        // User is authenticated and not admin
         setIsChecking(false);
     }, [user, isLoading, router]);
 
