@@ -123,6 +123,7 @@ export default function PricingPage() {
 
     // Handle tier change
     const handleTierChange = async (courseId: string, newTier: AccessTier) => {
+        // Optimistic update
         setCourses((prev) =>
             prev.map((c) =>
                 c.id === courseId
@@ -130,13 +131,39 @@ export default function PricingPage() {
                     : c
             )
         );
-        // TODO: Call API to persist tier change
+
+        // Persist to API
+        try {
+            const res = await fetch(`/api/courses/${courseId}/pricing`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ accessTier: newTier }),
+            });
+            if (!res.ok) {
+                throw new Error("Failed to update tier");
+            }
+        } catch (error) {
+            console.error("Failed to save tier:", error);
+            // Revert on error (optional: could refetch instead)
+        }
     };
 
     // Handle price update
     const handleSavePrice = async (courseId: string) => {
         setIsSaving(true);
         try {
+            // Call API first
+            const res = await fetch(`/api/courses/${courseId}/pricing`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ price: editPrice }),
+            });
+
+            if (!res.ok) {
+                throw new Error("Failed to update price");
+            }
+
+            // Update local state on success
             setCourses((prev) =>
                 prev.map((c) =>
                     c.id === courseId
@@ -277,8 +304,8 @@ export default function PricingPage() {
                                                 key={tier}
                                                 onClick={() => handleTierChange(course.id, tier)}
                                                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${isActive
-                                                        ? `${config.bgColor} ${config.color}`
-                                                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                                                    ? `${config.bgColor} ${config.color}`
+                                                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
                                                     }`}
                                                 title={config.label}
                                             >
@@ -380,8 +407,8 @@ function TierStatCard({
         <button
             onClick={onClick}
             className={`p-4 rounded-xl border transition-all text-left ${isActive
-                    ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
-                    : "bg-white dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
+                ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white"
+                : "bg-white dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
                 }`}
         >
             <div className="flex items-center gap-2 mb-2">
