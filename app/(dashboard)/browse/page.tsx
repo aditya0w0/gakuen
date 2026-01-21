@@ -81,10 +81,11 @@ export default function BrowsePage() {
                     return;
                 }
 
-                const mergedResults = results.map((r: { id: string;[key: string]: unknown }) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const mergedResults = results.map((r: any) => {
                     const original = courses.find(c => c.id === r.id);
-                    return original ? { ...original, ...r } : r;
-                });
+                    return original ? { ...original, ...r } : null;
+                }).filter((c): c is Course => c !== null);
 
                 setSearchResults(mergedResults);
             } catch (error) {
