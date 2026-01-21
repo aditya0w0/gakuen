@@ -108,9 +108,6 @@ export default function CoursesManagementPage() {
     }
 
     const handleCreateCourse = async () => {
-        // Prompt for course title first
-        const title = prompt('Enter course title:')?.trim();
-        if (!title) return; // Cancelled or empty
 
         setIsCreating(true);
         try {
@@ -118,7 +115,7 @@ export default function CoursesManagementPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    title,
+                    title: 'Untitled Course',
                     description: 'Start building your course...',
                 }),
             });
@@ -126,9 +123,6 @@ export default function CoursesManagementPage() {
             if (!response.ok) throw new Error('Failed to create course');
 
             const { id } = await response.json();
-
-            // Small delay to ensure filesystem write completes
-            await new Promise(resolve => setTimeout(resolve, 300));
 
             router.push(`/editor/${id}`);
         } catch (error) {
