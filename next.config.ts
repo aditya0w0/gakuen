@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
+    // Allow unoptimized images from /api/images proxy (Google Drive content)
+    unoptimized: false,
     remotePatterns: [
       {
         protocol: 'https',
@@ -38,6 +40,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'api.dicebear.com',
       },
+      // Allow R2 storage if configured
+      ...(process.env.R2_PUBLIC_URL ? [{
+        protocol: 'https' as const,
+        hostname: new URL(process.env.R2_PUBLIC_URL).hostname,
+      }] : []),
     ],
   },
 
