@@ -11,10 +11,12 @@ interface FetchOptions extends RequestInit {
 }
 
 // Cache for offline support
-const responseCache = new Map<string, { data: unknown; timestamp: number }>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const responseCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-export async function resilientFetch<T = unknown>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function resilientFetch<T = any>(
     url: string,
     options: FetchOptions = {}
 ): Promise<T> {
