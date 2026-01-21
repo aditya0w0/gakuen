@@ -203,7 +203,7 @@ export default function RevenuePage() {
             {/* Quick Links */}
             <div className="flex items-center justify-center gap-4">
                 <Link
-                    href="/pricing"
+                    href="/course-pricing"
                     className="text-sm text-blue-500 hover:text-blue-600 transition-colors"
                 >
                     Manage Pricing →
