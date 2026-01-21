@@ -126,6 +126,10 @@ export default function CoursesManagementPage() {
             if (!response.ok) throw new Error('Failed to create course');
 
             const { id } = await response.json();
+
+            // Small delay to ensure filesystem write completes
+            await new Promise(resolve => setTimeout(resolve, 300));
+
             router.push(`/editor/${id}`);
         } catch (error) {
             console.error('Creation failed:', error);
