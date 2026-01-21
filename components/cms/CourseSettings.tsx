@@ -152,6 +152,7 @@ export function CourseSettings({
                 <div className="relative w-full h-64 bg-zinc-800 rounded-xl overflow-hidden group">
                     {/* Image or Placeholder */}
                     {courseThumbnail && courseThumbnail !== 'https://placehold.co/800x400' && !thumbnailError ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={courseThumbnail}
                             alt="Course thumbnail"
@@ -318,6 +319,7 @@ export function CourseSettings({
                                     <Loader2 size={20} className="animate-spin text-indigo-400" />
                                 </div>
                             ) : courseAuthorAvatar && !avatarError ? (
+                                // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                     src={courseAuthorAvatar}
                                     alt="Instructor"
