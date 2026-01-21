@@ -116,58 +116,58 @@ export default function MyClassesPage() {
     return (
         <div className="space-y-6">
             <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-                <h1 className="text-3xl font-bold text-white">{t.myClasses.title}</h1>
-                <p className="text-neutral-400 mt-1">
+                <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">{t.myClasses.title}</h1>
+                <p className="text-neutral-500 dark:text-neutral-400 mt-1">
                     {enrolledCourses.length} {enrolledCourses.length === 1 ? t.course.enrolled : t.myClasses.totalCourses.toLowerCase()}
                 </p>
             </div>
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="p-4 bg-white/5 border-white/10 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
+                <Card className="p-4 bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
                             <BookOpen className="w-5 h-5 text-blue-400" />
                         </div>
                         <div>
-                            <p className="text-sm text-neutral-400">{t.myClasses.totalCourses}</p>
-                            <p className="text-2xl font-bold text-white">{stats.total}</p>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t.myClasses.totalCourses}</p>
+                            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.total}</p>
                         </div>
                     </div>
                 </Card>
 
-                <Card className="p-4 bg-white/5 border-white/10 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
+                <Card className="p-4 bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
                             <TrendingUp className="w-5 h-5 text-yellow-400" />
                         </div>
                         <div>
-                            <p className="text-sm text-neutral-400">{t.myClasses.inProgress}</p>
-                            <p className="text-2xl font-bold text-white">{stats.inProgress}</p>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t.myClasses.inProgress}</p>
+                            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.inProgress}</p>
                         </div>
                     </div>
                 </Card>
 
-                <Card className="p-4 bg-white/5 border-white/10 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300">
+                <Card className="p-4 bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
                             <CheckCircle2 className="w-5 h-5 text-green-400" />
                         </div>
                         <div>
-                            <p className="text-sm text-neutral-400">{t.myClasses.completed}</p>
-                            <p className="text-2xl font-bold text-white">{stats.completed}</p>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t.myClasses.completed}</p>
+                            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{stats.completed}</p>
                         </div>
                     </div>
                 </Card>
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex gap-2 border-b border-white/10 pb-4">
+            <div className="flex gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-4">
                 <button
                     onClick={() => handleFilterChange("all")}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${filter === "all"
-                        ? "bg-white/10 text-white scale-105"
-                        : "text-neutral-400 hover:text-white hover:bg-white/5"
+                        ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white scale-105"
+                        : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                         }`}
                 >
                     {t.myClasses.all}
@@ -175,8 +175,8 @@ export default function MyClassesPage() {
                 <button
                     onClick={() => handleFilterChange("inProgress")}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${filter === "inProgress"
-                        ? "bg-white/10 text-white scale-105"
-                        : "text-neutral-400 hover:text-white hover:bg-white/5"
+                        ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white scale-105"
+                        : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                         }`}
                 >
                     {t.myClasses.inProgress}
@@ -184,8 +184,8 @@ export default function MyClassesPage() {
                 <button
                     onClick={() => handleFilterChange("completed")}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${filter === "completed"
-                        ? "bg-white/10 text-white scale-105"
-                        : "text-neutral-400 hover:text-white hover:bg-white/5"
+                        ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white scale-105"
+                        : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                         }`}
                 >
                     {t.myClasses.completed}
@@ -203,7 +203,7 @@ export default function MyClassesPage() {
                             return (
                                 <Card
                                     key={course.id}
-                                    className="p-6 bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
+                                    className="p-6 bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
                                     style={{
                                         animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
                                     }}
@@ -224,11 +224,11 @@ export default function MyClassesPage() {
 
                                         <div className="flex-1 space-y-3">
                                             <div>
-                                                <h3 className="text-xl font-semibold text-white mb-1">{course.title}</h3>
-                                                <p className="text-sm text-neutral-400">{course.category} • {course.instructor || 'Unknown'}</p>
+                                                <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-1">{course.title}</h3>
+                                                <p className="text-sm text-neutral-500 dark:text-neutral-400">{course.category} • {course.instructor || 'Unknown'}</p>
                                             </div>
 
-                                            <div className="flex items-center gap-4 text-sm text-neutral-400">
+                                            <div className="flex items-center gap-4 text-sm text-neutral-500 dark:text-neutral-400">
                                                 <span className="flex items-center gap-1">
                                                     <BookOpen className="w-4 h-4" />
                                                     {course.lessonsCount || course.lessons?.length || 0} lessons
@@ -241,10 +241,10 @@ export default function MyClassesPage() {
 
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between text-sm">
-                                                    <span className="text-neutral-400">{t.course.progress}</span>
-                                                    <span className="text-white font-medium">{progress}%</span>
+                                                    <span className="text-neutral-500 dark:text-neutral-400">{t.course.progress}</span>
+                                                    <span className="text-neutral-900 dark:text-white font-medium">{progress}%</span>
                                                 </div>
-                                                <Progress value={progress} className="h-2 bg-white/10" />
+                                                <Progress value={progress} className="h-2 bg-neutral-200 dark:bg-neutral-700" />
                                             </div>
                                         </div>
 
