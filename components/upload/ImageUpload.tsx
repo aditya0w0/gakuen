@@ -100,6 +100,7 @@ export function ImageUpload({
             >
                 {displayImage ? (
                     <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={displayImage}
                             alt="Uploaded"

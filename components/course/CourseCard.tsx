@@ -139,6 +139,7 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
                         </div>
                         {/* Render image on top if thumbnail exists */}
                         {course.thumbnail && !imageError && (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img
                                 src={getProxiedImageUrl(course.thumbnail)}
                                 alt={course.title}
@@ -230,6 +231,7 @@ export function CourseCard({ course, index = 0, onEnrollChange }: CourseCardProp
                                 <>
                                     <div className="flex items-center gap-2">
                                         {course.instructorAvatar ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
                                             <img
                                                 src={course.instructorAvatar}
                                                 alt={course.instructor || "Instructor"}

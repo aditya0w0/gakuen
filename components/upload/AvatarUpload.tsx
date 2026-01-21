@@ -59,6 +59,7 @@ export function AvatarUpload({ userId, currentAvatar, onUpload, size = 'md' }: A
                 )}
             >
                 {displayImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                         src={displayImage}
                         alt="Avatar"

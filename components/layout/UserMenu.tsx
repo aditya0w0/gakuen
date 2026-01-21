@@ -61,6 +61,7 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
                 )}
             >
                 {user.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                         src={user.avatar}
                         alt={user.name}
@@ -107,6 +108,7 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
                         <div className="p-4 border-b border-neutral-100 dark:border-neutral-800">
                             <div className="flex items-center gap-3">
                                 {user.avatar ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
                                     <img src={user.avatar} alt={user.name} className="h-10 w-10 rounded-full object-cover" />
                                 ) : (
                                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white">
