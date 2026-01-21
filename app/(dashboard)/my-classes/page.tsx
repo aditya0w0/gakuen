@@ -6,10 +6,11 @@ import { hybridStorage } from "@/lib/storage/hybrid-storage";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Clock, PlayCircle, CheckCircle2, TrendingUp } from "lucide-react";
+import { BookOpen, Clock, PlayCircle, CheckCircle2, TrendingUp, Star } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { CourseRatingModal } from "@/components/course/CourseRatingModal";
 
 // Convert Google Drive URLs to proxy URLs
 function getProxiedImageUrl(url: string | undefined): string | undefined {
@@ -36,6 +37,29 @@ export default function MyClassesPage() {
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const { t } = useTranslation();
+
+    // Rating modal state
+    const [ratingModalOpen, setRatingModalOpen] = useState(false);
+    const [ratingCourse, setRatingCourse] = useState<Course | null>(null);
+    const [ratedCourses, setRatedCourses] = useState<string[]>([]);
+
+    // Handle rating submit
+    const handleRatingSubmit = async (rating: number, review?: string) => {
+        if (!ratingCourse || !user) return;
+
+        await fetch("/api/reviews", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                courseId: ratingCourse.id,
+                rating,
+                review,
+            }),
+        });
+
+        // Mark as rated
+        setRatedCourses((prev) => [...prev, ratingCourse.id]);
+    };
 
     // Fetch courses from API
     useEffect(() => {
@@ -231,6 +255,25 @@ export default function MyClassesPage() {
                                                     {isCompleted ? "Review" : progress > 0 ? "Continue" : "Start"}
                                                 </Button>
                                             </Link>
+                                            {/* Rate button for completed courses */}
+                                            {isCompleted && !ratedCourses.includes(course.id) && (
+                                                <Button
+                                                    onClick={() => {
+                                                        setRatingCourse(course);
+                                                        setRatingModalOpen(true);
+                                                    }}
+                                                    variant="outline"
+                                                    className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
+                                                >
+                                                    <Star className="w-4 h-4 mr-2" />
+                                                    Rate
+                                                </Button>
+                                            )}
+                                            {isCompleted && ratedCourses.includes(course.id) && (
+                                                <span className="text-xs text-emerald-400 flex items-center gap-1">
+                                                    <CheckCircle2 className="w-3 h-3" /> Rated
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </Card>
@@ -268,6 +311,18 @@ export default function MyClassesPage() {
           }
         }
       `}</style>
+
+            {/* Rating Modal */}
+            <CourseRatingModal
+                courseId={ratingCourse?.id || ""}
+                courseTitle={ratingCourse?.title || ""}
+                isOpen={ratingModalOpen}
+                onClose={() => {
+                    setRatingModalOpen(false);
+                    setRatingCourse(null);
+                }}
+                onSubmit={handleRatingSubmit}
+            />
         </div>
     );
 }

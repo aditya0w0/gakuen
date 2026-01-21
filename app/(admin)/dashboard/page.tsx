@@ -391,7 +391,7 @@ export default function AdminDashboard() {
                                             }`}>
                                             {course.level}
                                         </span>
-                                        <span className="text-xs text-neutral-400">247 enrolled</span>
+                                        <span className="text-xs text-neutral-400">{course.enrolledCount || 0} enrolled</span>
                                     </div>
                                 </div>
                             </div>
