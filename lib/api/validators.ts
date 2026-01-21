@@ -99,7 +99,7 @@ export function sanitizeString(input: string): string {
 export function validateCourseId(id: string): boolean {
     if (!id || typeof id !== 'string') return false;
     // Allow alphanumeric with dashes, 3-100 chars
-    return /^[a-zA-Z0-9\-]{3,100}$/.test(id);
+    return /^[a-zA-Z0-9\-]{1,100}$/.test(id);
 }
 
 /**
