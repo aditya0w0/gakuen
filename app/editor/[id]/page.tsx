@@ -1081,7 +1081,13 @@ export default function CourseEditorPage({
                                 const newLessons = [...lessons, newLesson];
                                 const newSections = sections.map((s) =>
                                   s.id === section.id
-                                    ? { ...s, lessonIds: [...s.lessonIds, newLesson.id] }
+                                    ? {
+                                        ...s,
+                                        lessonIds: [
+                                          ...s.lessonIds,
+                                          newLesson.id,
+                                        ],
+                                      }
                                     : s
                                 );
                                 setLessons(newLessons);
