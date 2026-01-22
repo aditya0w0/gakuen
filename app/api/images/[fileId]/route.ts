@@ -20,8 +20,8 @@ function isValidFileId(fileId: string): boolean {
         return /^local-[a-zA-Z0-9_-]+(-[a-zA-Z0-9._-]+)*$/.test(fileId) && !fileId.includes('..');
     }
     if (fileId.startsWith('r2-')) {
-        // R2: allow alphanumeric, dashes, underscores, dots (for extensions)
-        return /^r2-[a-zA-Z0-9_.-]+$/.test(fileId) && !fileId.includes('..');
+        // R2: allow alphanumeric, dashes, underscores, dots (for extensions), colons (path separator)
+        return /^r2-[a-zA-Z0-9_.:/-]+$/.test(fileId) && !fileId.includes('..');
     }
     // Google Drive ID: alphanumeric with dashes/underscores, typically 20-40 chars
     return /^[a-zA-Z0-9_-]{10,50}$/.test(fileId);

@@ -430,7 +430,7 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     };
 
 
-    // Handle fluid editor updates - save both tiptapJson (for tables) and components (for backward compat)
+    // Handle fluid editor updates - save only tiptapJson (not redundant components)
     const handleFluidEditorUpdate = (html: string, json: object) => {
         if (editingIndex === null) return;
         const currentLesson = lessons[editingIndex];
@@ -439,11 +439,12 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
         const jsonChanged = JSON.stringify(json) !== JSON.stringify(currentLesson?.tiptapJson);
 
         if (jsonChanged) {
-            // Also serialize to components for backward compatibility
-            const newComponents = serializeToComponents(json as any);
+            // OPTIMIZATION: Only store tiptapJson, NOT components.
+            // Components are generated on-demand by blobToCourse for legacy readers.
+            // This reduces payload by 50%+ and avoids 413 errors!
             handleUpdateLesson(editingIndex, {
                 tiptapJson: json,  // Primary storage - preserves tables perfectly
-                components: newComponents  // Fallback for old readers
+                components: undefined  // Clear legacy components to save space
             });
         }
     };

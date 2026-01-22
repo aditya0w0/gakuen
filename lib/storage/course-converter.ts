@@ -73,62 +73,67 @@ export function courseToBlob(course: Course): {
     for (const lesson of course.lessons || []) {
         const compactLessonId = `L${lessonCounter++}`;
         lessonIdMap.set(lesson.id, compactLessonId);  // Map original ID to compact ID
-        const blockIds: string[] = [];
 
-        // Convert components to blocks
-        for (const component of lesson.components || []) {
-            const blockId = `B${blockCounter++}`;
-            // Cast to any for safe access to all possible component properties
-            const c = component as any;
-
-            const block: BlockCompact = {
-                id: blockId,
-                t: getBlockType(c.type),
-                // Preserve HTML content for rich formatting in student view
-                v: c.content || c.text || c.code || '',
-            };
-
-            // Add optional fields
-            if (c.src || c.imageUrl) {
-                block.src = c.src || c.imageUrl;
-            }
-            if (c.alt) {
-                block.alt = c.alt;
-            }
-            if (c.language) {
-                block.lang = c.language;
-            }
-
-            // Add non-default styles
-            const styles: any = {};
-            if (c.align && c.align !== 'left') {
-                styles.a = c.align === 'center' ? 'c' : 'r';
-            }
-            if (c.color && c.color !== '#d4d4d8') {
-                styles.c = c.color;
-            }
-            if (c.fontSize && c.fontSize !== 16) {
-                styles.fs = c.fontSize;
-            }
-            if (Object.keys(styles).length > 0) {
-                block.s = styles;
-            }
-
-            blocks[blockId] = block;
-            blockIds.push(blockId);
-        }
-
-        // Build lesson object with optional tiptapJson for rich rendering
+        // Build lesson object
         const lessonData: any = {
             id: compactLessonId,
             t: lesson.title,
             d: lesson.duration,
-            b: blockIds,
         };
 
-        // Preserve tiptapJson if it exists (for perfect rich text rendering)
+        // OPTIMIZATION: If tiptapJson exists, it's the authoritative source.
+        // SKIP block extraction to avoid redundant storage (2x+ size reduction!)
         if (lesson.tiptapJson) {
             lessonData.j = lesson.tiptapJson;  // 'j' for JSON (compact key)
+            lessonData.b = [];  // Empty blocks array - content is in tiptapJson
+        } else {
+            // Legacy path: extract blocks from components
+            const blockIds: string[] = [];
+
+            // Convert components to blocks
+            for (const component of lesson.components || []) {
+                const blockId = `B${blockCounter++}`;
+                // Cast to any for safe access to all possible component properties
+                const c = component as any;
+
+                const block: BlockCompact = {
+                    id: blockId,
+                    t: getBlockType(c.type),
+                    // Preserve HTML content for rich formatting in student view
+                    v: c.content || c.text || c.code || '',
+                };
+
+                // Add optional fields
+                if (c.src || c.imageUrl) {
+                    block.src = c.src || c.imageUrl;
+                }
+                if (c.alt) {
+                    block.alt = c.alt;
+                }
+                if (c.language) {
+                    block.lang = c.language;
+                }
+
+                // Add non-default styles
+                const styles: any = {};
+                if (c.align && c.align !== 'left') {
+                    styles.a = c.align === 'center' ? 'c' : 'r';
+                }
+                if (c.color && c.color !== '#d4d4d8') {
+                    styles.c = c.color;
+                }
+                if (c.fontSize && c.fontSize !== 16) {
+                    styles.fs = c.fontSize;
+                }
+                if (Object.keys(styles).length > 0) {
+                    block.s = styles;
+                }
+
+                blocks[blockId] = block;
+                blockIds.push(blockId);
+            }
+
+            lessonData.b = blockIds;
         }
 
         lessons[compactLessonId] = lessonData;

@@ -69,6 +69,11 @@ export default function AdminControlPage() {
     const [migrationError, setMigrationError] = useState<string | null>(null);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
+    // Base64 migration state
+    const [isBase64Migrating, setIsBase64Migrating] = useState(false);
+    const [isBase64ModalOpen, setIsBase64ModalOpen] = useState(false);
+    const [base64Stats, setBase64Stats] = useState<{ base64Found: number; uploaded: number; failed: number; bytesRemovedMB: number } | null>(null);
+
     // Fetch system status
     const fetchStatus = useCallback(async () => {
         try {
@@ -152,6 +157,30 @@ export default function AdminControlPage() {
             setMigrationError("Migration failed due to a network error.");
         } finally {
             setIsMigrating(false);
+        }
+    };
+
+    // Run base64 migration
+    const handleBase64Migrate = async () => {
+        setIsBase64ModalOpen(false);
+        setIsBase64Migrating(true);
+        setBase64Stats(null);
+        setMigrationError(null);
+
+        try {
+            const res = await fetch("/api/admin/migrate-base64", { method: "POST" });
+            const data = await res.json();
+            if (res.ok) {
+                setBase64Stats(data.stats);
+                setIsSuccessModalOpen(true);
+            } else {
+                setMigrationError(data.error || "Base64 migration failed");
+            }
+        } catch (error) {
+            console.error("Base64 migration error:", error);
+            setMigrationError("Base64 migration failed due to a network error.");
+        } finally {
+            setIsBase64Migrating(false);
         }
     };
 
@@ -250,6 +279,16 @@ export default function AdminControlPage() {
                         </button>
                     )}
 
+                    {/* Base64 Migration Button */}
+                    <button
+                        onClick={() => setIsBase64ModalOpen(true)}
+                        disabled={isBase64Migrating}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isBase64Migrating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        Fix Base64 Images
+                    </button>
+
                     <button
                         onClick={fetchStatus}
                         className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 text-xs font-bold rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
@@ -295,6 +334,19 @@ export default function AdminControlPage() {
                 cancelText="Cancel"
                 icon={<Cloud className="w-5 h-5" />}
                 isLoading={isMigrating}
+            />
+
+            {/* Base64 Migration Confirmation Modal */}
+            <SimpleModal
+                isOpen={isBase64ModalOpen}
+                onClose={() => setIsBase64ModalOpen(false)}
+                onConfirm={handleBase64Migrate}
+                title="Fix Base64 Images"
+                description="This will scan all course content for base64-encoded images, upload them to storage, and replace with proper URLs. This dramatically reduces payload size and fixes 413 errors."
+                confirmText="Start Fix"
+                cancelText="Cancel"
+                icon={<Sparkles className="w-5 h-5" />}
+                isLoading={isBase64Migrating}
             />
 
             {/* Migration Success Modal */}

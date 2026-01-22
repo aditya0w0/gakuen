@@ -409,14 +409,51 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(({
                 if (files && files.length > 0) {
                     const imageFile = Array.from(files).find(f => f.type.startsWith('image/'));
                     if (imageFile) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const base64 = e.target?.result as string;
-                            view.dispatch(view.state.tr.replaceSelectionWith(
-                                view.state.schema.nodes.customImage.create({ src: base64, alt: '' })
-                            ));
-                        };
-                        reader.readAsDataURL(imageFile);
+                        // FIXED: Upload to storage instead of storing base64 in JSON!
+                        // Base64 in JSON causes massive payload bloat (10x+ size increase)
+                        const formData = new FormData();
+                        formData.append('file', imageFile);
+                        formData.append('folder', 'cms');
+
+                        // Show placeholder while uploading
+                        const placeholderId = `uploading-${Date.now()}`;
+                        view.dispatch(view.state.tr.replaceSelectionWith(
+                            view.state.schema.nodes.paragraph.create({},
+                                view.state.schema.text(`[Uploading image...]`)
+                            )
+                        ));
+
+                        // Upload asynchronously
+                        fetch('/api/upload', {
+                            method: 'POST',
+                            body: formData,
+                        })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.url) {
+                                    // Replace placeholder with actual image
+                                    const { state } = view;
+                                    const imageNode = state.schema.nodes.customImage.create({
+                                        src: data.url,
+                                        alt: imageFile.name || ''
+                                    });
+
+                                    // Find and replace the placeholder
+                                    let tr = state.tr;
+                                    state.doc.descendants((node, pos) => {
+                                        if (node.isText && node.text?.includes('[Uploading image...]')) {
+                                            tr = tr.replaceWith(pos, pos + node.nodeSize, imageNode);
+                                            return false;
+                                        }
+                                        return true;
+                                    });
+                                    view.dispatch(tr);
+                                }
+                            })
+                            .catch(err => {
+                                console.error('Image upload failed:', err);
+                            });
+
                         return true;
                     }
                 }
