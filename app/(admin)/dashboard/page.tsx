@@ -350,7 +350,7 @@ export default function AdminDashboard() {
                                             <button className="p-1.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white">
                                                 <Eye className="w-4 h-4" />
                                             </button>
-                                            <Link href={`/courses/${course.id}/edit`}>
+                                            <Link href={`/editor/${course.id}`}>
                                                 <button className="p-1.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white">
                                                     <Edit className="w-4 h-4" />
                                                 </button>
