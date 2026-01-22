@@ -331,32 +331,36 @@ export default function CourseEditorPage({ params }: { params: Promise<{ id: str
     const handleSave = async () => {
         setIsSaving(true);
 
-        const updatedCourse = {
-            ...course,
-            title: courseTitle,
-            description: courseDescription,
-            thumbnail: courseThumbnail,
-            instructor: courseAuthor,
-            instructorAvatar: courseAuthorAvatar,
-            category: courseCategory,
-            level: courseLevel,
-            lessons,
-            sections,
-            isPublished: true,
-            publishedAt: new Date().toISOString(),
-        };
+        try {
+            const updatedCourse = {
+                ...course,
+                title: courseTitle,
+                description: courseDescription,
+                thumbnail: courseThumbnail,
+                instructor: courseAuthor,
+                instructorAvatar: courseAuthorAvatar,
+                category: courseCategory,
+                level: courseLevel,
+                lessons,
+                sections,
+                isPublished: true,
+                publishedAt: new Date().toISOString(),
+            };
 
-        // Publish to Telegram (explicit action)
-        const success = await publishCourse(courseId, updatedCourse);
+            // Publish to Telegram (explicit action)
+            const success = await publishCourse(courseId, updatedCourse);
 
-        if (success) {
-            setIsPublished(true);
-            console.log('✅ Course published to Telegram');
-        } else {
-            console.error('❌ Publish failed');
+            if (success) {
+                setIsPublished(true);
+                console.log('✅ Course published to Telegram');
+            } else {
+                console.error('❌ Publish failed');
+            }
+        } catch (error) {
+            console.error('❌ Publish error:', error);
+        } finally {
+            setIsSaving(false);
         }
-
-        setIsSaving(false);
     };
 
     const handleAddLesson = () => {
