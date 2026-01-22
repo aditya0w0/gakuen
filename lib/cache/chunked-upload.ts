@@ -1,15 +1,15 @@
 /**
  * Chunked Upload System
- * 
+ *
  * Splits large payloads into chunks under 3MB to avoid Vercel's 4.5MB limit.
  * Uses a simple multi-part upload protocol:
- * 
+ *
  * 1. POST /api/admin/upload-chunk?action=init&courseId=xxx&totalChunks=N
  *    Returns: { uploadId }
- * 
+ *
  * 2. POST /api/admin/upload-chunk?action=chunk&uploadId=xxx&chunkIndex=0
  *    Body: chunk data (gzip compressed)
- * 
+ *
  * 3. POST /api/admin/upload-chunk?action=complete&uploadId=xxx&operation=checkpoint|publish
  *    Reassembles and processes
  */
@@ -117,7 +117,10 @@ export async function uploadCourseChunked(
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/octet-stream' },
-          body: chunks[i].buffer.slice(chunks[i].byteOffset, chunks[i].byteOffset + chunks[i].byteLength) as ArrayBuffer,
+          body: chunks[i].buffer.slice(
+            chunks[i].byteOffset,
+            chunks[i].byteOffset + chunks[i].byteLength
+          ) as ArrayBuffer,
         }
       );
 
@@ -172,7 +175,10 @@ async function directUpload(
       'Content-Type': 'application/gzip',
       'Content-Encoding': 'gzip',
     },
-    body: compressed.buffer.slice(compressed.byteOffset, compressed.byteOffset + compressed.byteLength) as ArrayBuffer,
+    body: compressed.buffer.slice(
+      compressed.byteOffset,
+      compressed.byteOffset + compressed.byteLength
+    ) as ArrayBuffer,
   });
 
   if (!response.ok) {

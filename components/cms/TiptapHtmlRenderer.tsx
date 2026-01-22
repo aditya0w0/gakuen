@@ -1,124 +1,226 @@
-"use client";
+'use client';
 
 // Renders Tiptap JSON to React components for student view
 // This handles content saved as tiptapJson (which includes tables and quizzes)
 
-import { QuizBlock } from "@/components/quiz/QuizBlock";
-import type { Quiz } from "@/lib/types";
+import { QuizBlock } from '@/components/quiz/QuizBlock';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import type { Quiz } from '@/lib/types';
 
 interface TiptapNode {
-    type: string;
-    content?: TiptapNode[];
-    attrs?: Record<string, unknown>;
-    text?: string;
-    marks?: { type: string; attrs?: Record<string, unknown> }[];
+  type: string;
+  content?: TiptapNode[];
+  attrs?: Record<string, unknown>;
+  text?: string;
+  marks?: { type: string; attrs?: Record<string, unknown> }[];
+}
+
+// Language mapping for common aliases and frameworks
+const LANGUAGE_MAP: Record<string, string> = {
+  // Web
+  html: 'markup',
+  htm: 'markup',
+  xml: 'markup',
+  svg: 'markup',
+  css: 'css',
+  scss: 'scss',
+  sass: 'sass',
+  less: 'less',
+  js: 'javascript',
+  javascript: 'javascript',
+  jsx: 'jsx',
+  ts: 'typescript',
+  typescript: 'typescript',
+  tsx: 'tsx',
+  json: 'json',
+
+  // React/Frameworks
+  react: 'jsx',
+  reactjs: 'jsx',
+  vue: 'javascript',
+  angular: 'typescript',
+  tailwind: 'css',
+  tailwindcss: 'css',
+
+  // Mobile
+  dart: 'dart',
+  flutter: 'dart',
+  kotlin: 'kotlin',
+  kt: 'kotlin',
+  swift: 'swift',
+  objectivec: 'objectivec',
+  objc: 'objectivec',
+
+  // Backend
+  java: 'java',
+  python: 'python',
+  py: 'python',
+  ruby: 'ruby',
+  rb: 'ruby',
+  php: 'php',
+  go: 'go',
+  golang: 'go',
+  rust: 'rust',
+  rs: 'rust',
+  csharp: 'csharp',
+  cs: 'csharp',
+  c: 'c',
+  cpp: 'cpp',
+  'c++': 'cpp',
+
+  // Shell/Config
+  bash: 'bash',
+  shell: 'bash',
+  sh: 'bash',
+  zsh: 'bash',
+  powershell: 'powershell',
+  ps1: 'powershell',
+  yaml: 'yaml',
+  yml: 'yaml',
+  toml: 'toml',
+  ini: 'ini',
+  dockerfile: 'docker',
+  docker: 'docker',
+
+  // Database
+  sql: 'sql',
+  mysql: 'sql',
+  postgresql: 'sql',
+  graphql: 'graphql',
+  gql: 'graphql',
+
+  // Markup
+  markdown: 'markdown',
+  md: 'markdown',
+  latex: 'latex',
+  tex: 'latex',
+};
+
+// Normalize language string to Prism-compatible format
+function normalizeLanguage(lang?: string): string {
+  if (!lang) return 'text';
+  const normalized = lang.toLowerCase().trim();
+  return LANGUAGE_MAP[normalized] || normalized;
 }
 
 // Render non-interactive nodes to HTML
 function renderNodeToHtml(node: TiptapNode): string {
-    if (!node) return '';
+  if (!node) return '';
 
-    // Text node with marks
-    if (node.type === 'text') {
-        let text = node.text || '';
-        // Apply marks (bold, italic, underline, etc.)
-        if (node.marks) {
-            for (const mark of node.marks) {
-                switch (mark.type) {
-                    case 'bold':
-                        text = `<strong>${text}</strong>`;
-                        break;
-                    case 'italic':
-                        text = `<em>${text}</em>`;
-                        break;
-                    case 'underline':
-                        text = `<u>${text}</u>`;
-                        break;
-                    case 'strike':
-                        text = `<s>${text}</s>`;
-                        break;
-                    case 'link':
-                        text = `<a href="${mark.attrs?.href || '#'}" target="_blank" class="text-teal-600 dark:text-indigo-400 underline">${text}</a>`;
-                        break;
-                    case 'textStyle':
-                        const styles: string[] = [];
-                        const color = mark.attrs?.color as string;
-                        const fontSize = mark.attrs?.fontSize as string;
-                        const fontFamily = mark.attrs?.fontFamily as string;
+  // Text node with marks
+  if (node.type === 'text') {
+    let text = node.text || '';
+    // Escape HTML entities to prevent XSS and render code properly
+    text = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
 
-                        // Skip colors that are clearly dark-mode specific (light grays/whites)
-                        // These would be invisible on white backgrounds
-                        if (color) {
-                            const lowerColor = color.toLowerCase();
-                            const isDarkModeColor =
-                                lowerColor === '#d4d4d8' ||  // zinc-300
-                                lowerColor === '#e4e4e7' ||  // zinc-200
-                                lowerColor === '#f4f4f5' ||  // zinc-100
-                                lowerColor === '#ffffff' ||  // white
-                                lowerColor === '#fafafa' ||  // zinc-50
-                                lowerColor === '#a1a1aa' ||  // zinc-400
-                                lowerColor.startsWith('rgb(212') ||  // rgb version of zinc-300
-                                lowerColor.startsWith('rgb(244') ||  // rgb version of zinc-100
-                                lowerColor.startsWith('rgb(255');    // white
+    // Apply marks (bold, italic, underline, etc.)
+    if (node.marks) {
+      for (const mark of node.marks) {
+        switch (mark.type) {
+          case 'bold':
+            text = `<strong>${text}</strong>`;
+            break;
+          case 'italic':
+            text = `<em>${text}</em>`;
+            break;
+          case 'underline':
+            text = `<u>${text}</u>`;
+            break;
+          case 'strike':
+            text = `<s>${text}</s>`;
+            break;
+          case 'code':
+            // Inline code styling
+            text = `<code class="px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-pink-600 dark:text-pink-400 rounded text-sm font-mono">${text}</code>`;
+            break;
+          case 'link':
+            text = `<a href="${mark.attrs?.href || '#'}" target="_blank" class="text-teal-600 dark:text-indigo-400 underline">${text}</a>`;
+            break;
+          case 'textStyle':
+            const styles: string[] = [];
+            const color = mark.attrs?.color as string;
+            const fontSize = mark.attrs?.fontSize as string;
+            const fontFamily = mark.attrs?.fontFamily as string;
 
-                            // Only apply non-dark-mode colors
-                            if (!isDarkModeColor) {
-                                styles.push(`color: ${color}`);
-                            }
-                        }
-                        if (fontSize) styles.push(`font-size: ${fontSize}`);
-                        if (fontFamily) styles.push(`font-family: ${fontFamily}`);
-                        if (styles.length > 0) {
-                            text = `<span style="${styles.join('; ')}">${text}</span>`;
-                        }
-                        break;
-                }
+            // Skip colors that are clearly dark-mode specific (light grays/whites)
+            // These would be invisible on white backgrounds
+            if (color) {
+              const lowerColor = color.toLowerCase();
+              const isDarkModeColor =
+                lowerColor === '#d4d4d8' || // zinc-300
+                lowerColor === '#e4e4e7' || // zinc-200
+                lowerColor === '#f4f4f5' || // zinc-100
+                lowerColor === '#ffffff' || // white
+                lowerColor === '#fafafa' || // zinc-50
+                lowerColor === '#a1a1aa' || // zinc-400
+                lowerColor.startsWith('rgb(212') || // rgb version of zinc-300
+                lowerColor.startsWith('rgb(244') || // rgb version of zinc-100
+                lowerColor.startsWith('rgb(255'); // white
+
+              // Only apply non-dark-mode colors
+              if (!isDarkModeColor) {
+                styles.push(`color: ${color}`);
+              }
             }
+            if (fontSize) styles.push(`font-size: ${fontSize}`);
+            if (fontFamily) styles.push(`font-family: ${fontFamily}`);
+            if (styles.length > 0) {
+              text = `<span style="${styles.join('; ')}">${text}</span>`;
+            }
+            break;
         }
-        return text;
+      }
     }
+    return text;
+  }
 
-    const children = node.content?.map(child => renderNodeToHtml(child)).join('') || '';
+  const children =
+    node.content?.map((child) => renderNodeToHtml(child)).join('') || '';
 
-    switch (node.type) {
-        case 'doc':
-            return children;
-        case 'paragraph':
-            const align = node.attrs?.textAlign as string;
-            const alignStyle = align && align !== 'left' ? ` style="text-align: ${align}"` : '';
-            // Add margin-bottom for proper paragraph spacing (prose handles this but just in case)
-            return `<p class="mb-4"${alignStyle}>${children || '<br>'}</p>`;
-        case 'heading':
-            const level = node.attrs?.level || 1;
-            // Add proper heading margins
-            return `<h${level} class="mt-6 mb-3">${children}</h${level}>`;
-        case 'bulletList':
-            return `<ul class="list-disc pl-6 space-y-1">${children}</ul>`;
-        case 'orderedList':
-            return `<ol class="list-decimal pl-6 space-y-1">${children}</ol>`;
-        case 'listItem':
-            return `<li>${children}</li>`;
-        case 'blockquote':
-            return `<blockquote class="border-l-4 border-neutral-300 dark:border-neutral-600 pl-4 italic text-neutral-600 dark:text-neutral-300">${children}</blockquote>`;
-        case 'codeBlock':
-            return `<pre class="bg-neutral-100 dark:bg-neutral-800 p-4 rounded-lg overflow-x-auto"><code>${children}</code></pre>`;
-        case 'horizontalRule':
-            return '<hr class="border-neutral-300 dark:border-neutral-700 my-6">';;
-        case 'image':
-        case 'customImage':
-            return `<img src="${node.attrs?.src}" alt="${node.attrs?.alt || ''}" class="max-w-full rounded-lg my-4">`;
-        case 'table':
-            return `<table class="tiptap-table w-full border-collapse my-4">${children}</table>`;
-        case 'tableRow':
-            return `<tr>${children}</tr>`;
-        case 'tableHeader':
-            return `<th class="border border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 px-3 py-2 text-left font-semibold">${children}</th>`;
-        case 'tableCell':
-            return `<td class="border border-neutral-300 dark:border-neutral-600 px-3 py-2">${children}</td>`;
-        case 'customYoutube':
-            const videoId = node.attrs?.videoId as string;
-            if (videoId) {
-                return `<div class="relative pt-[56.25%] my-4 rounded-xl overflow-hidden bg-black">
+  switch (node.type) {
+    case 'doc':
+      return children;
+    case 'paragraph':
+      const align = node.attrs?.textAlign as string;
+      const alignStyle =
+        align && align !== 'left' ? ` style="text-align: ${align}"` : '';
+      // Add margin-bottom for proper paragraph spacing (prose handles this but just in case)
+      return `<p class="mb-4"${alignStyle}>${children || '<br>'}</p>`;
+    case 'heading':
+      const level = node.attrs?.level || 1;
+      // Add proper heading margins
+      return `<h${level} class="mt-6 mb-3">${children}</h${level}>`;
+    case 'bulletList':
+      return `<ul class="list-disc pl-6 space-y-1">${children}</ul>`;
+    case 'orderedList':
+      return `<ol class="list-decimal pl-6 space-y-1">${children}</ol>`;
+    case 'listItem':
+      return `<li>${children}</li>`;
+    case 'blockquote':
+      return `<blockquote class="border-l-4 border-neutral-300 dark:border-neutral-600 pl-4 italic text-neutral-600 dark:text-neutral-300">${children}</blockquote>`;
+    case 'codeBlock':
+      return `<pre class="bg-neutral-100 dark:bg-neutral-800 p-4 rounded-lg overflow-x-auto"><code>${children}</code></pre>`;
+    case 'horizontalRule':
+      return '<hr class="border-neutral-300 dark:border-neutral-700 my-6">';
+    case 'image':
+    case 'customImage':
+      return `<img src="${node.attrs?.src}" alt="${node.attrs?.alt || ''}" class="max-w-full rounded-lg my-4">`;
+    case 'table':
+      return `<table class="tiptap-table w-full border-collapse my-4">${children}</table>`;
+    case 'tableRow':
+      return `<tr>${children}</tr>`;
+    case 'tableHeader':
+      return `<th class="border border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 px-3 py-2 text-left font-semibold">${children}</th>`;
+    case 'tableCell':
+      return `<td class="border border-neutral-300 dark:border-neutral-600 px-3 py-2">${children}</td>`;
+    case 'customYoutube':
+      const videoId = node.attrs?.videoId as string;
+      if (videoId) {
+        return `<div class="relative pt-[56.25%] my-4 rounded-xl overflow-hidden bg-black">
                     <iframe 
                         class="absolute inset-0 w-full h-full"
                         src="https://www.youtube.com/embed/${videoId}?rel=0" 
@@ -128,92 +230,172 @@ function renderNodeToHtml(node: TiptapNode): string {
                         allowfullscreen>
                     </iframe>
                 </div>`;
-            }
-            return '';
-        default:
-            return children;
-    }
+      }
+      return '';
+    default:
+      return children;
+  }
 }
 
-// Split content into segments: HTML strings and quiz nodes
+// Split content into segments: HTML strings, quiz nodes, and code blocks
 interface ContentSegment {
-    type: 'html' | 'quiz';
-    content?: string;
-    quizId?: string;
-    passingScore?: number;
-    timeLimit?: number;
+  type: 'html' | 'quiz' | 'code';
+  content?: string;
+  quizId?: string;
+  passingScore?: number;
+  timeLimit?: number;
+  language?: string;
+  code?: string;
+}
+
+// Extract plain text from node (for code blocks)
+function extractText(node: TiptapNode): string {
+  if (node.type === 'text') return node.text || '';
+  if (!node.content) return '';
+  return node.content.map(extractText).join('');
 }
 
 function segmentContent(nodes: TiptapNode[]): ContentSegment[] {
-    const segments: ContentSegment[] = [];
-    let htmlBuffer = '';
+  const segments: ContentSegment[] = [];
+  let htmlBuffer = '';
 
-    for (const node of nodes) {
-        if (node.type === 'customQuiz') {
-            // Flush HTML buffer
-            if (htmlBuffer) {
-                segments.push({ type: 'html', content: htmlBuffer });
-                htmlBuffer = '';
-            }
-            // Add quiz segment
-            segments.push({
-                type: 'quiz',
-                quizId: node.attrs?.quizId as string,
-                passingScore: node.attrs?.passingScore as number,
-                timeLimit: node.attrs?.timeLimit as number,
-            });
-        } else {
-            // Accumulate HTML
-            htmlBuffer += renderNodeToHtml(node);
-        }
-    }
-
-    // Flush remaining HTML
-    if (htmlBuffer) {
+  for (const node of nodes) {
+    if (node.type === 'customQuiz') {
+      // Flush HTML buffer
+      if (htmlBuffer) {
         segments.push({ type: 'html', content: htmlBuffer });
+        htmlBuffer = '';
+      }
+      // Add quiz segment
+      segments.push({
+        type: 'quiz',
+        quizId: node.attrs?.quizId as string,
+        passingScore: node.attrs?.passingScore as number,
+        timeLimit: node.attrs?.timeLimit as number,
+      });
+    } else if (node.type === 'codeBlock') {
+      // Flush HTML buffer
+      if (htmlBuffer) {
+        segments.push({ type: 'html', content: htmlBuffer });
+        htmlBuffer = '';
+      }
+      // Add code block segment with proper syntax highlighting
+      const code = extractText(node);
+      const language = node.attrs?.language as string;
+      segments.push({
+        type: 'code',
+        code: code,
+        language: normalizeLanguage(language),
+      });
+    } else {
+      // Accumulate HTML
+      htmlBuffer += renderNodeToHtml(node);
     }
+  }
 
-    return segments;
+  // Flush remaining HTML
+  if (htmlBuffer) {
+    segments.push({ type: 'html', content: htmlBuffer });
+  }
+
+  return segments;
 }
 
 interface TiptapHtmlRendererProps {
-    content: { type: string; content?: TiptapNode[] };
-    courseId?: string;
-    quizzes?: Quiz[];
+  content: { type: string; content?: TiptapNode[] };
+  courseId?: string;
+  quizzes?: Quiz[];
 }
 
-export function TiptapHtmlRenderer({ content, courseId, quizzes }: TiptapHtmlRendererProps) {
-    if (!content || content.type !== 'doc' || !content.content) {
+export function TiptapHtmlRenderer({
+  content,
+  courseId,
+  quizzes,
+}: TiptapHtmlRendererProps) {
+  if (!content || content.type !== 'doc' || !content.content) {
+    return null;
+  }
+
+  const segments = segmentContent(content.content);
+
+  return (
+    <div className="ProseMirror prose prose-neutral dark:prose-invert max-w-none text-neutral-900 dark:text-neutral-100">
+      {segments.map((segment, index) => {
+        if (segment.type === 'html') {
+          return (
+            <div
+              key={index}
+              dangerouslySetInnerHTML={{ __html: segment.content || '' }}
+            />
+          );
+        } else if (segment.type === 'quiz') {
+          const quiz = quizzes?.find((q) => q.id === segment.quizId) || null;
+          return (
+            <QuizBlock
+              key={index}
+              quizId={segment.quizId || ''}
+              courseId={courseId || ''}
+              quiz={quiz}
+              passingScore={segment.passingScore}
+              timeLimit={segment.timeLimit}
+            />
+          );
+        } else if (segment.type === 'code') {
+          return (
+            <div
+              key={index}
+              className="my-4 rounded-lg overflow-hidden not-prose"
+            >
+              <div className="flex items-center justify-between bg-neutral-800 px-4 py-2 text-xs">
+                <span className="text-neutral-400 font-mono uppercase">
+                  {segment.language || 'text'}
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(segment.code || '');
+                  }}
+                  className="text-neutral-500 hover:text-neutral-300 transition-colors"
+                  title="Copy code"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <SyntaxHighlighter
+                language={segment.language || 'text'}
+                style={vscDarkPlus}
+                showLineNumbers
+                customStyle={{
+                  margin: 0,
+                  borderRadius: 0,
+                  fontSize: '14px',
+                  padding: '1rem',
+                }}
+                lineNumberStyle={{
+                  minWidth: '2.5em',
+                  paddingRight: '1em',
+                  color: '#6b7280',
+                  userSelect: 'none',
+                }}
+              >
+                {segment.code || ''}
+              </SyntaxHighlighter>
+            </div>
+          );
+        }
         return null;
-    }
-
-    const segments = segmentContent(content.content);
-
-    return (
-        <div className="ProseMirror prose prose-neutral dark:prose-invert max-w-none text-neutral-900 dark:text-neutral-100">
-            {segments.map((segment, index) => {
-                if (segment.type === 'html') {
-                    return (
-                        <div
-                            key={index}
-                            dangerouslySetInnerHTML={{ __html: segment.content || '' }}
-                        />
-                    );
-                } else if (segment.type === 'quiz') {
-                    const quiz = quizzes?.find(q => q.id === segment.quizId) || null;
-                    return (
-                        <QuizBlock
-                            key={index}
-                            quizId={segment.quizId || ''}
-                            courseId={courseId || ''}
-                            quiz={quiz}
-                            passingScore={segment.passingScore}
-                            timeLimit={segment.timeLimit}
-                        />
-                    );
-                }
-                return null;
-            })}
-        </div>
-    );
+      })}
+    </div>
+  );
 }

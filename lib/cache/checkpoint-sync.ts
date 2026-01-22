@@ -104,7 +104,11 @@ export async function runCheckpoint(): Promise<{
  */
 async function syncDraftToServer(draft: DraftEntry): Promise<boolean> {
   try {
-    const result = await uploadCourseChunked(draft.courseId, draft.course, 'checkpoint');
+    const result = await uploadCourseChunked(
+      draft.courseId,
+      draft.course,
+      'checkpoint'
+    );
 
     if (!result.success) {
       console.error(`Checkpoint failed: ${result.error}`);
