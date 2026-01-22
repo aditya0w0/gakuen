@@ -14,9 +14,14 @@ const CACHE_MAX_AGE = 2592000; // 30 * 24 * 60 * 60 = 2592000 seconds
 function isValidFileId(fileId: string): boolean {
     // Google Drive IDs are alphanumeric with possible dashes/underscores
     // Local IDs start with 'local-'
+    // R2 IDs start with 'r2-' and may include file extensions
     if (fileId.startsWith('local-')) {
         // Local: only allow alphanumeric, dashes, underscores, dots
         return /^local-[a-zA-Z0-9_-]+(-[a-zA-Z0-9._-]+)*$/.test(fileId) && !fileId.includes('..');
+    }
+    if (fileId.startsWith('r2-')) {
+        // R2: allow alphanumeric, dashes, underscores, dots (for extensions)
+        return /^r2-[a-zA-Z0-9_.-]+$/.test(fileId) && !fileId.includes('..');
     }
     // Google Drive ID: alphanumeric with dashes/underscores, typically 20-40 chars
     return /^[a-zA-Z0-9_-]{10,50}$/.test(fileId);
@@ -51,14 +56,24 @@ export async function GET(
     }
 
     try {
-        const { fileId } = await params;
+        const resolvedParams = await params;
+        let fileId = resolvedParams.fileId;
 
         if (!fileId) {
             return NextResponse.json({ error: 'File ID required' }, { status: 400 });
         }
 
+        // Next.js Image component may append query params - extract clean fileId
+        // Example: r2-cms-image.webp?url=/api/images/r2-cms-image.webp&w=828&q=75
+        // We only want: r2-cms-image.webp
+        const queryIndex = fileId.indexOf('?');
+        if (queryIndex !== -1) {
+            fileId = fileId.substring(0, queryIndex);
+        }
+
         // Validate fileId format to prevent injection attacks
         if (!isValidFileId(fileId)) {
+            console.warn('Invalid fileId format:', fileId);
             return NextResponse.json({ error: 'Invalid file ID format' }, { status: 400 });
         }
 
