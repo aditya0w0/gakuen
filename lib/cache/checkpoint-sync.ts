@@ -6,6 +6,7 @@
  */
 
 import { getAllDirtyDrafts, markDraftSynced, DraftEntry } from './draft-cache';
+import { uploadCourseChunked } from './chunked-upload';
 
 // Sync interval (30 seconds)
 const SYNC_INTERVAL_MS = 30 * 1000;
@@ -98,82 +99,15 @@ export async function runCheckpoint(): Promise<{
 }
 
 /**
- * Compress data using browser's CompressionStream (gzip)
- * Falls back to uncompressed if not supported
- */
-async function compressData(
-  data: string
-): Promise<{ compressed: ArrayBuffer; isCompressed: boolean }> {
-  // Check if CompressionStream is supported
-  if (typeof CompressionStream === 'undefined') {
-    const encoder = new TextEncoder();
-    return { compressed: encoder.encode(data).buffer, isCompressed: false };
-  }
-
-  try {
-    const encoder = new TextEncoder();
-    const inputBytes = encoder.encode(data);
-
-    const cs = new CompressionStream('gzip');
-    const writer = cs.writable.getWriter();
-    writer.write(inputBytes);
-    writer.close();
-
-    const chunks: Uint8Array[] = [];
-    const reader = cs.readable.getReader();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
-
-    // Combine chunks
-    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-    const result = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      result.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    console.log(
-      `📦 Compressed ${(inputBytes.length / 1024).toFixed(1)}KB → ${(result.length / 1024).toFixed(1)}KB (${((1 - result.length / inputBytes.length) * 100).toFixed(0)}% reduction)`
-    );
-
-    return { compressed: result.buffer, isCompressed: true };
-  } catch (error) {
-    console.warn('Compression failed, sending uncompressed:', error);
-    const encoder = new TextEncoder();
-    return { compressed: encoder.encode(data).buffer, isCompressed: false };
-  }
-}
-
-/**
  * Sync a single draft to server (Telegram upload + Firestore pointer)
+ * Uses chunked upload for large payloads
  */
 async function syncDraftToServer(draft: DraftEntry): Promise<boolean> {
   try {
-    const jsonData = JSON.stringify(draft.course);
-    const { compressed, isCompressed } = await compressData(jsonData);
+    const result = await uploadCourseChunked(draft.courseId, draft.course, 'checkpoint');
 
-    const response = await fetch(
-      `/api/admin/checkpoint?courseId=${draft.courseId}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': isCompressed
-            ? 'application/gzip'
-            : 'application/json',
-          'Content-Encoding': isCompressed ? 'gzip' : 'identity',
-        },
-        body: compressed,
-      }
-    );
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error(`Checkpoint API error: ${response.status}`, text);
+    if (!result.success) {
+      console.error(`Checkpoint failed: ${result.error}`);
       return false;
     }
 

@@ -12,6 +12,7 @@ import {
     getDraftLocal,
     markDraftSynced
 } from '@/lib/cache/draft-cache';
+import { uploadCourseChunked } from '@/lib/cache/chunked-upload';
 
 /**
  * Fetch course by ID
@@ -74,23 +75,14 @@ export async function publishCourse(id: string, course: Course): Promise<boolean
         // First save to local
         await saveDraftLocal(id, course);
 
-        // Then push to server via publish API WITH the course data
-        const response = await fetch(`/api/courses/${id}/publish`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',  // Include cookies for auth
-            body: JSON.stringify({ course }),  // Send course data in body!
-        });
+        // Use chunked upload to handle large payloads
+        const result = await uploadCourseChunked(id, course, 'publish');
 
-        if (!response.ok) {
-            const text = await response.text();
-            throw new Error(`${response.status} ${text}`);
+        if (!result.success) {
+            throw new Error(result.error || 'Publish failed');
         }
 
-        const result = await response.json();
-        console.log(`✅ [Publish] ${id} published:`, result);
+        console.log(`✅ [Publish] ${id} published:`, result.result);
 
         // Mark as synced
         await markDraftSynced(id);

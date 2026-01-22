@@ -14,6 +14,34 @@ import { courseToBlob } from '@/lib/storage/course-converter';
 import { getCourse } from '@/lib/storage/course-storage';
 import { invalidatePointerCache, updatePointerCache } from '@/lib/cache/pointer-cache';
 import { getFromLocalRegistry, markAsSynced, addToLocalRegistry } from '@/lib/cache/local-registry';
+import { gunzipSync } from 'zlib';
+
+/**
+ * Parse request body, handling both gzip and plain JSON
+ */
+async function parseRequestBody(request: NextRequest): Promise<any> {
+    const contentType = request.headers.get('content-type') || '';
+    const contentEncoding = request.headers.get('content-encoding') || '';
+
+    // Handle gzip compressed body
+    if (contentType === 'application/gzip' || contentEncoding === 'gzip') {
+        const arrayBuffer = await request.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        console.log(`📦 [Publish] Received compressed payload: ${(buffer.length / 1024).toFixed(1)}KB`);
+
+        try {
+            const decompressed = gunzipSync(buffer);
+            console.log(`📦 [Publish] Decompressed to: ${(decompressed.length / 1024).toFixed(1)}KB`);
+            return JSON.parse(decompressed.toString('utf-8'));
+        } catch (error) {
+            console.error('Decompression failed:', error);
+            throw new Error('Failed to decompress gzip payload');
+        }
+    }
+
+    // Plain JSON
+    return request.json();
+}
 
 export async function POST(
     request: NextRequest,
@@ -37,12 +65,17 @@ export async function POST(
 
         // Get course from request body (preferred - has latest editor content)
         // Fallback to getCourse for backward compatibility
+        // Supports both gzip compressed and plain JSON
         let course: any;
         try {
-            const body = await request.json();
-            if (body.course && body.course.lessons) {
-                course = body.course;
+            const body = await parseRequestBody(request);
+            // Body can be the course directly (from chunked upload) or wrapped in { course }
+            if (body.lessons) {
+                course = body;
                 console.log(`📄 [Publish] Using course from request body (${course.lessons?.length} lessons)`);
+            } else if (body.course && body.course.lessons) {
+                course = body.course;
+                console.log(`📄 [Publish] Using wrapped course from request body (${course.lessons?.length} lessons)`);
             }
         } catch {
             // No body or invalid JSON - use fallback
