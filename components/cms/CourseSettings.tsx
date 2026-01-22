@@ -131,7 +131,7 @@ export function CourseSettings({
     };
 
     return (
-        <div className="max-w-3xl mx-auto px-8 py-6 space-y-6">
+        <div className="max-w-4xl mx-auto px-8 py-6 space-y-6">
             {/* Status Badge */}
             <div className="flex items-center gap-2">
                 <span className="text-sm text-zinc-400">Status:</span>

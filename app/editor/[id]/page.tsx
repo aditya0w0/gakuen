@@ -30,6 +30,7 @@ import {
   deserializeFromComponents,
 } from '@/lib/cms/serialization';
 import { fetchCourse, updateCourse, publishCourse } from '@/lib/api/courseApi';
+import { CourseSyllabus } from '@/components/course/CourseSyllabus';
 // saveCourseMetadata removed - now using Telegram storage
 import { createComponent } from '@/lib/cms/registry';
 
@@ -165,7 +166,7 @@ export default function CourseEditorPage({
   const [draggedComponentId, setDraggedComponentId] = useState<string | null>(
     null
   );
-  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [addMenuOpen, setAddMenuOpen] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [lessonDropdownOpen, setLessonDropdownOpen] = useState(false);
   const [inlineTyping, setInlineTyping] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [fluidEditor, setFluidEditor] = useState<
@@ -176,7 +177,7 @@ export default function CourseEditorPage({
   const fluidEditorRef = useRef<FluidEditorRef>(null);
   const _saveTimeoutRef = useRef<NodeJS.Timeout | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
   const idCounterRef = useRef(0);
-  const addMenuRef = useRef<HTMLDivElement>(null);
+  const _addMenuRef = useRef<HTMLDivElement>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
   const lessonDropdownRef = useRef<HTMLDivElement>(null);
 
   // Load course from API
@@ -233,15 +234,11 @@ export default function CourseEditorPage({
     }
   }, [editingIndex, initialLessonIndex]);
 
-  // Close add menu when clicking outside
+  // Close add menu when clicking outside (disabled - dropdown removed)
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        addMenuRef.current &&
-        !addMenuRef.current.contains(event.target as Node)
-      ) {
-        setAddMenuOpen(false);
-      }
+      // addMenuRef removed
     };
 
     if (addMenuOpen) {
@@ -252,6 +249,7 @@ export default function CourseEditorPage({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [addMenuOpen]);
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   // Close lesson dropdown when clicking outside
   useEffect(() => {
@@ -768,37 +766,14 @@ export default function CourseEditorPage({
                       )}
                     </div>
 
-                    {/* Add Menu */}
-                    <div className="relative" ref={addMenuRef}>
-                      <button
-                        onClick={() => setAddMenuOpen(!addMenuOpen)}
-                        className="p-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-md text-white transition-colors"
-                      >
-                        <Plus size={14} />
-                      </button>
-                      {addMenuOpen && (
-                        <div className="absolute right-0 mt-1 w-40 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50">
-                          <button
-                            onClick={() => {
-                              handleAddLesson();
-                              setAddMenuOpen(false);
-                            }}
-                            className="w-full px-3 py-2 text-left text-sm text-white hover:bg-zinc-800 rounded-t-lg"
-                          >
-                            + Add Lesson
-                          </button>
-                          <button
-                            onClick={() => {
-                              setActiveView('sections');
-                              setAddMenuOpen(false);
-                            }}
-                            className="w-full px-3 py-2 text-left text-sm text-white hover:bg-zinc-800 rounded-b-lg border-t border-zinc-700"
-                          >
-                            + Add Section
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    {/* Add Lesson Button */}
+                    <button
+                      onClick={handleAddLesson}
+                      className="p-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-md text-white transition-colors"
+                      title="Add Lesson"
+                    >
+                      <Plus size={14} />
+                    </button>
 
                     {/* DELETE BUTTON */}
                     <button
@@ -1044,9 +1019,29 @@ export default function CourseEditorPage({
                                       <ChevronDown className="w-3 h-3" />
                                     </button>
                                   </div>
-                                  <span className="flex-1 text-sm text-white">
-                                    {lesson.title}
-                                  </span>
+                                  <input
+                                    type="text"
+                                    value={lesson.title}
+                                    onChange={(e) => {
+                                      const newLessons = lessons.map((l) =>
+                                        l.id === lesson.id
+                                          ? { ...l, title: e.target.value }
+                                          : l
+                                      );
+                                      setLessons(newLessons);
+                                    }}
+                                    onBlur={() => {
+                                      // Save on blur
+                                      if (course) {
+                                        updateCourse(courseId, {
+                                          ...course,
+                                          sections,
+                                          lessons,
+                                        });
+                                      }
+                                    }}
+                                    className="flex-1 text-sm text-white bg-transparent focus:outline-none focus:ring-1 focus:ring-indigo-500 rounded px-2 py-1"
+                                  />
                                   <button
                                     onClick={() =>
                                       setSections(
@@ -1069,6 +1064,43 @@ export default function CourseEditorPage({
                                 </div>
                               );
                             })}
+
+                            {/* Create new lesson directly in this section */}
+                            <button
+                              onClick={() => {
+                                const newLesson: Lesson = {
+                                  id: `${courseId}-lesson-${Date.now()}`,
+                                  title: `Lesson ${lessons.length + 1}`,
+                                  type: 'cms',
+                                  duration: '10 min',
+                                  content: '',
+                                  order: lessons.length + 1,
+                                  components: [],
+                                };
+                                // Add lesson and assign to this section
+                                const newLessons = [...lessons, newLesson];
+                                const newSections = sections.map((s) =>
+                                  s.id === section.id
+                                    ? { ...s, lessonIds: [...s.lessonIds, newLesson.id] }
+                                    : s
+                                );
+                                setLessons(newLessons);
+                                setSections(newSections);
+                                // Stay in sections view - user can rename inline
+                                // Save to server
+                                if (course) {
+                                  updateCourse(courseId, {
+                                    ...course,
+                                    sections: newSections,
+                                    lessons: newLessons,
+                                  });
+                                }
+                              }}
+                              className="w-full mt-2 p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+                            >
+                              <Plus size={14} />
+                              Create New Lesson
+                            </button>
 
                             {unassignedLessons.length > 0 && (
                               <select
@@ -1100,7 +1132,7 @@ export default function CourseEditorPage({
                                 className="w-full mt-2 p-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-400"
                               >
                                 <option value="">
-                                  + Add lesson to section...
+                                  + Add existing lesson...
                                 </option>
                                 {unassignedLessons.map((l) => (
                                   <option key={l.id} value={l.id}>
@@ -1139,21 +1171,43 @@ export default function CourseEditorPage({
         </main>
 
         {/* Right Panel - Desktop only (mobile uses inline toolbar) */}
-        <aside className="hidden md:block w-80 shrink-0">
-          {activeView === 'content' ? (
-            <FluidEditorSidebar
-              editor={fluidEditor}
-              onInsertComponent={handleAddComponent}
-            />
-          ) : (
-            <DesignControls
-              component={selectedComponent || null}
-              onUpdate={handleUpdateComponent}
-              onDelete={handleDeleteComponent}
-              onAddComponent={handleAddComponent}
-            />
-          )}
-        </aside>
+        {/* Only show sidebar for content and sections views */}
+        {(activeView === 'content' || activeView === 'sections') && (
+          <aside className="hidden md:block w-80 shrink-0">
+            {activeView === 'content' ? (
+              <FluidEditorSidebar
+                editor={fluidEditor}
+                onInsertComponent={handleAddComponent}
+              />
+            ) : (
+              <div className="h-full bg-zinc-950 border-l border-zinc-800 flex flex-col">
+                <div className="p-4 border-b border-zinc-800">
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Eye size={16} className="text-indigo-400" />
+                    Live Preview
+                  </h3>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    How students will see the syllabus
+                  </p>
+                </div>
+                <div className="flex-1 overflow-auto p-4 bg-zinc-900/50">
+                  <div className="bg-white dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800 p-3">
+                    <CourseSyllabus
+                      course={{
+                        ...course!,
+                        lessons,
+                        sections,
+                      }}
+                      activeLesson={undefined}
+                      completedLessons={[]}
+                      onSelectLesson={() => {}}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </aside>
+        )}
       </div>
 
       {/* Context Menu */}
