@@ -4,6 +4,7 @@ import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { CustomImage } from '@/lib/cms/extensions/CustomImage';
+import { CustomVideo } from '@/lib/cms/extensions/CustomVideo';
 import { CustomMultiFileCode } from '@/lib/cms/extensions/CustomMultiFileCode';
 import { CustomQuiz } from '@/lib/cms/extensions/CustomQuiz';
 import {
@@ -54,6 +55,7 @@ import {
   Heading2,
   Heading3,
   Image as ImageIcon,
+  Video as VideoIcon,
   Code,
   Minus,
   Quote,
@@ -138,6 +140,18 @@ const SLASH_COMMANDS: SlashCommandItem[] = [
         .chain()
         .focus()
         .insertContent({ type: 'customImage', attrs: { src: '', alt: '' } })
+        .run();
+    },
+  },
+  {
+    title: 'Video',
+    description: 'Upload or embed a video',
+    icon: <VideoIcon size={18} />,
+    command: (editor) => {
+      editor
+        .chain()
+        .focus()
+        .insertContent({ type: 'customVideo', attrs: { src: '', poster: '' } })
         .run();
     },
   },
@@ -395,6 +409,7 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
           emptyEditorClass: 'is-editor-empty',
         }),
         CustomImage,
+        CustomVideo,
         CustomMultiFileCode,
         CustomQuiz,
         CustomYouTube,
@@ -471,6 +486,63 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
           // Handle clipboard image FILES (screenshots, copied file images)
           const files = clipboardData.files;
           if (files && files.length > 0) {
+            // Check for video files first
+            const videoFile = Array.from(files).find((f) =>
+              f.type.startsWith('video/')
+            );
+            if (videoFile) {
+              const formData = new FormData();
+              formData.append('file', videoFile);
+              formData.append('type', 'video');
+
+              // Show placeholder while uploading
+              view.dispatch(
+                view.state.tr.replaceSelectionWith(
+                  view.state.schema.nodes.paragraph.create(
+                    {},
+                    view.state.schema.text(`[Uploading video...]`)
+                  )
+                )
+              );
+
+              // Upload asynchronously
+              fetch('/api/upload-video', {
+                method: 'POST',
+                body: formData,
+              })
+                .then((res) => res.json())
+                .then((data) => {
+                  if (data.url) {
+                    const { state } = view;
+                    const videoNode = state.schema.nodes.customVideo.create({
+                      src: data.url,
+                    });
+
+                    let tr = state.tr;
+                    state.doc.descendants((node, pos) => {
+                      if (
+                        node.isText &&
+                        node.text?.includes('[Uploading video...]')
+                      ) {
+                        tr = tr.replaceWith(
+                          pos,
+                          pos + node.nodeSize,
+                          videoNode
+                        );
+                        return false;
+                      }
+                      return true;
+                    });
+                    view.dispatch(tr);
+                  }
+                })
+                .catch((err) => {
+                  console.error('Video upload failed:', err);
+                });
+
+              return true;
+            }
+
             const imageFile = Array.from(files).find((f) =>
               f.type.startsWith('image/')
             );

@@ -86,28 +86,63 @@ export const POST = withAuthTracked(async (request, { user }) => {
             maxWidth = 2400;
         }
 
+        // Check if this is a GIF (preserve animation - don't convert to WebP)
+        const isGif = file.type === 'image/gif';
+        
         // Process with Sharp - convert PNG/JPG/etc to WebP with smart quality
+        // GIFs are preserved as-is to maintain animation
         const imageToProcess = buffer;
         let wasReplaced = false;
+        let processedBuffer: Buffer;
+        let outputFormat: 'webp' | 'gif';
+        let mimeType: string;
 
-        const processedBuffer = await sharp(imageToProcess)
-            .resize({
-                width: type === 'avatar' ? 400 : maxWidth,
-                height: type === 'avatar' ? 400 : undefined,
-                fit: 'inside',
-                withoutEnlargement: true
-            })
-            .webp({ quality })
-            .toBuffer();
-
-        const outputSizeKB = processedBuffer.length / 1024;
-        console.log(`✨ Compressed: ${inputSizeMB.toFixed(1)}MB → ${outputSizeKB.toFixed(0)}KB (${((1 - processedBuffer.length / buffer.length) * 100).toFixed(0)}% reduction)`);
+        if (isGif) {
+            // GIF: Preserve original to maintain animation
+            // Only resize if needed, keep as GIF format
+            const metadata = await sharp(buffer, { animated: true }).metadata();
+            const needsResize = metadata.width && metadata.width > maxWidth;
+            
+            if (needsResize) {
+                processedBuffer = await sharp(buffer, { animated: true })
+                    .resize({
+                        width: type === 'avatar' ? 400 : maxWidth,
+                        fit: 'inside',
+                        withoutEnlargement: true
+                    })
+                    .gif()
+                    .toBuffer();
+                console.log(`🎬 Resized GIF: ${inputSizeMB.toFixed(1)}MB → ${(processedBuffer.length / 1024 / 1024).toFixed(1)}MB`);
+            } else {
+                // Use original buffer for GIFs that don't need resizing
+                processedBuffer = buffer;
+                console.log(`🎬 Preserved GIF as-is: ${inputSizeMB.toFixed(1)}MB`);
+            }
+            outputFormat = 'gif';
+            mimeType = 'image/gif';
+        } else {
+            // Non-GIF: Convert to WebP for compression
+            processedBuffer = await sharp(imageToProcess)
+                .resize({
+                    width: type === 'avatar' ? 400 : maxWidth,
+                    height: type === 'avatar' ? 400 : undefined,
+                    fit: 'inside',
+                    withoutEnlargement: true
+                })
+                .webp({ quality })
+                .toBuffer();
+            outputFormat = 'webp';
+            mimeType = 'image/webp';
+            
+            const outputSizeKB = processedBuffer.length / 1024;
+            console.log(`✨ Compressed: ${inputSizeMB.toFixed(1)}MB → ${outputSizeKB.toFixed(0)}KB (${((1 - processedBuffer.length / buffer.length) * 100).toFixed(0)}% reduction)`);
+        }
 
         // Get image metadata
-        const metadata = await sharp(processedBuffer).metadata();
+        const metadata = await sharp(processedBuffer, isGif ? { animated: true } : {}).metadata();
 
         // Generate unique filename
-        const filename = `${uuidv4().slice(0, 8)}-${Date.now()}.webp`;
+        const filename = `${uuidv4().slice(0, 8)}-${Date.now()}.${outputFormat}`;
 
         // Try Google Drive first, fallback to base64
         const { isDriveEnabled, uploadToDrive } = await import('@/lib/storage/google-drive');
@@ -136,7 +171,7 @@ export const POST = withAuthTracked(async (request, { user }) => {
                     bufferToUpload,
                     filename,
                     driveFolder,
-                    'image/webp'
+                    mimeType
                 );
 
                 return NextResponse.json({
@@ -165,7 +200,7 @@ export const POST = withAuthTracked(async (request, { user }) => {
                     processedBuffer, // Use the same processed buffer
                     filename,
                     r2Folder as any,
-                    'image/webp'
+                    mimeType
                 );
 
                 console.log(`✅ Image uploaded to R2: ${fileId}`);
@@ -196,7 +231,7 @@ export const POST = withAuthTracked(async (request, { user }) => {
         }
 
         // Generate filename with user ID for organization
-        const localFilename = `${user.id}-${uuidv4().slice(0, 8)}.webp`;
+        const localFilename = `${user.id}-${uuidv4().slice(0, 8)}.${outputFormat}`;
         const filepath = join(uploadsDir, localFilename);
 
         // Write binary file (NOT base64)

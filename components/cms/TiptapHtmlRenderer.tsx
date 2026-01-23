@@ -232,6 +232,21 @@ function renderNodeToHtml(node: TiptapNode): string {
                 </div>`;
       }
       return '';
+    case 'customVideo':
+      const videoSrc = node.attrs?.src as string;
+      if (videoSrc) {
+        return `<div class="my-4 rounded-xl overflow-hidden bg-black">
+                    <video 
+                        class="w-full max-h-[500px]"
+                        src="${videoSrc}" 
+                        poster="${node.attrs?.poster || ''}"
+                        controls
+                        preload="metadata">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>`;
+      }
+      return '';
     default:
       return children;
   }
