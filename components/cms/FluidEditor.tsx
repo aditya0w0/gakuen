@@ -468,7 +468,7 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
 
           // Check for plain text first - detect URLs
           const text = clipboardData.getData('text/plain');
-          
+
           // Detect YouTube URLs
           if (text && isYouTubeUrl(text)) {
             const videoId = extractYouTubeId(text);
@@ -486,7 +486,10 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
           }
 
           // Detect direct video URLs (.mp4, .webm, .ogg, .mov)
-          if (text && /^https?:\/\/.+\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(text)) {
+          if (
+            text &&
+            /^https?:\/\/.+\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(text)
+          ) {
             console.log('🎬 Detected video URL paste:', text);
             view.dispatch(
               view.state.tr.replaceSelectionWith(
@@ -569,13 +572,14 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
 
               // Generate unique placeholder ID for tracking
               const uploadId = `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-              
+
               // Insert placeholder node with unique ID
-              const placeholderNode = view.state.schema.nodes.customImage.create({
-                src: '', // Empty src - CustomImage will show upload state
-                alt: uploadId, // Store ID in alt for tracking
-              });
-              
+              const placeholderNode =
+                view.state.schema.nodes.customImage.create({
+                  src: '', // Empty src - CustomImage will show upload state
+                  alt: uploadId, // Store ID in alt for tracking
+                });
+
               const insertPos = view.state.selection.from;
               view.dispatch(
                 view.state.tr.replaceSelectionWith(placeholderNode)
@@ -592,9 +596,13 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
                     // Find and update the placeholder by ID
                     const { state } = view;
                     let found = false;
-                    
+
                     state.doc.descendants((node, pos) => {
-                      if (!found && node.type.name === 'customImage' && node.attrs.alt === uploadId) {
+                      if (
+                        !found &&
+                        node.type.name === 'customImage' &&
+                        node.attrs.alt === uploadId
+                      ) {
                         const tr = state.tr.setNodeMarkup(pos, null, {
                           src: data.url,
                           alt: imageFile.name || '',
@@ -612,7 +620,10 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
                   // Remove placeholder on error
                   const { state } = view;
                   state.doc.descendants((node, pos) => {
-                    if (node.type.name === 'customImage' && node.attrs.alt === uploadId) {
+                    if (
+                      node.type.name === 'customImage' &&
+                      node.attrs.alt === uploadId
+                    ) {
                       const tr = state.tr.delete(pos, pos + node.nodeSize);
                       view.dispatch(tr);
                       return false;
