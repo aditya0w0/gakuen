@@ -70,6 +70,9 @@ export async function PUT(
             return NextResponse.json({ error: 'Course ID mismatch' }, { status: 400 });
         }
 
+        // Auto-calculate lessonsCount from lessons array
+        course.lessonsCount = course.lessons?.length || 0;
+
         const success = await saveCourse(id, course);
 
         if (!success) {
