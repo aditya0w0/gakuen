@@ -169,6 +169,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https: http:", // Allow all HTTPS/HTTP images - FluidEditor auto-uploads external images to our server
+              "media-src 'self' data: blob: https: http:", // Allow all HTTPS/HTTP videos - CustomVideo auto-uploads external videos to our server
               "connect-src 'self' https://*.googleapis.com https://*.googleusercontent.com https://lh3.googleusercontent.com https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://accounts.google.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com",
               "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://accounts.google.com https://*.firebaseapp.com",
               "object-src 'none'",
