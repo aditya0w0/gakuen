@@ -90,7 +90,9 @@ function ImageNodeView({
         try {
           if (attempt > 0) {
             const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-            console.log(`⏳ [Image] Retry ${attempt}/${maxRetries} after ${delay}ms...`);
+            console.log(
+              `⏳ [Image] Retry ${attempt}/${maxRetries} after ${delay}ms...`
+            );
             await new Promise((resolve) => setTimeout(resolve, delay));
             setUploadProgress(20 + attempt * 15);
           }
@@ -119,10 +121,15 @@ function ImageNodeView({
             return;
           } else {
             const errorText = await response.text();
-            lastError = new Error(`Upload failed (${response.status}): ${errorText}`);
-            
+            lastError = new Error(
+              `Upload failed (${response.status}): ${errorText}`
+            );
+
             if (attempt < maxRetries) {
-              console.warn(`⚠️ Attempt ${attempt + 1} failed:`, lastError.message);
+              console.warn(
+                `⚠️ Attempt ${attempt + 1} failed:`,
+                lastError.message
+              );
               continue;
             } else {
               console.error('❌ Image upload failed after retries');
@@ -136,16 +143,23 @@ function ImageNodeView({
             }
           }
         } catch (error) {
-          lastError = error instanceof Error ? error : new Error('Unknown error');
-          
+          lastError =
+            error instanceof Error ? error : new Error('Unknown error');
+
           if (attempt < maxRetries) {
-            console.warn(`⚠️ Attempt ${attempt + 1} failed:`, lastError.message);
+            console.warn(
+              `⚠️ Attempt ${attempt + 1} failed:`,
+              lastError.message
+            );
             continue;
           }
         }
       }
 
-      console.error('❌ Image auto-upload failed after all retries:', lastError);
+      console.error(
+        '❌ Image auto-upload failed after all retries:',
+        lastError
+      );
       // Don't delete node - just stop uploading and allow manual retry
       uploadedUrls.delete(src);
       lastUploadedSrcRef.current = null;

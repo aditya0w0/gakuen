@@ -104,10 +104,15 @@ function VideoNodeView({
             return;
           } else {
             const errorText = await response.text();
-            lastError = new Error(`Upload failed (${response.status}): ${errorText}`);
-            
+            lastError = new Error(
+              `Upload failed (${response.status}): ${errorText}`
+            );
+
             if (attempt < maxRetries) {
-              console.warn(`⚠️ Attempt ${attempt + 1} failed:`, lastError.message);
+              console.warn(
+                `⚠️ Attempt ${attempt + 1} failed:`,
+                lastError.message
+              );
               continue;
             } else {
               console.error('❌ Video upload failed after retries');
@@ -123,7 +128,7 @@ function VideoNodeView({
         } catch (error) {
           lastError =
             error instanceof Error ? error : new Error('Unknown error');
-          
+
           if (attempt < maxRetries) {
             console.warn(
               `⚠️ Attempt ${attempt + 1} failed:`,

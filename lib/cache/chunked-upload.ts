@@ -120,8 +120,10 @@ export async function uploadCourseChunked(
         try {
           if (attempt > 0) {
             const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
-            console.log(`⏳ [Chunked] Retry chunk ${i} (attempt ${attempt}/${maxRetries}) after ${delay}ms`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            console.log(
+              `⏳ [Chunked] Retry chunk ${i} (attempt ${attempt}/${maxRetries}) after ${delay}ms`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
           }
 
           const chunkRes = await fetch(
@@ -142,7 +144,11 @@ export async function uploadCourseChunked(
             if (text.includes('Upload not found') && attempt < maxRetries) {
               // Upload expired - need to reinitialize
               console.warn(`⚠️ [Chunked] Upload expired, reinitializing...`);
-              return { success: false, error: 'Upload expired - please try again', needsRetry: true };
+              return {
+                success: false,
+                error: 'Upload expired - please try again',
+                needsRetry: true,
+              };
             }
             continue;
           }
@@ -152,7 +158,10 @@ export async function uploadCourseChunked(
         } catch (err) {
           lastError = err instanceof Error ? err.message : 'Unknown error';
           if (attempt >= maxRetries) {
-            return { success: false, error: `Chunk ${i} failed after ${maxRetries} retries: ${lastError}` };
+            return {
+              success: false,
+              error: `Chunk ${i} failed after ${maxRetries} retries: ${lastError}`,
+            };
           }
         }
       }
