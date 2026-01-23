@@ -271,7 +271,7 @@ function ImageNodeView({ node, updateAttributes, deleteNode, selected }: NodeVie
                             </div>
                         )}
                     </div>
-                )}}
+                )}
 
                 {/* Upload Progress Overlay */}
                 {isUploading && (

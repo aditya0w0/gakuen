@@ -144,7 +144,7 @@ export default function CourseEditorPage({
   } | null>(null);
   const [copiedComponent, setCopiedComponent] = useState<Component | null>(
     null
-  ); // eslint-disable-line @typescript-eslint/no-unused-vars
+  );  
   const [activeView, setActiveView] = useState<
     'content' | 'settings' | 'sections'
   >('content');
