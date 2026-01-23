@@ -1,14 +1,18 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @plugin "@tailwindcss/typography";
-@import "tw-animate-css";
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans:
+    ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
 
   /* Neutral colors - required for text-neutral-*, bg-neutral-*, etc */
   --color-neutral-50: #fafafa;
@@ -217,10 +221,12 @@
   }
 
   .skeleton {
-    background: linear-gradient(90deg,
-        rgba(255, 255, 255, 0.05) 25%,
-        rgba(255, 255, 255, 0.1) 50%,
-        rgba(255, 255, 255, 0.05) 75%);
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.05) 75%
+    );
     background-size: 200% 100%;
     animation: skeleton-shimmer 1.5s infinite ease-in-out;
   }
@@ -254,7 +260,6 @@
   /* Override inline styles that use light colors (from dark mode editing) */
   .prose *,
   .ProseMirror * {
-
     /* In light mode, override very light inline colors */
     &:not(.dark *) {
       /* This doesn't work well, use JavaScript or component-level fix instead */
@@ -306,7 +311,6 @@
 
 /* GPU-optimized background animations */
 @keyframes float-slow {
-
   0%,
   100% {
     transform: translate(0, 0) scale(1);
@@ -318,7 +322,6 @@
 }
 
 @keyframes float-slow-delay {
-
   0%,
   100% {
     transform: translate(0, 0) scale(1);
@@ -330,7 +333,6 @@
 }
 
 @keyframes pulse-slow {
-
   0%,
   100% {
     opacity: 0.3;
@@ -358,7 +360,6 @@
 
 /* Reduce animations for users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
-
   .animate-float-slow,
   .animate-float-slow-delay,
   .animate-pulse-slow {
@@ -595,31 +596,31 @@
 }
 
 /* Text Alignment - Tiptap applies style directly */
-.ProseMirror p[style*="text-align: left"],
-.ProseMirror h1[style*="text-align: left"],
-.ProseMirror h2[style*="text-align: left"],
-.ProseMirror h3[style*="text-align: left"] {
+.ProseMirror p[style*='text-align: left'],
+.ProseMirror h1[style*='text-align: left'],
+.ProseMirror h2[style*='text-align: left'],
+.ProseMirror h3[style*='text-align: left'] {
   text-align: left !important;
 }
 
-.ProseMirror p[style*="text-align: center"],
-.ProseMirror h1[style*="text-align: center"],
-.ProseMirror h2[style*="text-align: center"],
-.ProseMirror h3[style*="text-align: center"] {
+.ProseMirror p[style*='text-align: center'],
+.ProseMirror h1[style*='text-align: center'],
+.ProseMirror h2[style*='text-align: center'],
+.ProseMirror h3[style*='text-align: center'] {
   text-align: center !important;
 }
 
-.ProseMirror p[style*="text-align: right"],
-.ProseMirror h1[style*="text-align: right"],
-.ProseMirror h2[style*="text-align: right"],
-.ProseMirror h3[style*="text-align: right"] {
+.ProseMirror p[style*='text-align: right'],
+.ProseMirror h1[style*='text-align: right'],
+.ProseMirror h2[style*='text-align: right'],
+.ProseMirror h3[style*='text-align: right'] {
   text-align: right !important;
 }
 
-.ProseMirror p[style*="text-align: justify"],
-.ProseMirror h1[style*="text-align: justify"],
-.ProseMirror h2[style*="text-align: justify"],
-.ProseMirror h3[style*="text-align: justify"] {
+.ProseMirror p[style*='text-align: justify'],
+.ProseMirror h1[style*='text-align: justify'],
+.ProseMirror h2[style*='text-align: justify'],
+.ProseMirror h3[style*='text-align: justify'] {
   text-align: justify !important;
 }
 
@@ -648,7 +649,7 @@
 
 .ProseMirror th,
 .ProseMirror .tableHeader,
-.ProseMirror [data-cell-type="header"] {
+.ProseMirror [data-cell-type='header'] {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
   color: white !important;
   font-weight: 600 !important;
@@ -701,7 +702,7 @@
 }
 
 .ProseMirror .selectedCell::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -731,10 +732,11 @@
 /* Code block container - high specificity */
 .ProseMirror pre,
 .prose pre,
-pre[class*="language-"],
+pre[class*='language-'],
 .tiptap pre,
 .prose-invert pre {
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', 'Monaco', monospace !important;
+  font-family:
+    'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', 'Monaco', monospace !important;
   font-size: 0.875rem !important;
   line-height: 1.7 !important;
   font-weight: 400;
@@ -981,65 +983,65 @@ pre code {
    ============================================ */
 
 /* Override light backgrounds in prose content */
-.prose.prose-invert *[style*="background-color"] {
+.prose.prose-invert *[style*='background-color'] {
   background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
 /* Override light backgrounds from pastes (common colors) */
-.prose.prose-invert *[style*="background: rgb(255"],
-.prose.prose-invert *[style*="background: rgb(254"],
-.prose.prose-invert *[style*="background: rgb(253"],
-.prose.prose-invert *[style*="background: rgb(252"],
-.prose.prose-invert *[style*="background: rgb(251"],
-.prose.prose-invert *[style*="background: rgb(250"],
-.prose.prose-invert *[style*="background: rgb(249"],
-.prose.prose-invert *[style*="background: rgb(248"],
-.prose.prose-invert *[style*="background: rgb(247"],
-.prose.prose-invert *[style*="background: rgb(246"],
-.prose.prose-invert *[style*="background: rgb(245"],
-.prose.prose-invert *[style*="background-color: rgb(255"],
-.prose.prose-invert *[style*="background-color: rgb(254"],
-.prose.prose-invert *[style*="background-color: rgb(253"],
-.prose.prose-invert *[style*="background-color: rgb(252"],
-.prose.prose-invert *[style*="background-color: rgb(251"],
-.prose.prose-invert *[style*="background-color: rgb(250"],
-.prose.prose-invert *[style*="background-color: rgb(249"],
-.prose.prose-invert *[style*="background-color: rgb(248"],
-.prose.prose-invert *[style*="background-color: rgb(247"],
-.prose.prose-invert *[style*="background-color: rgb(246"],
-.prose.prose-invert *[style*="background-color: rgb(245"],
-.prose.prose-invert *[style*="background-color: white"],
-.prose.prose-invert *[style*="background-color: #fff"],
-.prose.prose-invert *[style*="background-color: #FFF"],
-.prose.prose-invert *[style*="background-color:#fff"],
-.prose.prose-invert *[style*="background-color:#FFF"],
-.prose.prose-invert *[style*="background: white"],
-.prose.prose-invert *[style*="background: #fff"],
-.prose.prose-invert *[style*="background: #FFF"],
-.prose.prose-invert *[style*="background:#fff"],
-.prose.prose-invert *[style*="background:#FFF"] {
+.prose.prose-invert *[style*='background: rgb(255'],
+.prose.prose-invert *[style*='background: rgb(254'],
+.prose.prose-invert *[style*='background: rgb(253'],
+.prose.prose-invert *[style*='background: rgb(252'],
+.prose.prose-invert *[style*='background: rgb(251'],
+.prose.prose-invert *[style*='background: rgb(250'],
+.prose.prose-invert *[style*='background: rgb(249'],
+.prose.prose-invert *[style*='background: rgb(248'],
+.prose.prose-invert *[style*='background: rgb(247'],
+.prose.prose-invert *[style*='background: rgb(246'],
+.prose.prose-invert *[style*='background: rgb(245'],
+.prose.prose-invert *[style*='background-color: rgb(255'],
+.prose.prose-invert *[style*='background-color: rgb(254'],
+.prose.prose-invert *[style*='background-color: rgb(253'],
+.prose.prose-invert *[style*='background-color: rgb(252'],
+.prose.prose-invert *[style*='background-color: rgb(251'],
+.prose.prose-invert *[style*='background-color: rgb(250'],
+.prose.prose-invert *[style*='background-color: rgb(249'],
+.prose.prose-invert *[style*='background-color: rgb(248'],
+.prose.prose-invert *[style*='background-color: rgb(247'],
+.prose.prose-invert *[style*='background-color: rgb(246'],
+.prose.prose-invert *[style*='background-color: rgb(245'],
+.prose.prose-invert *[style*='background-color: white'],
+.prose.prose-invert *[style*='background-color: #fff'],
+.prose.prose-invert *[style*='background-color: #FFF'],
+.prose.prose-invert *[style*='background-color:#fff'],
+.prose.prose-invert *[style*='background-color:#FFF'],
+.prose.prose-invert *[style*='background: white'],
+.prose.prose-invert *[style*='background: #fff'],
+.prose.prose-invert *[style*='background: #FFF'],
+.prose.prose-invert *[style*='background:#fff'],
+.prose.prose-invert *[style*='background:#FFF'] {
   background-color: rgba(255, 255, 255, 0.05) !important;
   background: rgba(255, 255, 255, 0.05) !important;
 }
 
 /* Override dark text on light backgrounds */
-.prose.prose-invert *[style*="color: rgb(0"],
-.prose.prose-invert *[style*="color: rgb(1"],
-.prose.prose-invert *[style*="color: rgb(2"],
-.prose.prose-invert *[style*="color: rgb(3"],
-.prose.prose-invert *[style*="color: rgb(4"],
-.prose.prose-invert *[style*="color: rgb(5"],
-.prose.prose-invert *[style*="color: black"],
-.prose.prose-invert *[style*="color: #000"],
-.prose.prose-invert *[style*="color:#000"] {
+.prose.prose-invert *[style*='color: rgb(0'],
+.prose.prose-invert *[style*='color: rgb(1'],
+.prose.prose-invert *[style*='color: rgb(2'],
+.prose.prose-invert *[style*='color: rgb(3'],
+.prose.prose-invert *[style*='color: rgb(4'],
+.prose.prose-invert *[style*='color: rgb(5'],
+.prose.prose-invert *[style*='color: black'],
+.prose.prose-invert *[style*='color: #000'],
+.prose.prose-invert *[style*='color:#000'] {
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
 /* Specific fix for highlight/mark-like backgrounds (yellows, oranges, etc) */
 .prose.prose-invert mark,
-.prose.prose-invert *[style*="background-color: yellow"],
-.prose.prose-invert *[style*="background-color: #ff"],
-.prose.prose-invert *[style*="background: yellow"] {
+.prose.prose-invert *[style*='background-color: yellow'],
+.prose.prose-invert *[style*='background-color: #ff'],
+.prose.prose-invert *[style*='background: yellow'] {
   background-color: rgba(250, 204, 21, 0.2) !important;
   color: rgba(255, 255, 255, 0.9) !important;
 }

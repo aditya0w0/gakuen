@@ -264,7 +264,11 @@ function ImageNodeView({
             src={src}
             alt={alt || 'Image'}
             className="max-w-full h-auto rounded-xl"
-            style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain' }}
+            style={{
+              maxWidth: '100%',
+              maxHeight: '400px',
+              objectFit: 'contain',
+            }}
             onError={(e) => {
               console.warn('⚠️ Image failed to load:', src);
               // If needs upload and failed, remove from Set so it can be retried
