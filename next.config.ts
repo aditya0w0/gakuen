@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
@@ -41,10 +41,14 @@ const nextConfig: NextConfig = {
         hostname: 'api.dicebear.com',
       },
       // Allow R2 storage if configured
-      ...(process.env.R2_PUBLIC_URL ? [{
-        protocol: 'https' as const,
-        hostname: new URL(process.env.R2_PUBLIC_URL).hostname,
-      }] : []),
+      ...(process.env.R2_PUBLIC_URL
+        ? [
+            {
+              protocol: 'https' as const,
+              hostname: new URL(process.env.R2_PUBLIC_URL).hostname,
+            },
+          ]
+        : []),
     ],
   },
 
@@ -79,7 +83,8 @@ const nextConfig: NextConfig = {
       },
       {
         // HTML pages - no cache (critical for fresh UI after deployments)
-        source: '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|jpg|jpeg|png|gif|ico|webp|avif|woff|woff2)).*)',
+        source:
+          '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|jpg|jpeg|png|gif|ico|webp|avif|woff|woff2)).*)',
         headers: [
           {
             key: 'Cache-Control',
@@ -147,10 +152,14 @@ const nextConfig: NextConfig = {
             value: 'camera=(), microphone=(), geolocation=()',
           },
           // HSTS - enforce HTTPS in production
-          ...(process.env.NODE_ENV === 'production' ? [{
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains',
-          }] : []),
+          ...(process.env.NODE_ENV === 'production'
+            ? [
+                {
+                  key: 'Strict-Transport-Security',
+                  value: 'max-age=31536000; includeSubDomains',
+                },
+              ]
+            : []),
           // Content Security Policy
           {
             key: 'Content-Security-Policy',
@@ -159,7 +168,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com https://www.gstatic.com", // Added Google APIs for auth
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com https://*.google.com https://*.gstatic.com https://picsum.photos https://api.dicebear.com",
+              "img-src 'self' data: blob: https: http:", // Allow all HTTPS/HTTP images - FluidEditor auto-uploads external images to our server
               "connect-src 'self' https://*.googleapis.com https://*.googleusercontent.com https://lh3.googleusercontent.com https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://accounts.google.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com",
               "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://accounts.google.com https://*.firebaseapp.com",
               "object-src 'none'",
