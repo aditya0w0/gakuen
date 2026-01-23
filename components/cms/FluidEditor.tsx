@@ -447,7 +447,9 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
         }),
         TableRow,
         TableHeader,
-        TableCell,
+        TableCell.extend({
+          content: 'block+',
+        }),
         // Line height extension
         LineHeight.configure({
           types: ['heading', 'paragraph'],

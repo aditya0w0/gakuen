@@ -216,7 +216,12 @@ function renderNodeToHtml(node: TiptapNode): string {
     case 'tableHeader':
       return `<th class="border border-neutral-300 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 px-3 py-2 text-left font-semibold">${children}</th>`;
     case 'tableCell':
-      return `<td class="border border-neutral-300 dark:border-neutral-600 px-3 py-2">${children}</td>`;
+      // Constrain images in table cells
+      const cellContent = children.replace(
+        /<img /g,
+        '<img style="max-width: 200px; max-height: 150px; width: auto; height: auto;" '
+      );
+      return `<td class="border border-neutral-300 dark:border-neutral-600 px-3 py-2">${cellContent}</td>`;
     case 'customYoutube':
       const videoId = node.attrs?.videoId as string;
       if (videoId) {
