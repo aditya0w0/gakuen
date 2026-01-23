@@ -6,17 +6,20 @@ import { useState, useRef, useEffect } from 'react';
 import { Upload, Wand2, Loader2, X, ImageIcon, Trash2, Pencil } from 'lucide-react';
 import { authenticatedFetch } from '@/lib/api/authenticated-fetch';
 
-// Helper to check if URL is external (not from our server)
-function isExternalUrl(url: string): boolean {
+// Helper to check if URL is external and needs re-upload to our server
+function needsUpload(url: string): boolean {
     if (!url || url === '') return false;
+    // Don't re-upload data/blob URLs - these should never be in the JSON
     if (url.startsWith('data:')) return false;
     if (url.startsWith('blob:')) return false;
+    // URLs already on our server don't need re-upload
     if (url.includes('/api/images/')) return false;
     if (url.includes('drive.google.com')) return false;
     if (url.includes('googleusercontent.com')) return false;
     if (url.includes('vercel.app')) return false;
     if (url.includes('gakuen')) return false;
     if (url.startsWith('/')) return false;
+    // External HTTP URLs need to be re-uploaded to our server
     return url.startsWith('http://') || url.startsWith('https://');
 }
 
@@ -43,14 +46,14 @@ function ImageNodeView({ node, updateAttributes, deleteNode, selected }: NodeVie
     const { src, alt } = node.attrs;
     const hasImage = src && src !== '';
 
-    // Auto-upload external images via server (bypasses CORS)
-    // If upload fails, DELETE the image - never keep external URLs
+    // Auto-upload images that need uploading (data URLs, blob URLs, external URLs)
+    // If upload fails, DELETE the image - never keep unuploaded content
     useEffect(() => {
         // Skip if already uploading, no src, or already processed this src
         if (isUploadingRef.current || !src) return;
         if (lastUploadedSrcRef.current === src) return;
         if (uploadedUrls.has(src)) return;
-        if (!isExternalUrl(src)) return;
+        if (!needsUpload(src)) return;
 
         // Mark as processed IMMEDIATELY (synchronously)
         lastUploadedSrcRef.current = src;
@@ -244,8 +247,8 @@ function ImageNodeView({ node, updateAttributes, deleteNode, selected }: NodeVie
                         className="max-w-full h-auto rounded-xl"
                         onError={(e) => {
                             console.warn('⚠️ Image failed to load:', src);
-                            // If external URL failed, remove from Set so it can be retried
-                            if (isExternalUrl(src)) {
+                            // If needs upload and failed, remove from Set so it can be retried
+                            if (needsUpload(src)) {
                                 uploadedUrls.delete(src);
                                 lastUploadedSrcRef.current = null;
                             }
@@ -260,8 +263,15 @@ function ImageNodeView({ node, updateAttributes, deleteNode, selected }: NodeVie
                         <div className="absolute bottom-0 left-0 w-full h-full bg-gradient-to-tr from-blue-600/10 to-transparent"></div>
                         <div className="absolute top-8 right-8 w-32 h-32 bg-orange-500/30 rounded-full blur-3xl"></div>
                         <div className="absolute bottom-8 left-8 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl"></div>
+                        {/* Show upload indicator if empty src (paste upload in progress) */}
+                        {!hasImage && alt?.startsWith('upload-') && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <Loader2 size={32} className="text-blue-500 animate-spin mb-2" />
+                                <span className="text-xs text-zinc-400">Uploading image...</span>
+                            </div>
+                        )}
                     </div>
-                )}
+                )}}
 
                 {/* Upload Progress Overlay */}
                 {isUploading && (

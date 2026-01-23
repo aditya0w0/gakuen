@@ -461,13 +461,15 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
           class:
             'prose prose-invert max-w-none focus:outline-none min-h-[200px] px-6 py-5',
         },
-        // Smart paste handler - handles images and YouTube URLs
+        // Smart paste handler - handles images, videos, and YouTube URLs
         handlePaste: (view, event) => {
           const clipboardData = event.clipboardData;
           if (!clipboardData) return false;
 
-          // Check for plain text first - detect YouTube URLs
+          // Check for plain text first - detect URLs
           const text = clipboardData.getData('text/plain');
+          
+          // Detect YouTube URLs
           if (text && isYouTubeUrl(text)) {
             const videoId = extractYouTubeId(text);
             if (videoId) {
@@ -481,6 +483,19 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
               );
               return true; // Handled
             }
+          }
+
+          // Detect direct video URLs (.mp4, .webm, .ogg, .mov)
+          if (text && /^https?:\/\/.+\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(text)) {
+            console.log('🎬 Detected video URL paste:', text);
+            view.dispatch(
+              view.state.tr.replaceSelectionWith(
+                view.state.schema.nodes.customVideo.create({
+                  src: text,
+                })
+              )
+            );
+            return true; // Handled - CustomVideo will auto-upload it
           }
 
           // Handle clipboard image FILES (screenshots, copied file images)
@@ -547,21 +562,23 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
               f.type.startsWith('image/')
             );
             if (imageFile) {
-              // FIXED: Upload to storage instead of storing base64 in JSON!
-              // Base64 in JSON causes massive payload bloat (10x+ size increase)
+              // Upload first, then insert - prevents base64 in JSON
               const formData = new FormData();
               formData.append('file', imageFile);
-              formData.append('folder', 'cms');
+              formData.append('type', 'cms');
 
-              // Show placeholder while uploading
-              const placeholderId = `uploading-${Date.now()}`;
+              // Generate unique placeholder ID for tracking
+              const uploadId = `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              
+              // Insert placeholder node with unique ID
+              const placeholderNode = view.state.schema.nodes.customImage.create({
+                src: '', // Empty src - CustomImage will show upload state
+                alt: uploadId, // Store ID in alt for tracking
+              });
+              
+              const insertPos = view.state.selection.from;
               view.dispatch(
-                view.state.tr.replaceSelectionWith(
-                  view.state.schema.nodes.paragraph.create(
-                    {},
-                    view.state.schema.text(`[Uploading image...]`)
-                  )
-                )
+                view.state.tr.replaceSelectionWith(placeholderNode)
               );
 
               // Upload asynchronously
@@ -572,34 +589,36 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
                 .then((res) => res.json())
                 .then((data) => {
                   if (data.url) {
-                    // Replace placeholder with actual image
+                    // Find and update the placeholder by ID
                     const { state } = view;
-                    const imageNode = state.schema.nodes.customImage.create({
-                      src: data.url,
-                      alt: imageFile.name || '',
-                    });
-
-                    // Find and replace the placeholder
-                    let tr = state.tr;
+                    let found = false;
+                    
                     state.doc.descendants((node, pos) => {
-                      if (
-                        node.isText &&
-                        node.text?.includes('[Uploading image...]')
-                      ) {
-                        tr = tr.replaceWith(
-                          pos,
-                          pos + node.nodeSize,
-                          imageNode
-                        );
+                      if (!found && node.type.name === 'customImage' && node.attrs.alt === uploadId) {
+                        const tr = state.tr.setNodeMarkup(pos, null, {
+                          src: data.url,
+                          alt: imageFile.name || '',
+                        });
+                        view.dispatch(tr);
+                        found = true;
                         return false;
                       }
                       return true;
                     });
-                    view.dispatch(tr);
                   }
                 })
                 .catch((err) => {
                   console.error('Image upload failed:', err);
+                  // Remove placeholder on error
+                  const { state } = view;
+                  state.doc.descendants((node, pos) => {
+                    if (node.type.name === 'customImage' && node.attrs.alt === uploadId) {
+                      const tr = state.tr.delete(pos, pos + node.nodeSize);
+                      view.dispatch(tr);
+                      return false;
+                    }
+                    return true;
+                  });
                 });
 
               return true;
