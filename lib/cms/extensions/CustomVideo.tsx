@@ -66,32 +66,57 @@ function VideoNodeView({
     setUploadProgress(20);
 
     (async () => {
-      try {
-        const response = await authenticatedFetch('/api/upload-video', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ video: src }),
-        });
+      const maxRetries = 2;
+      let lastError: Error | null = null;
 
-        setUploadProgress(80);
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          if (attempt > 0) {
+            const delay = Math.pow(2, attempt - 1) * 1000;
+            console.log(`⏳ Retry ${attempt}/${maxRetries} after ${delay}ms...`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            setUploadProgress(20 + attempt * 10);
+          }
 
-        if (response.ok) {
-          const { url } = await response.json();
-          console.log('✅ Video upload successful:', url);
-          setUploadProgress(100);
-          updateAttributes({ src: url });
-        } else {
-          console.warn('❌ Video upload failed, deleting node');
-          deleteNode();
+          const response = await authenticatedFetch('/api/upload-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video: src }),
+          });
+
+          setUploadProgress(80);
+
+          if (response.ok) {
+            const { url } = await response.json();
+            console.log('✅ Video upload successful:', url);
+            setUploadProgress(100);
+            updateAttributes({ src: url });
+            isUploadingRef.current = false;
+            setIsUploading(false);
+            setUploadProgress(0);
+            return;
+          } else if (attempt < maxRetries) {
+            lastError = new Error(`Upload failed: ${response.status}`);
+            continue;
+          } else {
+            console.warn('❌ Video upload failed after retries, deleting node');
+            deleteNode();
+            return;
+          }
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error('Unknown error');
+          if (attempt < maxRetries) {
+            console.warn(`⚠️ Attempt ${attempt + 1} failed:`, lastError.message);
+            continue;
+          }
         }
-      } catch (error) {
-        console.error('❌ Video auto-upload error:', error);
-        deleteNode();
-      } finally {
-        isUploadingRef.current = false;
-        setIsUploading(false);
-        setUploadProgress(0);
       }
+
+      console.error('❌ Video auto-upload failed after all retries:', lastError);
+      deleteNode();
+      isUploadingRef.current = false;
+      setIsUploading(false);
+      setUploadProgress(0);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
@@ -192,6 +217,10 @@ function VideoNodeView({
               src={src}
               poster={poster}
               controls
+              autoPlay
+              loop
+              muted
+              playsInline
               className="w-full max-h-[500px]"
               preload="metadata"
             >

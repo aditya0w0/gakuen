@@ -19,6 +19,7 @@ import {
     Type,
     Minus,
     Image,
+    Video,
     ChevronDown,
     Palette,
     ALargeSmall,
@@ -925,6 +926,14 @@ export function FluidEditorSidebar({ editor, onInsertComponent }: FluidEditorSid
                         >
                             <Image size={14} />
                             <span className="text-[9px]">Image</span>
+                        </button>
+                        <button
+                            onClick={() => editor.chain().focus().insertContent({ type: 'customVideo', attrs: { src: '' } }).run()}
+                            className="flex flex-col items-center gap-0.5 p-2 rounded-lg border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-all"
+                            title="Insert Video"
+                        >
+                            <Video size={14} />
+                            <span className="text-[9px]">Video</span>
                         </button>
                         <button
                             onClick={() => editor.chain().focus().insertContent({ type: 'customMultiFileCode' }).run()}
