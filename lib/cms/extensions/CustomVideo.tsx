@@ -73,7 +73,9 @@ function VideoNodeView({
         try {
           if (attempt > 0) {
             const delay = Math.pow(2, attempt - 1) * 1000;
-            console.log(`⏳ Retry ${attempt}/${maxRetries} after ${delay}ms...`);
+            console.log(
+              `⏳ Retry ${attempt}/${maxRetries} after ${delay}ms...`
+            );
             await new Promise((resolve) => setTimeout(resolve, delay));
             setUploadProgress(20 + attempt * 10);
           }
@@ -104,15 +106,22 @@ function VideoNodeView({
             return;
           }
         } catch (error) {
-          lastError = error instanceof Error ? error : new Error('Unknown error');
+          lastError =
+            error instanceof Error ? error : new Error('Unknown error');
           if (attempt < maxRetries) {
-            console.warn(`⚠️ Attempt ${attempt + 1} failed:`, lastError.message);
+            console.warn(
+              `⚠️ Attempt ${attempt + 1} failed:`,
+              lastError.message
+            );
             continue;
           }
         }
       }
 
-      console.error('❌ Video auto-upload failed after all retries:', lastError);
+      console.error(
+        '❌ Video auto-upload failed after all retries:',
+        lastError
+      );
       deleteNode();
       isUploadingRef.current = false;
       setIsUploading(false);
