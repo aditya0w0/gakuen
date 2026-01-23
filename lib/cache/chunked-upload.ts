@@ -110,26 +110,56 @@ export async function uploadCourseChunked(
     const { uploadId } = await initRes.json();
     console.log(`📤 [Chunked] Upload ID: ${uploadId}`);
 
-    // Step 2: Upload each chunk
+    // Step 2: Upload each chunk with retry
     for (let i = 0; i < chunks.length; i++) {
-      const chunkRes = await fetch(
-        `/api/admin/upload-chunk?action=chunk&uploadId=${uploadId}&chunkIndex=${i}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/octet-stream' },
-          body: chunks[i].buffer.slice(
-            chunks[i].byteOffset,
-            chunks[i].byteOffset + chunks[i].byteLength
-          ) as ArrayBuffer,
-        }
-      );
+      const maxRetries = 3;
+      let lastError: string = '';
+      let success = false;
 
-      if (!chunkRes.ok) {
-        const text = await chunkRes.text();
-        return { success: false, error: `Chunk ${i} failed: ${text}` };
+      for (let attempt = 0; attempt <= maxRetries && !success; attempt++) {
+        try {
+          if (attempt > 0) {
+            const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
+            console.log(`⏳ [Chunked] Retry chunk ${i} (attempt ${attempt}/${maxRetries}) after ${delay}ms`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+
+          const chunkRes = await fetch(
+            `/api/admin/upload-chunk?action=chunk&uploadId=${uploadId}&chunkIndex=${i}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/octet-stream' },
+              body: chunks[i].buffer.slice(
+                chunks[i].byteOffset,
+                chunks[i].byteOffset + chunks[i].byteLength
+              ) as ArrayBuffer,
+            }
+          );
+
+          if (!chunkRes.ok) {
+            const text = await chunkRes.text();
+            lastError = text;
+            if (text.includes('Upload not found') && attempt < maxRetries) {
+              // Upload expired - need to reinitialize
+              console.warn(`⚠️ [Chunked] Upload expired, reinitializing...`);
+              return { success: false, error: 'Upload expired - please try again', needsRetry: true };
+            }
+            continue;
+          }
+
+          console.log(`📤 [Chunked] Chunk ${i + 1}/${chunks.length} uploaded`);
+          success = true;
+        } catch (err) {
+          lastError = err instanceof Error ? err.message : 'Unknown error';
+          if (attempt >= maxRetries) {
+            return { success: false, error: `Chunk ${i} failed after ${maxRetries} retries: ${lastError}` };
+          }
+        }
       }
 
-      console.log(`📤 [Chunked] Chunk ${i + 1}/${chunks.length} uploaded`);
+      if (!success) {
+        return { success: false, error: `Chunk ${i} failed: ${lastError}` };
+      }
     }
 
     // Step 3: Complete upload

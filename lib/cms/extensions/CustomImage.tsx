@@ -65,7 +65,7 @@ function ImageNodeView({
   const hasImage = src && src !== '';
 
   // Auto-upload images that need uploading (data URLs, blob URLs, external URLs)
-  // If upload fails, DELETE the image - never keep unuploaded content
+  // If upload fails after retries, keep node but allow manual retry
   useEffect(() => {
     // Skip if already uploading, no src, or already processed this src
     if (isUploadingRef.current || !src) return;
@@ -83,32 +83,75 @@ function ImageNodeView({
     setUploadProgress(20);
 
     (async () => {
-      try {
-        const response = await authenticatedFetch('/api/upload-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: src }),
-        });
+      const maxRetries = 3;
+      let lastError: Error | null = null;
 
-        setUploadProgress(80);
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          if (attempt > 0) {
+            const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+            console.log(`⏳ [Image] Retry ${attempt}/${maxRetries} after ${delay}ms...`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            setUploadProgress(20 + attempt * 15);
+          }
 
-        if (response.ok) {
-          const { url } = await response.json();
-          console.log('✅ Server-side upload successful:', url);
-          setUploadProgress(100);
-          updateAttributes({ src: url, alt: alt || 'Uploaded image' });
-        } else {
-          console.warn('❌ Upload failed, deleting external image node');
-          deleteNode();
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+          const response = await authenticatedFetch('/api/upload-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: src }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeout);
+          setUploadProgress(80);
+
+          if (response.ok) {
+            const { url } = await response.json();
+            console.log('✅ Image upload successful:', url);
+            setUploadProgress(100);
+            updateAttributes({ src: url, alt: alt || 'Uploaded image' });
+            isUploadingRef.current = false;
+            setIsUploading(false);
+            setUploadProgress(0);
+            return;
+          } else {
+            const errorText = await response.text();
+            lastError = new Error(`Upload failed (${response.status}): ${errorText}`);
+            
+            if (attempt < maxRetries) {
+              console.warn(`⚠️ Attempt ${attempt + 1} failed:`, lastError.message);
+              continue;
+            } else {
+              console.error('❌ Image upload failed after retries');
+              // Don't delete node - keep it for manual retry
+              uploadedUrls.delete(src);
+              lastUploadedSrcRef.current = null;
+              isUploadingRef.current = false;
+              setIsUploading(false);
+              setUploadProgress(0);
+              return;
+            }
+          }
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error('Unknown error');
+          
+          if (attempt < maxRetries) {
+            console.warn(`⚠️ Attempt ${attempt + 1} failed:`, lastError.message);
+            continue;
+          }
         }
-      } catch (error) {
-        console.error('❌ Auto-upload error, deleting node:', error);
-        deleteNode();
-      } finally {
-        isUploadingRef.current = false;
-        setIsUploading(false);
-        setUploadProgress(0);
       }
+
+      console.error('❌ Image auto-upload failed after all retries:', lastError);
+      // Don't delete node - just stop uploading and allow manual retry
+      uploadedUrls.delete(src);
+      lastUploadedSrcRef.current = null;
+      isUploadingRef.current = false;
+      setIsUploading(false);
+      setUploadProgress(0);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]); // Only depend on src - updateAttributes/deleteNode are stable

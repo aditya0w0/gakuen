@@ -66,26 +66,31 @@ function VideoNodeView({
     setUploadProgress(20);
 
     (async () => {
-      const maxRetries = 2;
+      const maxRetries = 3; // Increased from 2 to 3
       let lastError: Error | null = null;
 
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
           if (attempt > 0) {
-            const delay = Math.pow(2, attempt - 1) * 1000;
+            const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
             console.log(
-              `⏳ Retry ${attempt}/${maxRetries} after ${delay}ms...`
+              `⏳ [Video] Retry ${attempt}/${maxRetries} after ${delay}ms...`
             );
             await new Promise((resolve) => setTimeout(resolve, delay));
-            setUploadProgress(20 + attempt * 10);
+            setUploadProgress(20 + attempt * 15);
           }
+
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
           const response = await authenticatedFetch('/api/upload-video', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ video: src }),
+            signal: controller.signal,
           });
 
+          clearTimeout(timeout);
           setUploadProgress(80);
 
           if (response.ok) {
@@ -97,17 +102,28 @@ function VideoNodeView({
             setIsUploading(false);
             setUploadProgress(0);
             return;
-          } else if (attempt < maxRetries) {
-            lastError = new Error(`Upload failed: ${response.status}`);
-            continue;
           } else {
-            console.warn('❌ Video upload failed after retries, deleting node');
-            deleteNode();
-            return;
+            const errorText = await response.text();
+            lastError = new Error(`Upload failed (${response.status}): ${errorText}`);
+            
+            if (attempt < maxRetries) {
+              console.warn(`⚠️ Attempt ${attempt + 1} failed:`, lastError.message);
+              continue;
+            } else {
+              console.error('❌ Video upload failed after retries');
+              // Don't delete node - keep it for manual retry
+              uploadedUrls.delete(src); // Allow manual retry
+              lastUploadedSrcRef.current = null;
+              isUploadingRef.current = false;
+              setIsUploading(false);
+              setUploadProgress(0);
+              return;
+            }
           }
         } catch (error) {
           lastError =
             error instanceof Error ? error : new Error('Unknown error');
+          
           if (attempt < maxRetries) {
             console.warn(
               `⚠️ Attempt ${attempt + 1} failed:`,
@@ -122,7 +138,9 @@ function VideoNodeView({
         '❌ Video auto-upload failed after all retries:',
         lastError
       );
-      deleteNode();
+      // Don't delete node - just stop uploading and allow manual retry
+      uploadedUrls.delete(src); // Remove from set to allow retry
+      lastUploadedSrcRef.current = null;
       isUploadingRef.current = false;
       setIsUploading(false);
       setUploadProgress(0);

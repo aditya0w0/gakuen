@@ -31,7 +31,7 @@ const pendingUploads = new Map<
 // Cleanup old uploads every minute
 setInterval(() => {
   const now = Date.now();
-  const TIMEOUT = 5 * 60 * 1000; // 5 minutes
+  const TIMEOUT = 15 * 60 * 1000; // 15 minutes - increased for large uploads
   for (const [uploadId, upload] of pendingUploads) {
     if (now - upload.createdAt > TIMEOUT) {
       pendingUploads.delete(uploadId);
