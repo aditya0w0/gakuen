@@ -491,7 +491,7 @@ function ImageNodeView({
 export const CustomImage = Node.create({
   name: 'customImage',
 
-  group: 'block inline',
+  group: 'block',
 
   inline: false,
 
