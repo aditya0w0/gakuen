@@ -144,7 +144,7 @@ export default function CourseEditorPage({
   } | null>(null);
   const [copiedComponent, setCopiedComponent] = useState<Component | null>(
     null
-  );  
+  );
   const [activeView, setActiveView] = useState<
     'content' | 'settings' | 'sections'
   >('content');
