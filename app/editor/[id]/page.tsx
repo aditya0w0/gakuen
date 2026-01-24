@@ -289,7 +289,7 @@ export default function CourseEditorPage({
       }
 
       // Ctrl/Cmd + Arrow: Lesson navigation (works even in editor)
-      if (isModifier && event.key === 'ArrowUp') {
+      if (isModifier && event.key === 'ArrowLeft') {
         event.preventDefault();
         if (editingIndex !== null && editingIndex > 0) {
           setEditingIndex(editingIndex - 1);
@@ -298,7 +298,7 @@ export default function CourseEditorPage({
         return;
       }
 
-      if (isModifier && event.key === 'ArrowDown') {
+      if (isModifier && event.key === 'ArrowRight') {
         event.preventDefault();
         if (editingIndex !== null && editingIndex < lessons.length - 1) {
           setEditingIndex(editingIndex + 1);
