@@ -73,7 +73,12 @@ export async function uploadCourseChunked(
   courseId: string,
   course: any,
   operation: 'checkpoint' | 'publish'
-): Promise<{ success: boolean; error?: string; result?: any; needsRetry?: boolean }> {
+): Promise<{
+  success: boolean;
+  error?: string;
+  result?: any;
+  needsRetry?: boolean;
+}> {
   try {
     const jsonData = JSON.stringify(course);
     const originalSize = jsonData.length;
