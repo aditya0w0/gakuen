@@ -3,7 +3,7 @@
 import { MultiFileCodeComponent, CodeFile } from '@/lib/cms/types';
 import { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Plus, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -169,11 +169,10 @@ export function MultiFileCodeBlock({
       <div
         onClick={onSelect}
         style={containerStyle}
-        className={`group cursor-pointer rounded-lg overflow-hidden transition-all ${
-          isSelected
-            ? 'ring-2 ring-indigo-500'
-            : 'hover:ring-1 hover:ring-zinc-600'
-        }`}
+        className={`group cursor-pointer rounded-lg overflow-hidden transition-all ${isSelected
+          ? 'ring-2 ring-indigo-500'
+          : 'hover:ring-1 hover:ring-zinc-600'
+          }`}
       >
         {/* Tabs Bar */}
         <div className="flex items-center bg-zinc-900 border-b border-zinc-700 overflow-x-auto">
@@ -184,11 +183,10 @@ export function MultiFileCodeBlock({
                 e.stopPropagation();
                 setActiveTab(file.id);
               }}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-r border-zinc-700 cursor-pointer transition-colors ${
-                activeTab === file.id
-                  ? 'bg-zinc-800 text-white'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-r border-zinc-700 cursor-pointer transition-colors ${activeTab === file.id
+                ? 'bg-zinc-800 text-white'
+                : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                }`}
             >
               {editingFilename === file.id ? (
                 <input
@@ -252,7 +250,7 @@ export function MultiFileCodeBlock({
             {/* Syntax highlighted background */}
             <SyntaxHighlighter
               language={detectLanguage(activeFile.filename)}
-              style={vscDarkPlus}
+              style={atomDark}
               showLineNumbers={false}
               wrapLines={false}
               wrapLongLines={false}
@@ -261,6 +259,7 @@ export function MultiFileCodeBlock({
                 padding: '16px',
                 background: '#1e1e1e',
                 minHeight: '200px',
+                maxHeight: '320px', // Force max height
                 fontSize: component.fontSize
                   ? `${component.fontSize}px`
                   : '14px',
@@ -341,11 +340,10 @@ export function MultiFileCodeBlock({
             <button
               key={file.id}
               onClick={() => setActiveTab(file.id)}
-              className={`px-3 py-1 rounded-md text-xs transition-all ${
-                activeTab === file.id
-                  ? 'bg-zinc-700/80 text-white'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-700/40'
-              }`}
+              className={`px-3 py-1 rounded-md text-xs transition-all ${activeTab === file.id
+                ? 'bg-zinc-700/80 text-white'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-700/40'
+                }`}
             >
               {file.filename}
             </button>
@@ -357,7 +355,7 @@ export function MultiFileCodeBlock({
       {activeFile && (
         <SyntaxHighlighter
           language={detectLanguage(activeFile.filename)}
-          style={vscDarkPlus}
+          style={atomDark}
           showLineNumbers={component.showLineNumbers}
           lineNumberStyle={{
             minWidth: '2.5em',
@@ -372,6 +370,7 @@ export function MultiFileCodeBlock({
             background: '#1a1a1a',
             padding: '12px 0',
             fontSize: component.fontSize ? `${component.fontSize}px` : '13px',
+            maxHeight: '320px', // Force max height
           }}
         >
           {activeFile.code}

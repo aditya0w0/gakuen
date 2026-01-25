@@ -277,18 +277,16 @@ function SlashCommandMenu({
         <button
           key={cmd.title}
           onClick={() => executeCommand(cmd)}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-all ${
-            index === selectedIndex
+          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-all ${index === selectedIndex
               ? 'bg-indigo-600/20 text-white'
               : 'text-zinc-300 hover:bg-zinc-800/50'
-          }`}
+            }`}
         >
           <div
-            className={`p-2 rounded-lg ${
-              index === selectedIndex
+            className={`p-2 rounded-lg ${index === selectedIndex
                 ? 'bg-indigo-600/30 text-indigo-300'
                 : 'bg-zinc-800 text-zinc-400'
-            }`}
+              }`}
           >
             {cmd.icon}
           </div>
@@ -462,6 +460,7 @@ export const FluidEditor = forwardRef<FluidEditorRef, FluidEditorProps>(
         attributes: {
           class:
             'prose prose-invert max-w-none focus:outline-none min-h-[200px] px-6 py-5',
+          spellCheck: 'false',
         },
         // Smart paste handler - handles images, videos, and YouTube URLs
         handlePaste: (view, event) => {

@@ -2,7 +2,7 @@
 
 import { CodeComponent } from "@/lib/cms/types";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface CodeBlockProps {
     component: CodeComponent;
@@ -29,12 +29,13 @@ export function CodeBlock({ component, isEditing, isSelected, onSelect }: CodeBl
             >
                 <SyntaxHighlighter
                     language={component.language || "javascript"}
-                    style={vscDarkPlus}
+                    style={atomDark}
                     showLineNumbers={component.showLineNumbers}
                     customStyle={{
                         margin: 0,
                         borderRadius: "0.5rem",
                         fontSize: component.fontSize ? `${component.fontSize}px` : "14px",
+                        maxHeight: "320px", // Force max height
                     }}
                 >
                     {component.code}
@@ -47,12 +48,13 @@ export function CodeBlock({ component, isEditing, isSelected, onSelect }: CodeBl
         <div style={containerStyle}>
             <SyntaxHighlighter
                 language={component.language || "javascript"}
-                style={vscDarkPlus}
+                style={atomDark}
                 showLineNumbers={component.showLineNumbers}
                 customStyle={{
                     margin: 0,
                     borderRadius: "0.5rem",
                     fontSize: component.fontSize ? `${component.fontSize}px` : "14px",
+                    maxHeight: "320px", // Force max height
                 }}
             >
                 {component.code}

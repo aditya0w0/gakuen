@@ -740,12 +740,14 @@ pre[class*='language-'],
   font-size: 0.875rem !important;
   line-height: 1.7 !important;
   font-weight: 400;
-  background: linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%) !important;
-  border: 1px solid rgba(255, 149, 0, 0.2) !important;
+  background: #1e1e1e !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 12px !important;
   padding: 1.25rem 1.5rem !important;
   margin: 1.5rem 0;
   overflow-x: auto;
+  overflow-y: auto; /* Enable vertical scroll */
+  max-height: 320px; /* Approx 13-15 lines */
   color: #e4e4e7;
   box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.3),
@@ -773,27 +775,14 @@ pre code {
 .prose code:not(pre code) {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 0.85em;
-  background: rgba(255, 149, 0, 0.12);
-  color: #ffa94d;
+  background: rgba(99, 102, 241, 0.15); /* Indigo tint */
+  color: #a5b4fc; /* Indigo-300 */
   padding: 0.2em 0.4em;
   border-radius: 6px;
-  border: 1px solid rgba(255, 149, 0, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
-/* Code block decoration - top bar effect */
-.ProseMirror pre::before,
-.prose pre::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #ff9500, #ff5e3a, #ff2d55);
-  border-radius: 12px 12px 0 0;
-}
-
-/* Syntax highlighting colors */
+/* Syntax highlighting colors - Custom overrides for cool tones */
 .ProseMirror pre .token.comment,
 .prose pre .comment {
   color: #6b7280;
